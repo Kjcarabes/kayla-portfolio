@@ -38,11 +38,11 @@
       "heroFeature": true
     },
     {
-      "id": "fire",
-      "title": "Warm November",
+      "id": "voyuer",
+      "title": "Voyuer",
       "year": "2025",
       "category": "Paintings",
-      "image": "assets/images/fire.jpeg",
+      "image": "assets/images/assets/images/voyeur.IMG_3787.jpg",
       "description": "",
       "medium": "Oil on canvas",
       "size": "2ft x 3ft",
@@ -349,7 +349,21 @@
       "heroFeature": true
 
       
-    } 
+    },  
+    {
+      "id": "Grey sky",
+      "title": "Cloudy day",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "assets/images/assets/images/Grey sky. IMG_9829.jpg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "10in x 10in",
+      "featured": false
+
+
+      
+    }
   ],
 
   "_howToAdd": "Copy one of the entries above, paste it, and change the values. Make sure to add a comma after the previous entry!",
