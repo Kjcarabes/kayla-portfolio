@@ -140,12 +140,216 @@
       "title": "Horse with No Name",
       "year": "2023",
       "category": "Paintings",
-      "image": "assets/images/horse.heic",
+      "image": "assets/images/horse.jpeg",
       "description": "",
       "medium": "Oil on canvas",
       "size": "6in x 12in",
       "featured": false
-    }
+    },  
+    {
+      "id": "Photonorphogenesis",
+      "title": "hotonorphogenesis",
+      "year": "2024",
+      "category": "Paintings",
+      "image": "hotonorphogenesis.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "26in x 26in",
+      "featured": false
+    },  
+    {
+      "id": "Park",
+      "title": "Parklife",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "Park.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "4ft x 4ft",
+      "featured": false
+    },  
+    {
+      "id": "Blue",
+      "title": "Blue Horse",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "blue.jpeg",
+      "description": "",
+      "medium": "Oil on wood panel",
+      "size": "8in x 10in",
+      "featured": false
+    },  
+    {
+      "id": "xochi",
+      "title": "Xochimilco",
+      "year": "2026",
+      "category": "Paintings",
+      "image": "xochi.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "2ft x 4ft",
+      "featured": true,
+      "heroFeature": true
+    },  
+    {
+      "id": "skull",
+      "title": "CMD",
+      "year": "2026",
+      "category": "Paintings",
+      "image": "skull.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "10in x 4in",
+      "featured": false
+      
+    },  
+    {
+      "id": "Armadillo",
+      "title": "Armadillo",
+      "year": "2023",
+      "category": "Paintings",
+      "image": "Armadillo.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "36in x 36in",
+      "featured": false
+      
+    },  
+    {
+      "id": "Apple",
+      "title": "Bite me",
+      "year": "2023",
+      "category": "Paintings",
+      "image": "Apple.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "6ft x 5ft",
+      "featured": false
+      
+    },  
+    {
+      "id": "cow",
+      "title": "River Cow",
+      "year": "2026",
+      "category": "Paintings",
+      "image": "cow.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "16in x 20in",
+      "featured": true
+      
+    },  
+    {
+      "id": "Bridge",
+      "title": "Bridge over troubled water",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "bridge.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "16in x 14in",
+      "featured": false
+      
+    },  
+    {
+      "id": "moon",
+      "title": "Moon over Utopia",
+      "year": "2026",
+      "category": "Paintings",
+      "image": "moon.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "14in x 13in",
+      "featured": true,
+      "heroFeature": true
+
+      
+    },  
+    {
+      "id": "red sun",
+      "title": "Red Sun",
+      "year": "2023",
+      "category": "Paintings",
+      "image": "red sun.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "11in x 14in",
+      "featured": false
+      
+
+      
+    },  
+    {
+      "id": "rabbit",
+      "title": "Another brick in the wall",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "rabbit.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "16in x 14in",
+      "featured": false
+      
+
+      
+    },  
+    {
+      "id": "garden",
+      "title": "Grandma's Garden",
+      "year": "2024",
+      "category": "Paintings",
+      "image": "garden.jpeg",
+      "description": "",
+      "medium": "Oil on unstreched canvas",
+      "size": "2ft x 3ft",
+      "featured": true,
+      "heroFeature": true
+
+
+      
+    },  
+    {
+      "id": "shell",
+      "title": "soft shell",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "shell.jpeg",
+      "description": "",
+      "medium": "Oil on wood panel",
+      "size": "12in x 20in ",
+      "featured": false
+
+
+      
+    },  
+    {
+      "id": "night",
+      "title": "Night study",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "night.jpeg",
+      "description": "",
+      "medium": "Oil on wood block",
+      "size": "6in x 3in",
+      "featured": false
+
+
+      
+    },  
+    {
+      "id": "sheep",
+      "title": "Party animal",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "sheep.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "4ft x 5ft",
+      "featured": true,
+      "heroFeature": true
+
+      
+    } 
   ],
 
   "_howToAdd": "Copy one of the entries above, paste it, and change the values. Make sure to add a comma after the previous entry!",
