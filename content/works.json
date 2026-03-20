@@ -46,8 +46,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "2ft x 3ft",
-      "featured": true,
-      "heroFeature": true
+      "featured": true
+  
     },
     {
       "id": "lake-self",
@@ -102,7 +102,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "4ft x 3ft",
-      "featured": true
+      "featured": true,
+      "heroFeature": true
     },
     {
       "id": "water",
@@ -236,7 +237,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "16in x 20in",
-      "featured": true
+      "featured": true,
+      "heroFeature": true
       
     },  
     {
@@ -331,7 +333,8 @@
       "description": "",
       "medium": "Oil on wood block",
       "size": "6in x 3in",
-      "featured": false
+      "featured": false,
+      "heroFeature": true
 
 
       
