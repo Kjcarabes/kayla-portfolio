@@ -21,6 +21,13 @@
         "assets/images/blog 1-2.webp"
       ],
       "content": "Slowly chipping away at this forest painting, but am really enjoying the red underlayer."
+    },
+     {
+      "id": "Senior Show",
+      "date": "2026-03-12",
+      "images": ["assets/image/groupphoto.JPG",
+       "assets/images/seniorshow.jpg"],
+      "content": "Really enjoyed my RISD Senior Painting showcase! Felt like a huge accomplishment (:"
     }
   ]
 }
