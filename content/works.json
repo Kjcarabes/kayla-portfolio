@@ -71,16 +71,6 @@
       "featured": false
     },
     {
-      "id": "donkey-moon",
-      "title": "Donkey Moon",
-      "year": "2024",
-      "category": "Paintings",
-      "image": "",
-      "description": "",
-      "medium": "Charcoal on paper",
-      "featured": false
-    },
-    {
       "id": "teeth",
       "title": "Cavity",
       "year": "2024",
@@ -144,6 +134,17 @@
       "medium": "Wood ash, animal skin glue and soft pastel on wood",
       "size": "6in x 12in",
       "featured": true
+    },  
+    {
+      "id": "horse-2",
+      "title": "Horse with No Name",
+      "year": "2023",
+      "category": "Paintings",
+      "image": "assets/images/horse.heic",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "6in x 12in",
+      "featured": false
     }
   ],
 
