@@ -102,8 +102,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "4ft x 3ft",
-      "featured": true,
-      "heroFeature": true
+      "featured": true
+      
     },
     {
       "id": "water",
