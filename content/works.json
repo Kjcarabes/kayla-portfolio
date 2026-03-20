@@ -4,17 +4,29 @@
 
   "works": [
     {
-      "id": "xochi",
-      "title": "Xochimilco",
+      "id": "moon",
+      "title": "Moon over Utopia",
       "year": "2026",
       "category": "Paintings",
-      "image": "assets/images/xochi.jpeg",
+      "image": "assets/images/moon.jpeg",
       "description": "",
       "medium": "Oil on canvas",
-      "size": "2ft x 4ft",
+      "size": "14in x 13in",
       "featured": true,
       "heroFeature": true
-    },  
+    },
+    {
+      "id": "night",
+      "title": "Night study",
+      "year": "2025",
+      "category": "Paintings",
+      "image": "assets/images/night.jpeg",
+      "description": "",
+      "medium": "Oil on wood block",
+      "size": "6in x 3in",
+      "featured": false,
+      "heroFeature": true
+    },
     {
       "id": "sparkle-face",
       "title": "Luchadora",
@@ -26,6 +38,30 @@
       "featured": true,
       "heroFeature": true
     },
+    {
+      "id": "xochi",
+      "title": "Xochimilco",
+      "year": "2026",
+      "category": "Paintings",
+      "image": "assets/images/xochi.jpeg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "2ft x 4ft",
+      "featured": true,
+      "heroFeature": true
+    },
+        {
+      "id": "garden",
+      "title": "Grandma's Garden",
+      "year": "2024",
+      "category": "Paintings",
+      "image": "assets/images/garden.jpeg",
+      "description": "",
+      "medium": "Oil on unstreched canvas",
+      "size": "2ft x 3ft",
+      "featured": true,
+      "heroFeature": true
+    },   
     {
       "id": "horses",
       "title": "Leavin' on the mind",
@@ -253,20 +289,6 @@
       
     },  
     {
-      "id": "moon",
-      "title": "Moon over Utopia",
-      "year": "2026",
-      "category": "Paintings",
-      "image": "assets/images/moon.jpeg",
-      "description": "",
-      "medium": "Oil on canvas",
-      "size": "14in x 13in",
-      "featured": true,
-      "heroFeature": true
-
-      
-    },  
-    {
       "id": "red sun",
       "title": "Red Sun",
       "year": "2023",
@@ -293,22 +315,7 @@
       
 
       
-    },  
-    {
-      "id": "garden",
-      "title": "Grandma's Garden",
-      "year": "2024",
-      "category": "Paintings",
-      "image": "assets/images/garden.jpeg",
-      "description": "",
-      "medium": "Oil on unstreched canvas",
-      "size": "2ft x 3ft",
-      "featured": true,
-      "heroFeature": true
-
-
-      
-    },  
+    },   
     {
       "id": "shell",
       "title": "soft shell",
@@ -322,22 +329,7 @@
 
 
       
-    },  
-    {
-      "id": "night",
-      "title": "Night study",
-      "year": "2025",
-      "category": "Paintings",
-      "image": "assets/images/night.jpeg",
-      "description": "",
-      "medium": "Oil on wood block",
-      "size": "6in x 3in",
-      "featured": false,
-      "heroFeature": true
-
-
-      
-    },  
+    },   
     {
       "id": "sheep",
       "title": "Party animal",
