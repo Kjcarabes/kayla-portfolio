@@ -3,16 +3,16 @@
   "_instructions": "Manage products in Stripe Dashboard. This file syncs automatically.",
   "products": [
     {
-      "id": "prod_TlSffbZWDkj6B3",
-      "title": "test art",
-      "category": "Originals",
+      "id": "prod_UFI9fgMIjRjC7B",
+      "title": "Horse With No Name",
+      "category": "Prints",
       "price": 10,
-      "image": "assets/images/bears.jpeg",
-      "description": "art is cool!",
-      "stripeLink": "https://buy.stripe.com/test_5kQfZibJE5TGg4daJtcfK00",
+      "image": "assets/images/horse.jpeg",
+      "description": "5X7 Print ",
+      "stripeLink": "https://buy.stripe.com/3cI00j8MG1gi9hP4aCe7m00",
       "sold": false,
-      "workId": "bears"
+      "workId": "horse-2"
     }
   ],
-  "_lastSync": "2026-03-30T18:50:38.250Z"
+  "_lastSync": "2026-04-09T18:53:07.473Z"
 }
