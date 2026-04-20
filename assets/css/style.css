@@ -1231,6 +1231,16 @@ img {
     margin-bottom: 0.5rem;
 }
 
+.product-card-original {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--color-border);
+}
+
+.product-card-original .product-card-status {
+    margin-bottom: 0.5rem;
+}
+
 .work-detail-buy-btn.sold {
     background: var(--color-border);
     color: var(--color-text-light);

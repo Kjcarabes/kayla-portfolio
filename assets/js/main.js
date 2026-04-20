@@ -547,11 +547,17 @@ function inquireButtonHtml(product, variant) {
     return `<button type="button" class="${cls}" data-inquire data-product-title="${escapeAttr(product.title)}" data-product-id="${escapeAttr(product.id)}">Contact me</button>`;
 }
 
-// Create a product card element
-function createProductCard(product, works = []) {
+// Create a product card element.
+// If `attachedOriginal` is passed, the card is a print that shares a workId with an original —
+// the original is rendered inline as a status note instead of getting its own card.
+function createProductCard(product, works = [], attachedOriginal = null) {
     const article = document.createElement('article');
     article.className = 'product-card';
-    article.dataset.category = product.category;
+
+    const categories = [product.category];
+    if (attachedOriginal) categories.push(attachedOriginal.category);
+    article.dataset.categories = categories.join(' ');
+    article.dataset.category = product.category; // kept for any legacy readers
 
     let buttonHtml;
     if (isOriginal(product)) {
@@ -566,9 +572,27 @@ function createProductCard(product, works = []) {
         buttonHtml = '<span class="product-card-btn coming-soon">Coming Soon</span>';
     }
 
-    const statusHtml = isOriginal(product) && !product.sold
-        ? '<p class="product-card-status">Original available</p>'
-        : '';
+    let statusHtml = '';
+    if (isOriginal(product) && !product.sold) {
+        statusHtml = '<p class="product-card-status">Original available</p>';
+    }
+
+    // Attached original (on a print card): show status + Contact-me below the print's own CTA.
+    let attachedOriginalHtml = '';
+    if (attachedOriginal) {
+        attachedOriginalHtml = attachedOriginal.sold
+            ? `
+                <div class="product-card-original">
+                    <p class="product-card-status">Original — Sold</p>
+                </div>
+            `
+            : `
+                <div class="product-card-original">
+                    <p class="product-card-status">Original available</p>
+                    ${inquireButtonHtml(attachedOriginal)}
+                </div>
+            `;
+    }
 
     // Use product description, or fall back to linked work's description
     let description = product.description;
@@ -600,6 +624,7 @@ function createProductCard(product, works = []) {
             <p class="product-card-price">$${product.price}</p>
             ${statusHtml}
             ${buttonHtml}
+            ${attachedOriginalHtml}
             ${viewArtworkHtml}
         </div>
     `;
@@ -618,12 +643,33 @@ async function populateShop() {
         loadWorks()
     ]);
 
+    // Attach originals to sibling prints/crafts that share a workId so the shop shows one card per work.
+    // Originals without a non-original sibling (or without a workId) stay as their own cards.
+    const originalsByWorkId = new Map();
+    for (const p of products) {
+        if (!isOriginal(p) || !p.workId) continue;
+        if (!originalsByWorkId.has(p.workId)) originalsByWorkId.set(p.workId, p);
+    }
+    const claimedOriginalIds = new Set();
+    const displayItems = [];
+    for (const p of products) {
+        if (isOriginal(p)) continue; // handled via attachment or as leftovers below
+        const attached = p.workId ? originalsByWorkId.get(p.workId) : null;
+        if (attached) claimedOriginalIds.add(attached.id);
+        displayItems.push({ product: p, attachedOriginal: attached || null });
+    }
+    // Any original not attached to a sibling still gets its own card.
+    for (const p of products) {
+        if (!isOriginal(p)) continue;
+        if (claimedOriginalIds.has(p.id)) continue;
+        displayItems.push({ product: p, attachedOriginal: null });
+    }
+
     container.innerHTML = '';
-    products.forEach(product => {
-        container.appendChild(createProductCard(product, works));
+    displayItems.forEach(({ product, attachedOriginal }) => {
+        container.appendChild(createProductCard(product, works, attachedOriginal));
     });
 
-    // Setup filter functionality
     setupShopFilters();
 }
 
@@ -646,7 +692,8 @@ function setupShopFilters() {
         const items = document.querySelectorAll('.product-card');
 
         items.forEach(item => {
-            if (filter === 'all' || item.dataset.category === filter) {
+            const cats = (item.dataset.categories || item.dataset.category || '').split(/\s+/);
+            if (filter === 'all' || cats.includes(filter)) {
                 item.classList.remove('hidden');
             } else {
                 item.classList.add('hidden');
