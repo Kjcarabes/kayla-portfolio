@@ -17,7 +17,7 @@
       "id": "prod_UN5GRJoPkpJ9vN",
       "title": "Horse With No Name",
       "category": "Originals",
-      "price": 999999,
+      "price": 0,
       "image": "assets/images/placeholder.jpg",
       "description": "",
       "stripeLink": "",
@@ -25,5 +25,5 @@
       "workId": "Horse-2"
     }
   ],
-  "_lastSync": "2026-04-20T16:55:24.017Z"
+  "_lastSync": "2026-04-20T17:04:06.425Z"
 }
