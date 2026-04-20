@@ -124,6 +124,22 @@ Your shop syncs automatically with Stripe every 6 hours. **No need to edit any f
 
 Your product will appear on your website within 6 hours (or sync manually - see below).
 
+### Adding an Original Artwork (no Payment Link needed)
+
+Originals don't sell directly through the site — visitors click **Contact me** to send you an inquiry. So you don't need a Payment Link for them.
+
+1. In Stripe, go to **Product catalog** (not Payment Links) → **Add product**.
+2. Fill in name, description, image, and price (price still shows internally; the site doesn't expose a Buy button for originals).
+3. Scroll to **Additional options** → **Add metadata** and add:
+   - `category` = `Originals`
+   - `status` = `available` (change to `sold` once it's been sold)
+   - `workId` = the matching artwork id from `works.json` (recommended, so it shows on that work's detail page)
+4. Save.
+
+On the next sync the site shows the piece with **Original available** + a **Contact me** button. Change `status` to `sold` later to flip it to **Original — Sold**.
+
+> If you already created an original via a Payment Link, that still works — just set the `status` metadata on the product and you can archive the link whenever you want.
+
 ### Syncing Immediately (Manual Sync)
 
 Don't want to wait 6 hours?
@@ -143,6 +159,7 @@ The sync is forgiving with metadata:
 - `crafts`, `craft`, `Crafts`
 - If you forget the category, it defaults to "Prints"
 - `workId`, `workid`, `WorkId`, or `work_id`
+- `status` (originals only): `available` or `sold` — defaults to available
 
 ### When Something Sells Out
 

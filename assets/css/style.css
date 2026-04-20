@@ -1219,3 +1219,203 @@ img {
         max-width: none;
     }
 }
+
+/* ===========================================
+   ORIGINAL AVAILABLE STATUS + INQUIRY MODAL
+   =========================================== */
+.product-card-status {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-light);
+    margin-bottom: 0.5rem;
+}
+
+.work-detail-buy-btn.sold {
+    background: var(--color-border);
+    color: var(--color-text-light);
+    cursor: not-allowed;
+}
+
+.inquiry-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.inquiry-modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.inquiry-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.inquiry-modal-content {
+    position: relative;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-md);
+    width: min(440px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.inquiry-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-light);
+    cursor: pointer;
+    padding: 0;
+}
+
+.inquiry-modal-close:hover {
+    color: var(--color-text);
+}
+
+.inquiry-modal-content h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding-right: 2rem;
+    margin-bottom: 0.25rem;
+}
+
+.inquiry-modal-lede {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    margin-bottom: 0.75rem;
+}
+
+.inquiry-modal-artwork {
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+    font-style: italic;
+    margin-bottom: 1rem;
+}
+
+.inquiry-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.inquiry-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-light);
+}
+
+.inquiry-form input[type="text"],
+.inquiry-form input[type="email"],
+.inquiry-form input[type="tel"],
+.inquiry-form textarea {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--color-border);
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: var(--color-bg);
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.inquiry-form input:focus,
+.inquiry-form textarea:focus {
+    outline: none;
+    border-color: var(--color-text);
+}
+
+.inquiry-form textarea {
+    resize: vertical;
+    min-height: 3rem;
+}
+
+.inquiry-form-preference {
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.inquiry-form-preference legend {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-light);
+    margin-bottom: 0.25rem;
+    width: 100%;
+}
+
+.inquiry-form-preference label {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--color-text);
+}
+
+.inquiry-form-submit {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--color-text);
+    color: var(--color-bg);
+    border: none;
+    font-size: 0.8rem;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 0.25rem;
+}
+
+.inquiry-form-submit:hover:not(:disabled) {
+    opacity: 0.8;
+}
+
+.inquiry-form-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.inquiry-form-error {
+    font-size: 0.8rem;
+    color: #b33030;
+    margin: 0;
+}
+
+.inquiry-modal-success {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.inquiry-modal-success p {
+    font-size: 0.95rem;
+    color: var(--color-text);
+}

@@ -24,36 +24,20 @@ if (new URLSearchParams(window.location.search).get('ass') === 'phat') {
 // ===========================================
 
 async function initNewsletter() {
-    // Check if already subscribed
     if (localStorage.getItem('newsletter_subscribed')) return;
 
-    // Check if dismissed recently
+    const settings = await getSiteSettings();
+    if (!settings.newsletter?.enabled) return;
+
+    const nl = settings.newsletter;
+
     const dismissed = localStorage.getItem('newsletter_dismissed');
     if (dismissed) {
-        const dismissedDate = new Date(parseInt(dismissed));
-        const now = new Date();
-        const daysSince = (now - dismissedDate) / (1000 * 60 * 60 * 24);
-
-        // Load settings to check showAfterDays
-        try {
-            const response = await fetch('content/site-settings.json');
-            const settings = await response.json();
-            const showAfterDays = settings.newsletter?.showAfterDays || 7;
-
-            if (daysSince < showAfterDays) return;
-        } catch {
-            if (daysSince < 7) return; // Default 7 days
-        }
+        const daysSince = (Date.now() - parseInt(dismissed)) / (1000 * 60 * 60 * 24);
+        if (daysSince < (nl.showAfterDays || 7)) return;
     }
 
-    // Load newsletter settings
     try {
-        const response = await fetch('content/site-settings.json');
-        const settings = await response.json();
-
-        if (!settings.newsletter?.enabled) return;
-
-        const nl = settings.newsletter;
 
         // Create popup HTML
         const popup = document.createElement('div');
@@ -128,18 +112,158 @@ async function initNewsletter() {
 }
 
 // ===========================================
+// INQUIRY MODAL (originals)
+// ===========================================
+
+function initInquiryModal() {
+    const modal = document.createElement('div');
+    modal.className = 'inquiry-modal';
+    modal.id = 'inquiry-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'inquiry-modal-title');
+    modal.innerHTML = `
+        <div class="inquiry-modal-backdrop" data-inquiry-close></div>
+        <div class="inquiry-modal-content">
+            <button type="button" class="inquiry-modal-close" aria-label="Close" data-inquiry-close>&times;</button>
+            <h3 id="inquiry-modal-title">Interested in an original?</h3>
+            <p class="inquiry-modal-lede">Leave your info and Kayla will be in touch.</p>
+            <p class="inquiry-modal-artwork" data-inquiry-artwork></p>
+            <form class="inquiry-form" novalidate>
+                <label>Name<span aria-hidden="true">*</span>
+                    <input type="text" name="name" required autocomplete="name">
+                </label>
+                <label>Email
+                    <input type="email" name="email" autocomplete="email">
+                </label>
+                <label>Phone
+                    <input type="tel" name="phone" autocomplete="tel">
+                </label>
+                <fieldset class="inquiry-form-preference">
+                    <legend>Preferred contact</legend>
+                    <label><input type="radio" name="contactPreference" value="email" checked> Email</label>
+                    <label><input type="radio" name="contactPreference" value="phone"> Phone</label>
+                </fieldset>
+                <label>Message (optional)
+                    <textarea name="message" rows="3"></textarea>
+                </label>
+                <p class="inquiry-form-error" data-inquiry-error hidden></p>
+                <button type="submit" class="inquiry-form-submit">Send</button>
+            </form>
+            <div class="inquiry-modal-success" hidden>
+                <p>Thanks — your message is on its way. Kayla will reply soon.</p>
+                <button type="button" class="inquiry-form-submit" data-inquiry-close>Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const form = modal.querySelector('.inquiry-form');
+    const errorEl = modal.querySelector('[data-inquiry-error]');
+    const artworkEl = modal.querySelector('[data-inquiry-artwork]');
+    const successEl = modal.querySelector('.inquiry-modal-success');
+
+    // Open
+    document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-inquire]');
+        if (!trigger) return;
+        e.preventDefault();
+        openInquiryModal(trigger.dataset.productTitle || '', trigger.dataset.productId || '');
+    });
+
+    // Close
+    modal.addEventListener('click', (e) => {
+        if (e.target.closest('[data-inquiry-close]')) closeInquiryModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) closeInquiryModal();
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.hidden = true;
+
+        const fd = new FormData(form);
+        const name = (fd.get('name') || '').toString().trim();
+        const email = (fd.get('email') || '').toString().trim();
+        const phone = (fd.get('phone') || '').toString().trim();
+
+        if (!name) { showError('Please enter your name.'); return; }
+        if (!email && !phone) { showError('Please leave an email or phone so Kayla can reply.'); return; }
+
+        const settings = await getSiteSettings();
+        const endpoint = settings.inquiryFormAction;
+        if (!endpoint) { showError('This form isn’t configured yet. Please try again later.'); return; }
+
+        fd.append('productTitle', form.dataset.productTitle || '');
+        fd.append('productId', form.dataset.productId || '');
+        fd.append('timestamp', new Date().toISOString());
+
+        const submitBtn = form.querySelector('.inquiry-form-submit');
+        submitBtn.disabled = true;
+        const originalLabel = submitBtn.textContent;
+        submitBtn.textContent = 'Sending…';
+
+        try {
+            await fetch(endpoint, { method: 'POST', mode: 'no-cors', body: fd });
+            form.hidden = true;
+            successEl.hidden = false;
+        } catch (err) {
+            console.error('Inquiry submit failed:', err);
+            showError('Something went wrong. Please try again or email kjcarabes@gmail.com.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalLabel;
+        }
+    });
+
+    function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.hidden = false;
+    }
+
+    function openInquiryModal(productTitle, productId) {
+        form.reset();
+        form.hidden = false;
+        successEl.hidden = true;
+        errorEl.hidden = true;
+        form.dataset.productTitle = productTitle;
+        form.dataset.productId = productId;
+        artworkEl.textContent = productTitle ? `About: ${productTitle}` : '';
+        artworkEl.hidden = !productTitle;
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => form.querySelector('input[name="name"]')?.focus(), 50);
+    }
+
+    function closeInquiryModal() {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// ===========================================
 // SITE-WIDE SETTINGS
 // ===========================================
 
-// Load and apply site settings from JSON
-async function loadSiteSettings() {
-    try {
-        const response = await fetch('content/site-settings.json');
-        const settings = await response.json();
-        applySiteSettings(settings);
-    } catch (error) {
-        console.error('Error loading site settings:', error);
+let siteSettingsPromise = null;
+
+// Shared, cached fetch — inquiry modal and other features reuse this.
+function getSiteSettings() {
+    if (!siteSettingsPromise) {
+        siteSettingsPromise = fetch('content/site-settings.json')
+            .then(r => r.json())
+            .catch(err => {
+                console.error('Error loading site settings:', err);
+                siteSettingsPromise = null;
+                return {};
+            });
     }
+    return siteSettingsPromise;
+}
+
+async function loadSiteSettings() {
+    const settings = await getSiteSettings();
+    if (settings) applySiteSettings(settings);
 }
 
 // Apply settings to the page
@@ -411,6 +535,18 @@ async function loadProducts() {
     }
 }
 
+// Escape values we interpolate into HTML attributes.
+function escapeAttr(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+const isOriginal = (product) => (product.category || '').toLowerCase() === 'originals';
+
+function inquireButtonHtml(product, variant) {
+    const cls = variant === 'work-detail' ? 'work-detail-buy-btn' : 'product-card-btn inquire';
+    return `<button type="button" class="${cls}" data-inquire data-product-title="${escapeAttr(product.title)}" data-product-id="${escapeAttr(product.id)}">Contact me</button>`;
+}
+
 // Create a product card element
 function createProductCard(product, works = []) {
     const article = document.createElement('article');
@@ -418,13 +554,21 @@ function createProductCard(product, works = []) {
     article.dataset.category = product.category;
 
     let buttonHtml;
-    if (product.sold) {
+    if (isOriginal(product)) {
+        buttonHtml = product.sold
+            ? '<span class="product-card-btn sold">Original — Sold</span>'
+            : inquireButtonHtml(product);
+    } else if (product.sold) {
         buttonHtml = '<span class="product-card-btn sold">Sold</span>';
     } else if (product.stripeLink) {
         buttonHtml = `<a href="${product.stripeLink}" target="_blank" rel="noopener" class="product-card-btn">Buy Now</a>`;
     } else {
         buttonHtml = '<span class="product-card-btn coming-soon">Coming Soon</span>';
     }
+
+    const statusHtml = isOriginal(product) && !product.sold
+        ? '<p class="product-card-status">Original available</p>'
+        : '';
 
     // Use product description, or fall back to linked work's description
     let description = product.description;
@@ -454,6 +598,7 @@ function createProductCard(product, works = []) {
             ${description ? `<p class="product-card-description">${description}</p>` : ''}
             ${medium ? `<p class="product-card-medium">${medium}</p>` : ''}
             <p class="product-card-price">$${product.price}</p>
+            ${statusHtml}
             ${buttonHtml}
             ${viewArtworkHtml}
         </div>
@@ -631,28 +776,40 @@ async function loadWorkDetail() {
     // Update page title
     document.title = `${work.title} | Kayla Carabes`;
 
-    // Find any products linked to this work (via workId metadata)
-    const linkedProducts = products.filter(p => p.workId === workId && !p.sold);
+    // Prints/crafts: only show when available. Originals: always show (so "Sold" is visible too).
+    const linkedProducts = products
+        .filter(p => p.workId === workId && (isOriginal(p) || !p.sold))
+        .sort((a, b) => Number(isOriginal(b)) - Number(isOriginal(a)));
 
-    // Build shop section HTML if there are linked products
     let shopHtml = '';
     if (linkedProducts.length > 0) {
         shopHtml = `
             <div class="work-detail-shop">
-                <p class="work-detail-shop-title">Available for Purchase</p>
+                <p class="work-detail-shop-title">Shop this piece</p>
                 ${linkedProducts.map(product => {
-                    // Use product description, or fall back to work description
                     const description = product.description || work.description || '';
                     const medium = work.medium || '';
+                    const original = isOriginal(product);
+                    let actionHtml;
+                    if (original && product.sold) {
+                        actionHtml = '<span class="work-detail-buy-btn sold">Sold</span>';
+                    } else if (original) {
+                        actionHtml = inquireButtonHtml(product, 'work-detail');
+                    } else {
+                        actionHtml = `<a href="${product.stripeLink}" target="_blank" rel="noopener" class="work-detail-buy-btn">Buy</a>`;
+                    }
+                    const priceHtml = original
+                        ? `<span class="work-detail-shop-item-price">${product.sold ? 'Original — Sold' : 'Original available'}</span>`
+                        : `<span class="work-detail-shop-item-price">$${product.price}</span>`;
                     return `
                     <div class="work-detail-shop-item">
                         <div class="work-detail-shop-item-info">
                             <span class="work-detail-shop-item-title">${product.title}</span>
                             ${description ? `<span class="work-detail-shop-item-desc">${description}</span>` : ''}
                             ${medium ? `<span class="work-detail-shop-item-medium">${medium}</span>` : ''}
-                            <span class="work-detail-shop-item-price">$${product.price}</span>
+                            ${priceHtml}
                         </div>
-                        <a href="${product.stripeLink}" target="_blank" rel="noopener" class="work-detail-buy-btn">Buy</a>
+                        ${actionHtml}
                     </div>
                 `}).join('')}
             </div>
@@ -721,5 +878,6 @@ document.addEventListener('DOMContentLoaded', () => {
     populateBlog();
     loadWorkDetail();
     setupImageFadeIn();
+    initInquiryModal();
     initNewsletter();
 });
