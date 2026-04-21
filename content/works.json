@@ -1,19 +1,19 @@
 {
   "_comment": "✏️ THIS IS YOUR ARTWORK DATABASE - Edit this file to add/remove works!",
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, featured, heroFeature",
-
   "works": [
     {
       "id": "moon",
       "title": "Moon over Utopia",
-      "year": "2026",
+      "date": "2026-01-10",
       "category": "Paintings",
       "image": "assets/images/moon.jpeg",
       "description": "",
       "medium": "Oil on canvas",
       "size": "14in x 13in",
       "featured": true,
-      "heroFeature": true
+      "heroFeature": true,
+      "originalStatus": "nfs"
     },
     {
       "id": "night",
@@ -25,7 +25,8 @@
       "medium": "Oil on wood block",
       "size": "6in x 3in",
       "featured": false,
-      "heroFeature": true
+      "heroFeature": true,
+      "originalStatus": "available"
     },
     {
       "id": "sparkle-face",
@@ -34,35 +35,46 @@
       "category": "Paintings",
       "image": "assets/images/sparkle-face.jpeg",
       "description": "",
-      "medium":"Paper collage",
+      "medium": "Paper collage",
       "featured": true,
-      "heroFeature": true
+      "heroFeature": true,
+      "originalStatus": "available"
     },
     {
       "id": "xochi",
       "title": "Xochimilco",
-      "year": "2026",
+      "date": "2026-03-04",
       "category": "Paintings",
-      "image": "assets/images/xochi.jpeg",
+      "image": "assets/images/xochi/xochi.jpeg",
+      "detail_images": [
+        "assets/images/xochi/xochi.jpeg",
+        "assets/images/xochi/xochi_1.jpg",
+        "assets/images/xochi/xochi_2.jpg",
+        "assets/images/xochi/xochi_3.jpg",
+        "assets/images/xochi/xochi_4.jpg",
+        "assets/images/xochi/xochi_5.jpg"
+      ],
       "description": "",
       "medium": "Oil on canvas",
       "size": "2ft x 4ft",
       "featured": true,
-      "heroFeature": true
+      "heroFeature": true,
+      "originalStatus": "available"
     },
-        {
+    {
       "id": "moss-hall",
       "title": "Mossy Hall",
-      "year": "2026",
+      "date": "2026-04-05",
       "category": "Paintings",
       "image": "assets/images/mossy_hall.jpg",
       "description": "",
       "medium": "Oil on canvas",
       "size": "4ft x 4ft",
       "featured": true,
-      "heroFeature": true
+      "heroFeature": true,
+      "originalStatus": "available"
     },
-        {
+    {
       "id": "garden",
       "title": "Grandma's Garden",
       "year": "2024",
@@ -72,8 +84,9 @@
       "medium": "Oil on unstreched canvas",
       "size": "2ft x 3ft",
       "featured": true,
-      "heroFeature": true
-    },   
+      "heroFeature": true,
+      "originalStatus": "available"
+    },
     {
       "id": "horses",
       "title": "Leavin' on the mind",
@@ -83,7 +96,8 @@
       "description": "",
       "medium": "Oil on panel",
       "featured": true,
-      "heroFeature": true
+      "heroFeature": true,
+      "originalStatus": "available"
     },
     {
       "id": "voyuer",
@@ -94,8 +108,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "2ft x 3ft",
-      "featured": true
-  
+      "featured": true,
+      "originalStatus": "available"
     },
     {
       "id": "lake-self",
@@ -106,7 +120,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "3ft x 4ft",
-      "featured": true
+      "featured": true,
+      "originalStatus": "available"
     },
     {
       "id": "birb",
@@ -117,7 +132,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "2ft x 3ft",
-      "featured": false
+      "featured": false,
+      "originalStatus": "sold"
     },
     {
       "id": "bears",
@@ -128,7 +144,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "6ft x 4ft",
-      "featured": false
+      "featured": false,
+      "originalStatus": "available"
     },
     {
       "id": "teeth",
@@ -139,7 +156,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "26in x 26in",
-      "featured": false
+      "featured": false,
+      "originalStatus": "available"
     },
     {
       "id": "trees",
@@ -150,8 +168,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "4ft x 3ft",
-      "featured": true
-      
+      "featured": true,
+      "originalStatus": "available"
     },
     {
       "id": "water",
@@ -162,7 +180,8 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "26in x 26in",
-      "featured": false
+      "featured": false,
+      "originalStatus": "available"
     },
     {
       "id": "wood",
@@ -172,7 +191,8 @@
       "image": "assets/images/wood.jpeg",
       "description": "Small portrait of my late grandmother from her youth",
       "medium": "Oil and soft pastel on found wood",
-      "featured": false
+      "featured": false,
+      "originalStatus": "available"
     },
     {
       "id": "father-dog",
@@ -183,7 +203,8 @@
       "description": "Rambling thoughts on my walk throughout the city. Blue sky, city trees in concrete, wires in the air, the strange truck parked only for 2 days, God i hate cars they're trying to kill me, so many nice dogs I can't pet, this song stuck in my head, blue busted bike looking, welcoming me home.",
       "medium": "Oil on canvas",
       "size": "4ft x 4ft",
-      "featured": false
+      "featured": false,
+      "originalStatus": "available"
     },
     {
       "id": "natural",
@@ -194,8 +215,9 @@
       "description": "",
       "medium": "Wood ash, animal skin glue and soft pastel on wood",
       "size": "6in x 12in",
-      "featured": true
-    },  
+      "featured": true,
+      "originalStatus": "available"
+    },
     {
       "id": "horse-2",
       "title": "Horse with No Name",
@@ -205,8 +227,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "6in x 12in",
-      "featured": false
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "Photonorphogenesis",
       "title": "hotonorphogenesis",
@@ -216,8 +239,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "26in x 26in",
-      "featured": false
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "Park",
       "title": "Parklife",
@@ -227,8 +251,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "4ft x 4ft",
-      "featured": false
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "Blue",
       "title": "Blue Horse",
@@ -238,7 +263,8 @@
       "description": "",
       "medium": "Oil on wood panel",
       "size": "8in x 10in",
-      "featured": false
+      "featured": false,
+      "originalStatus": "available"
     },
     {
       "id": "skull",
@@ -249,9 +275,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "10in x 4in",
-      "featured": false
-      
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "Armadillo",
       "title": "Armadillo",
@@ -261,9 +287,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "36in x 36in",
-      "featured": false
-      
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "Apple",
       "title": "Bite me",
@@ -273,9 +299,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "6ft x 5ft",
-      "featured": false
-      
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "cow",
       "title": "River Cow",
@@ -285,9 +311,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "16in x 20in",
-      "featured": true
-      
-    },  
+      "featured": true,
+      "originalStatus": "available"
+    },
     {
       "id": "Bridge",
       "title": "Bridge over troubled water",
@@ -297,9 +323,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "16in x 14in",
-      "featured": false
-      
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "red sun",
       "title": "Red Sun",
@@ -309,11 +335,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "11in x 14in",
-      "featured": false
-      
-
-      
-    },  
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "rabbit",
       "title": "Another brick in the wall",
@@ -323,11 +347,9 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "16in x 14in",
-      "featured": false
-      
-
-      
-    },   
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "shell",
       "title": "soft shell",
@@ -337,11 +359,9 @@
       "description": "",
       "medium": "Oil on wood panel",
       "size": "12in x 20in ",
-      "featured": false
-
-
-      
-    },   
+      "featured": false,
+      "originalStatus": "available"
+    },
     {
       "id": "sheep",
       "title": "Party animal",
@@ -352,10 +372,9 @@
       "medium": "Oil on canvas",
       "size": "4ft x 5ft",
       "featured": true,
-      "heroFeature": true
-
-      
-    },  
+      "heroFeature": true,
+      "originalStatus": "available"
+    },
     {
       "id": "Grey sky",
       "title": "Cloudy day",
@@ -365,13 +384,10 @@
       "description": "",
       "medium": "Oil on canvas",
       "size": "10in x 10in",
-      "featured": false
-
-
-      
+      "featured": false,
+      "originalStatus": "available"
     }
   ],
-
   "_howToAdd": "Copy one of the entries above, paste it, and change the values. Make sure to add a comma after the previous entry!",
   "_categories": "You can use any category names you want: Paintings, Drawings, Sculptures, Digital, Photography, etc."
 }

@@ -68,7 +68,7 @@ Open `content/works.json` and add a new entry. Copy this template:
 {
   "id": "unique-name-here",
   "title": "Your Artwork Title",
-  "year": "2024",
+  "date": "2024",
   "category": "Paintings",
   "image": "assets/images/your-image-filename.jpg",
   "description": "An artistic statement about your piece.",
@@ -85,6 +85,19 @@ Open `content/works.json` and add a new entry. Copy this template:
 - `heroFeature: true` = shows in the big hero slideshow at top of homepage
 - Put a comma after the previous artwork's `}` before adding yours
 - Categories can be anything you want: Paintings, Drawings, Digital, Photography, etc.
+
+**Optional extras:**
+
+- `date` — can be a full ISO date (`"2025-07-15"`) or just a year (`"2025"`). The site always displays **only the year portion** in meta labels; the full date (when present) is used to sort works within a year on the Work page, giving finer-grained ordering. If you only know the year, just use `"2025"` — that's also what existing entries with the legacy `year` field do, and both keep working. New entries should prefer `date`.
+- `detail_images` — an array of image paths, used for a photo gallery on the work-detail page:
+  ```json
+  "detail_images": [
+    "assets/images/piece-front.jpg",
+    "assets/images/piece-detail.jpg",
+    "assets/images/piece-back.jpg"
+  ]
+  ```
+  The first image is the main one; the rest appear as clickable thumbnails under it. Keep the single `image` field alongside — it's used on the gallery grid, homepage hero, and shop cards.
 
 **Hero Slideshow:** Works with `heroFeature: true` will cycle through the homepage hero. Visitors can click or wait 5 seconds for auto-advance.
 
@@ -124,21 +137,27 @@ Your shop syncs automatically with Stripe every 6 hours. **No need to edit any f
 
 Your product will appear on your website within 6 hours (or sync manually - see below).
 
-### Adding an Original Artwork (no Payment Link needed)
+### Originals don't need Stripe at all
 
-Originals don't sell directly through the site — visitors click **Contact me** to send you an inquiry. So you don't need a Payment Link for them.
+Every work in `content/works.json` is automatically treated as an available original. Nothing to create in Stripe — the Originals tab on the shop populates from works.json directly.
 
-1. In Stripe, go to **Product catalog** (not Payment Links) → **Add product**.
-2. Fill in name, description, image, and price (price still shows internally; the site doesn't expose a Buy button for originals).
-3. Scroll to **Additional options** → **Add metadata** and add:
-   - `category` = `Originals`
-   - `status` = `available` (change to `sold` once it's been sold)
-   - `workId` = the matching artwork id from `works.json` (recommended, so it shows on that work's detail page)
-4. Save.
+To mark an original's availability, add an **optional** `originalStatus` field to the work:
 
-On the next sync the site shows the piece with **Original available** + a **Contact me** button. Change `status` to `sold` later to flip it to **Original — Sold**.
+```json
+{
+  "id": "moon",
+  "title": "Moon over Utopia",
+  ...
+  "originalStatus": "sold"
+}
+```
 
-> If you already created an original via a Payment Link, that still works — just set the `status` metadata on the product and you can archive the link whenever you want.
+Values:
+- `"available"` *(default — omit the field)*
+- `"sold"` — shows "Original Sold — Unavailable" with an X across the image
+- `"nfs"` — hides the work from the Originals tab entirely (use for pieces that were never for sale)
+
+Visitors click **Contact me** on available originals; that opens the inquiry modal and emails you. You don't handle money through the site for originals.
 
 ### Syncing Immediately (Manual Sync)
 
@@ -155,11 +174,11 @@ Don't want to wait 6 hours?
 The sync is forgiving with metadata:
 - `category`, `Category`, or `CATEGORY`
 - `prints`, `Prints`, `print`, `Print`
-- `originals`, `original`, `Original`
 - `crafts`, `craft`, `Crafts`
 - If you forget the category, it defaults to "Prints"
 - `workId`, `workid`, `WorkId`, or `work_id`
-- `status` (originals only): `available` or `sold` — defaults to available
+
+> Note: `category: Originals` in Stripe is ignored. Originals come from `works.json` (see "Originals don't need Stripe at all" above).
 
 ### When Something Sells Out
 

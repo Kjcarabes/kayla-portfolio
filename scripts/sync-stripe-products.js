@@ -1,19 +1,15 @@
 /**
  * Sync products from Stripe to products.json
  *
- * How originals vs prints/crafts flow through here:
+ * Scope: prints + crafts only. Originals are driven entirely from works.json
+ * (the `originalStatus` field), not from Stripe — this script ignores any
+ * Stripe product with `category: Originals` so there's one source of truth.
  *
- *   Prints & Crafts — must have an active Stripe Payment Link.
- *     Availability = payment link active flag.
- *
- *   Originals — no payment link required. The script also scans all active
- *     Stripe products tagged `category: Originals` and picks them up even
- *     when no payment link exists. Availability comes from the product's
- *     `status` metadata field (`available` | `sold`, default available).
+ * Prints & Crafts must have an active Stripe Payment Link. Availability =
+ * payment link active flag (inactive = sold).
  *
  * Metadata on a Stripe product:
- *   - category: "Originals" | "Prints" | "Crafts"       (required)
- *   - status:   "available" | "sold"                    (originals only)
+ *   - category: "Prints" | "Crafts"                     (defaults to Prints)
  *   - workId:   matches a work id in works.json         (optional)
  *   - order:    integer sort order                      (optional)
  */
@@ -64,14 +60,8 @@ function buildProductEntry({ product, priceAmount, stripeLink, soldOverride, wor
 
   const workId = readMetadata(product.metadata, 'workId', 'workid', 'WorkId', 'work_id') || null;
 
-  // Originals: availability comes from status metadata. Prints/crafts: from payment link.
-  let sold;
-  if (category === 'Originals') {
-    const status = (readMetadata(product.metadata, 'status', 'Status') || 'available').toLowerCase();
-    sold = status === 'sold';
-  } else {
-    sold = soldOverride === true;
-  }
+  // Availability comes from the payment link's active flag.
+  const sold = soldOverride === true;
 
   let image = product.images?.[0] || 'assets/images/placeholder.jpg';
   const linkedWork = workId ? works.find(w => w.id === workId) : null;
@@ -104,10 +94,7 @@ async function syncProducts() {
   console.log(`Found ${activeLinks.data.length} active and ${inactiveLinks.data.length} inactive payment links`);
 
   const products = [];
-  const capturedProductIds = new Set();
 
-  // --- Pass 1: products reached via payment links (prints, crafts, and any
-  //             originals that happen to have a payment link too). ---
   for (const link of paymentLinks) {
     try {
       const lineItems = await stripe.paymentLinks.listLineItems(link.id, { limit: 1 });
@@ -124,6 +111,12 @@ async function syncProducts() {
         continue;
       }
 
+      const rawCategory = readMetadata(product.metadata, 'category', 'Category', 'CATEGORY');
+      if (normalizeCategory(rawCategory) === 'Originals') {
+        console.log(`Skipping ${product.name} - originals are driven from works.json`);
+        continue;
+      }
+
       const entry = buildProductEntry({
         product,
         priceAmount: price.unit_amount,
@@ -133,39 +126,11 @@ async function syncProducts() {
       });
 
       products.push(entry);
-      capturedProductIds.add(product.id);
-      console.log(`Added (link): ${product.name} (${entry.category}) - $${entry.price}${entry.sold ? ' [sold]' : ''}`);
+      console.log(`Added: ${product.name} (${entry.category}) - $${entry.price}${entry.sold ? ' [sold]' : ''}`);
     } catch (error) {
       console.error(`Error processing payment link ${link.id}:`, error.message);
     }
   }
-
-  // --- Pass 2: originals without a payment link. ---
-  console.log('\nScanning for originals without payment links...');
-  let originalsFound = 0;
-  for await (const product of stripe.products.list({ active: true, limit: 100, expand: ['data.default_price'] })) {
-    const category = normalizeCategory(readMetadata(product.metadata, 'category', 'Category', 'CATEGORY'));
-    if (category !== 'Originals') continue;
-    if (capturedProductIds.has(product.id)) continue;
-
-    const defaultPrice = product.default_price && typeof product.default_price === 'object'
-      ? product.default_price
-      : null;
-
-    const entry = buildProductEntry({
-      product,
-      priceAmount: defaultPrice?.unit_amount ?? null,
-      stripeLink: '',
-      soldOverride: false, // unused for originals; status metadata drives it
-      works,
-    });
-
-    products.push(entry);
-    capturedProductIds.add(product.id);
-    originalsFound++;
-    console.log(`Added (product): ${product.name} (${entry.category}) - $${entry.price}${entry.sold ? ' [sold]' : ''}`);
-  }
-  console.log(`Found ${originalsFound} originals without payment links`);
 
   // Sort: lower _order first, then by title.
   products.sort((a, b) => (a._order - b._order) || a.title.localeCompare(b.title));

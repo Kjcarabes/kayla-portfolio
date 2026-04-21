@@ -125,18 +125,17 @@ function initInquiryModal() {
     modal.innerHTML = `
         <div class="inquiry-modal-backdrop" data-inquiry-close></div>
         <div class="inquiry-modal-content">
-            <button type="button" class="inquiry-modal-close" aria-label="Close" data-inquiry-close>&times;</button>
             <h3 id="inquiry-modal-title">Interested in an original?</h3>
             <p class="inquiry-modal-lede">Leave your info and Kayla will be in touch.</p>
             <p class="inquiry-modal-artwork" data-inquiry-artwork></p>
             <form class="inquiry-form" novalidate>
-                <label>Name<span aria-hidden="true">*</span>
+                <label><span class="inquiry-form-label">Name *</span>
                     <input type="text" name="name" required autocomplete="name">
                 </label>
-                <label>Email
+                <label><span class="inquiry-form-label">Email</span>
                     <input type="email" name="email" autocomplete="email">
                 </label>
-                <label>Phone
+                <label><span class="inquiry-form-label">Phone</span>
                     <input type="tel" name="phone" autocomplete="tel">
                 </label>
                 <fieldset class="inquiry-form-preference">
@@ -144,7 +143,7 @@ function initInquiryModal() {
                     <label><input type="radio" name="contactPreference" value="email" checked> Email</label>
                     <label><input type="radio" name="contactPreference" value="phone"> Phone</label>
                 </fieldset>
-                <label>Message (optional)
+                <label><span class="inquiry-form-label">Message (optional)</span>
                     <textarea name="message" rows="3"></textarea>
                 </label>
                 <p class="inquiry-form-error" data-inquiry-error hidden></p>
@@ -152,7 +151,6 @@ function initInquiryModal() {
             </form>
             <div class="inquiry-modal-success" hidden>
                 <p>Thanks — your message is on its way. Kayla will reply soon.</p>
-                <button type="button" class="inquiry-form-submit" data-inquiry-close>Close</button>
             </div>
         </div>
     `;
@@ -208,6 +206,7 @@ function initInquiryModal() {
             await fetch(endpoint, { method: 'POST', mode: 'no-cors', body: fd });
             form.hidden = true;
             successEl.hidden = false;
+            setTimeout(closeInquiryModal, 2500);
         } catch (err) {
             console.error('Inquiry submit failed:', err);
             showError('Something went wrong. Please try again or email kjcarabes@gmail.com.');
@@ -355,7 +354,7 @@ function createWorkItem(work) {
         <img src="${work.image}" alt="${work.title}" loading="lazy">
         <div class="work-item-overlay">
             <h3 class="work-item-title">${work.title}</h3>
-            <span class="work-item-year">${work.year}</span>
+            <span class="work-item-year">${workDisplayYear(work)}</span>
         </div>
     `;
 
@@ -453,7 +452,7 @@ async function populateAllWorks() {
     // Group works by year
     const worksByYear = {};
     works.forEach(work => {
-        const year = work.year || 'Other';
+        const year = workDisplayYear(work) || 'Other';
         if (!worksByYear[year]) {
             worksByYear[year] = [];
         }
@@ -462,6 +461,20 @@ async function populateAllWorks() {
 
     // Sort years descending (newest first)
     const sortedYears = Object.keys(worksByYear).sort((a, b) => b - a);
+
+    // Within a year: works with a full date sort newest-first; works without keep their JSON order
+    // and fall to the bottom of the year as a group.
+    sortedYears.forEach(year => {
+        worksByYear[year] = worksByYear[year]
+            .map((work, i) => ({ work, i, fullMs: workFullDateMs(work) }))
+            .sort((a, b) => {
+                if (a.fullMs !== null && b.fullMs !== null) return b.fullMs - a.fullMs;
+                if (a.fullMs !== null) return -1;
+                if (b.fullMs !== null) return 1;
+                return a.i - b.i;
+            })
+            .map(x => x.work);
+    });
 
     container.innerHTML = '';
 
@@ -542,6 +555,43 @@ function escapeAttr(s) {
 
 const isOriginal = (product) => (product.category || '').toLowerCase() === 'originals';
 
+// Every work is implicitly an available original unless `originalStatus` says otherwise.
+// "available" (default) | "sold" | "nfs" (not for sale — hides it from the Originals tab entirely).
+function worksAsOriginals(works) {
+    return works
+        .filter(w => (w.originalStatus || 'available') !== 'nfs')
+        .map(w => ({
+            id: `original:${w.id}`,
+            title: w.title,
+            category: 'Originals',
+            price: 0,
+            image: w.image,
+            description: '', // shop cards don't display work descriptions
+            sold: w.originalStatus === 'sold',
+            workId: w.id,
+        }));
+}
+
+// Works accept either `date` (full ISO or just a year) or the legacy `year` field.
+// Display always renders just the year portion.
+function workDisplayYear(work) {
+    const v = work.date || work.year;
+    if (!v) return '';
+    const match = String(v).match(/\d{4}/);
+    return match ? match[0] : String(v);
+}
+
+// Returns a timestamp when the date has more granularity than just a year,
+// or null for year-only / missing values.
+function workFullDateMs(work) {
+    const v = work.date;
+    if (!v) return null;
+    const s = String(v);
+    if (/^\d{4}$/.test(s)) return null;
+    const t = new Date(s).getTime();
+    return isNaN(t) ? null : t;
+}
+
 function inquireButtonHtml(product, variant) {
     const cls = variant === 'work-detail' ? 'work-detail-buy-btn' : 'product-card-btn inquire';
     return `<button type="button" class="${cls}" data-inquire data-product-title="${escapeAttr(product.title)}" data-product-id="${escapeAttr(product.id)}">Contact me</button>`;
@@ -554,16 +604,20 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     const article = document.createElement('article');
     article.className = 'product-card';
 
-    const categories = [product.category];
-    if (attachedOriginal) categories.push(attachedOriginal.category);
-    article.dataset.categories = categories.join(' ');
-    article.dataset.category = product.category; // kept for any legacy readers
+    article.dataset.categories = product.category;
+    article.dataset.category = product.category;
+    if (isOriginal(product) && product.sold) article.classList.add('original-sold');
 
-    let buttonHtml;
+    let buttonHtml = '';
+    let statusHtml = '';
     if (isOriginal(product)) {
-        buttonHtml = product.sold
-            ? '<span class="product-card-btn sold">Original — Sold</span>'
-            : inquireButtonHtml(product);
+        if (product.sold) {
+            statusHtml = '<p class="product-card-status">Original unavailable</p>';
+            buttonHtml = '<span class="product-card-btn sold">Sold!</span>';
+        } else {
+            statusHtml = '<p class="product-card-status">Original available</p>';
+            buttonHtml = inquireButtonHtml(product);
+        }
     } else if (product.sold) {
         buttonHtml = '<span class="product-card-btn sold">Sold</span>';
     } else if (product.stripeLink) {
@@ -572,18 +626,14 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         buttonHtml = '<span class="product-card-btn coming-soon">Coming Soon</span>';
     }
 
-    let statusHtml = '';
-    if (isOriginal(product) && !product.sold) {
-        statusHtml = '<p class="product-card-status">Original available</p>';
-    }
-
     // Attached original (on a print card): show status + Contact-me below the print's own CTA.
     let attachedOriginalHtml = '';
     if (attachedOriginal) {
         attachedOriginalHtml = attachedOriginal.sold
             ? `
-                <div class="product-card-original">
-                    <p class="product-card-status">Original — Sold</p>
+                <div class="product-card-original sold">
+                    <p class="product-card-status">Original unavailable</p>
+                    <span class="product-card-btn sold">Sold!</span>
                 </div>
             `
             : `
@@ -594,15 +644,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
             `;
     }
 
-    // Use product description, or fall back to linked work's description
-    let description = product.description;
-    let linkedWork = null;
-    if (product.workId) {
-        linkedWork = works.find(w => w.id === product.workId);
-        if (linkedWork && !description) {
-            description = linkedWork.description;
-        }
-    }
+    // Shop cards show the product's own description only — no fallback to the linked work's.
+    const description = product.description || '';
+    const linkedWork = product.workId ? works.find(w => w.id === product.workId) : null;
 
     // Get medium from linked work
     const medium = linkedWork?.medium || '';
@@ -618,14 +662,18 @@ function createProductCard(product, works = [], attachedOriginal = null) {
             <span class="product-card-badge">${product.category}</span>
         </div>
         <div class="product-card-info">
-            <h3 class="product-card-title">${product.title}</h3>
-            ${description ? `<p class="product-card-description">${description}</p>` : ''}
-            ${medium ? `<p class="product-card-medium">${medium}</p>` : ''}
-            <p class="product-card-price">$${product.price}</p>
-            ${statusHtml}
-            ${buttonHtml}
-            ${attachedOriginalHtml}
-            ${viewArtworkHtml}
+            <div class="product-card-top">
+                <h3 class="product-card-title">${product.title}</h3>
+                ${description ? `<p class="product-card-description">${description}</p>` : ''}
+                ${medium ? `<p class="product-card-medium">${medium}</p>` : ''}
+                ${isOriginal(product) ? '' : `<p class="product-card-price">$${product.price}</p>`}
+            </div>
+            <div class="product-card-actions">
+                ${statusHtml}
+                ${buttonHtml}
+                ${attachedOriginalHtml}
+                ${viewArtworkHtml}
+            </div>
         </div>
     `;
 
@@ -643,31 +691,33 @@ async function populateShop() {
         loadWorks()
     ]);
 
-    // Attach originals to sibling prints/crafts that share a workId so the shop shows one card per work.
-    // Originals without a non-original sibling (or without a workId) stay as their own cards.
-    const originalsByWorkId = new Map();
-    for (const p of products) {
-        if (!isOriginal(p) || !p.workId) continue;
-        if (!originalsByWorkId.has(p.workId)) originalsByWorkId.set(p.workId, p);
+    // Originals are synthesized from works.json (default: available). Stripe "Originals" products
+    // are ignored here so there's one source of truth for original availability.
+    const nonOriginalProducts = products.filter(p => !isOriginal(p));
+    const syntheticOriginals = worksAsOriginals(works);
+    const originalsByWorkId = new Map(syntheticOriginals.map(o => [o.workId, o]));
+
+    // A work has a sibling product if there's a print/craft with the same workId.
+    const workIdsWithPrintSibling = new Set();
+    for (const p of nonOriginalProducts) {
+        if (p.workId && originalsByWorkId.has(p.workId)) workIdsWithPrintSibling.add(p.workId);
     }
-    const claimedOriginalIds = new Set();
+
     const displayItems = [];
-    for (const p of products) {
-        if (isOriginal(p)) continue; // handled via attachment or as leftovers below
+    for (const p of nonOriginalProducts) {
         const attached = p.workId ? originalsByWorkId.get(p.workId) : null;
-        if (attached) claimedOriginalIds.add(attached.id);
-        displayItems.push({ product: p, attachedOriginal: attached || null });
+        displayItems.push({ product: p, attachedOriginal: attached || null, originalsTabOnly: false });
     }
-    // Any original not attached to a sibling still gets its own card.
-    for (const p of products) {
-        if (!isOriginal(p)) continue;
-        if (claimedOriginalIds.has(p.id)) continue;
-        displayItems.push({ product: p, attachedOriginal: null });
+    for (const o of syntheticOriginals) {
+        const hasSibling = workIdsWithPrintSibling.has(o.workId);
+        displayItems.push({ product: o, attachedOriginal: null, originalsTabOnly: hasSibling });
     }
 
     container.innerHTML = '';
-    displayItems.forEach(({ product, attachedOriginal }) => {
-        container.appendChild(createProductCard(product, works, attachedOriginal));
+    displayItems.forEach(({ product, attachedOriginal, originalsTabOnly }) => {
+        const card = createProductCard(product, works, attachedOriginal);
+        if (originalsTabOnly) card.classList.add('originals-tab-only');
+        container.appendChild(card);
     });
 
     setupShopFilters();
@@ -678,26 +728,27 @@ function setupShopFilters() {
     const filtersContainer = document.getElementById('shop-filters');
     if (!filtersContainer) return;
 
+    const grid = document.getElementById('product-grid');
+
     filtersContainer.addEventListener('click', (e) => {
         if (!e.target.classList.contains('shop-filter-btn')) return;
 
-        // Update active state
-        filtersContainer.querySelectorAll('.shop-filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
+        filtersContainer.querySelectorAll('.shop-filter-btn').forEach(btn => btn.classList.remove('active'));
         e.target.classList.add('active');
 
-        // Filter items
         const filter = e.target.dataset.filter;
-        const items = document.querySelectorAll('.product-card');
+        grid?.classList.toggle('filter-originals', filter === 'Originals');
 
-        items.forEach(item => {
+        document.querySelectorAll('.product-card').forEach(item => {
             const cats = (item.dataset.categories || item.dataset.category || '').split(/\s+/);
-            if (filter === 'all' || cats.includes(filter)) {
-                item.classList.remove('hidden');
+            const originalsTabOnly = item.classList.contains('originals-tab-only');
+            let show;
+            if (filter === 'all') {
+                show = !originalsTabOnly;
             } else {
-                item.classList.add('hidden');
+                show = cats.includes(filter);
             }
+            item.classList.toggle('hidden', !show);
         });
     });
 }
@@ -823,10 +874,16 @@ async function loadWorkDetail() {
     // Update page title
     document.title = `${work.title} | Kayla Carabes`;
 
-    // Prints/crafts: only show when available. Originals: always show (so "Sold" is visible too).
-    const linkedProducts = products
-        .filter(p => p.workId === workId && (isOriginal(p) || !p.sold))
-        .sort((a, b) => Number(isOriginal(b)) - Number(isOriginal(a)));
+    // Prints/crafts from Stripe — only show when available (and never Stripe originals, those are
+    // driven from works.json now). Then prepend the synthesized original unless the work is "nfs".
+    const printsAndCrafts = products.filter(p => p.workId === workId && !isOriginal(p) && !p.sold);
+    const status = work.originalStatus || 'available';
+    const syntheticOriginal = status === 'nfs'
+        ? null
+        : worksAsOriginals([work])[0];
+    const linkedProducts = syntheticOriginal
+        ? [syntheticOriginal, ...printsAndCrafts]
+        : printsAndCrafts;
 
     let shopHtml = '';
     if (linkedProducts.length > 0) {
@@ -834,8 +891,6 @@ async function loadWorkDetail() {
             <div class="work-detail-shop">
                 <p class="work-detail-shop-title">Shop this piece</p>
                 ${linkedProducts.map(product => {
-                    const description = product.description || work.description || '';
-                    const medium = work.medium || '';
                     const original = isOriginal(product);
                     let actionHtml;
                     if (original && product.sold) {
@@ -852,8 +907,6 @@ async function loadWorkDetail() {
                     <div class="work-detail-shop-item">
                         <div class="work-detail-shop-item-info">
                             <span class="work-detail-shop-item-title">${product.title}</span>
-                            ${description ? `<span class="work-detail-shop-item-desc">${description}</span>` : ''}
-                            ${medium ? `<span class="work-detail-shop-item-medium">${medium}</span>` : ''}
                             ${priceHtml}
                         </div>
                         ${actionHtml}
@@ -863,27 +916,55 @@ async function loadWorkDetail() {
         `;
     }
 
-    // Render the detail page
+    // Support a `detail_images` array (first image is the main). Falls back to single `image`.
+    const imagesList = (Array.isArray(work.detail_images) && work.detail_images.length > 0)
+        ? work.detail_images
+        : [work.image].filter(Boolean);
+
+    const thumbsHtml = imagesList.length > 1 ? `
+        <div class="work-detail-thumbs">
+            ${imagesList.map((src, i) => `
+                <button type="button" class="work-detail-thumb${i === 0 ? ' active' : ''}" data-src="${escapeAttr(src)}" aria-label="View image ${i + 1}">
+                    <img src="${escapeAttr(src)}" alt="" loading="lazy">
+                </button>
+            `).join('')}
+        </div>
+    ` : '';
+
     container.innerHTML = `
-        <div class="work-detail-image">
-            <img src="${work.image}" alt="${work.title}" id="detail-image">
+        <div class="work-detail-gallery">
+            <div class="work-detail-image">
+                <img src="${escapeAttr(imagesList[0] || '')}" alt="${work.title}" id="detail-image">
+            </div>
+            ${thumbsHtml}
         </div>
         <div class="work-detail-info">
             <h1>${work.title}</h1>
-            <p class="work-detail-meta">${work.year}${work.category ? ` · ${work.category}` : ''}</p>
+            <p class="work-detail-meta">${workDisplayYear(work)}${work.category ? ` · ${work.category}` : ''}</p>
             ${work.description ? `<p class="work-detail-description">${work.description}</p>` : ''}
             ${work.medium || work.size ? `<p class="work-detail-medium">${[work.medium, work.size].filter(Boolean).join(' | ')}</p>` : ''}
             ${shopHtml}
         </div>
     `;
 
-    // Add click to zoom on image (opens lightbox)
     const detailImage = document.getElementById('detail-image');
     if (detailImage) {
         detailImage.addEventListener('click', () => {
-            openLightbox(work.image, work.title);
+            openLightbox(detailImage.src, work.title);
         });
     }
+
+    // Thumbnail click → swap main image
+    container.querySelectorAll('.work-detail-thumb').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+            const src = thumb.dataset.src;
+            if (!src || !detailImage) return;
+            detailImage.src = src;
+            detailImage.classList.remove('loaded');
+            container.querySelectorAll('.work-detail-thumb').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+        });
+    });
 }
 
 // Fade in images when loaded

@@ -429,7 +429,7 @@ img {
     align-items: start;
 }
 
-.work-detail-image {
+.work-detail-gallery {
     position: sticky;
     top: calc(var(--nav-height) + var(--spacing-md));
 }
@@ -437,6 +437,42 @@ img {
 .work-detail-image img {
     width: 100%;
     cursor: zoom-in;
+    display: block;
+}
+
+.work-detail-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.work-detail-thumb {
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.15s;
+}
+
+.work-detail-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.work-detail-thumb:hover {
+    border-color: var(--color-text-light);
+}
+
+.work-detail-thumb.active {
+    border-color: var(--color-text);
+    outline: 1px solid var(--color-text);
+    outline-offset: -2px;
 }
 
 .work-detail-info {
@@ -549,7 +585,7 @@ img {
         gap: var(--spacing-md);
     }
 
-    .work-detail-image {
+    .work-detail-gallery {
         position: relative;
         top: 0;
     }
@@ -769,6 +805,7 @@ img {
     background: none;
     border: none;
     padding: 0.5rem 0;
+    font-family: inherit;
     font-size: 0.875rem;
     text-align: left;
     cursor: pointer;
@@ -792,10 +829,14 @@ img {
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-auto-rows: max-content;
     gap: var(--spacing-md);
+    align-items: start;
 }
 
 .product-card {
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--color-border);
     background: white;
     transition: box-shadow 0.2s;
@@ -843,6 +884,14 @@ img {
 
 .product-card-info {
     padding: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.product-card-actions {
+    margin-top: auto;
+    padding-top: 0.5rem;
 }
 
 .product-card-title {
@@ -876,6 +925,7 @@ img {
     background: var(--color-text);
     color: var(--color-bg);
     border: none;
+    font-family: inherit;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1241,6 +1291,56 @@ img {
     margin-bottom: 0.5rem;
 }
 
+/* Sold originals — strike-through text + X overlay on the card image. */
+.product-card-status-sold {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    color: var(--color-text-light);
+    font-weight: 500;
+}
+
+.product-card.original-sold .product-card-image {
+    position: relative;
+}
+
+.product-card.original-sold .product-card-image img {
+    opacity: 0.55;
+    filter: grayscale(0.4);
+}
+
+.product-card.original-sold .product-card-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(to top right,
+            transparent calc(50% - 1px),
+            rgba(0, 0, 0, 0.75) calc(50% - 1px),
+            rgba(0, 0, 0, 0.75) calc(50% + 1px),
+            transparent calc(50% + 1px)
+        ),
+        linear-gradient(to top left,
+            transparent calc(50% - 1px),
+            rgba(0, 0, 0, 0.75) calc(50% - 1px),
+            rgba(0, 0, 0, 0.75) calc(50% + 1px),
+            transparent calc(50% + 1px)
+        );
+}
+
+.product-card-original.sold {
+    opacity: 0.9;
+}
+
+/* Contact-me inside an attached-original block (on a print card) only shows on the Originals filter.
+   Contact-me on original-primary cards (standalone or dedicated variant) shows on any tab. */
+#product-grid .product-card-original .product-card-btn.inquire { display: none; }
+#product-grid.filter-originals .product-card-original .product-card-btn.inquire { display: inline-block; }
+
+/* Dedicated original-primary cards are only visible on the Originals filter. */
+#product-grid .product-card.originals-tab-only { display: none; }
+#product-grid.filter-originals .product-card.originals-tab-only { display: block; }
+
 .work-detail-buy-btn.sold {
     background: var(--color-border);
     color: var(--color-text-light);
@@ -1281,28 +1381,20 @@ img {
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
-.inquiry-modal-close {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    line-height: 1;
-    color: var(--color-text-light);
-    cursor: pointer;
-    padding: 0;
-}
-
-.inquiry-modal-close:hover {
-    color: var(--color-text);
-}
-
 .inquiry-modal-content h3 {
     font-size: 1.1rem;
     font-weight: 500;
-    padding-right: 2rem;
     margin-bottom: 0.25rem;
+}
+
+/* Ensure [hidden] wins over the display:flex rules below. */
+.inquiry-form[hidden],
+.inquiry-modal-success[hidden] {
+    display: none;
+}
+
+.inquiry-form-label {
+    display: inline-block;
 }
 
 .inquiry-modal-lede {
