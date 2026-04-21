@@ -29,12 +29,12 @@
       "title": "Xochimilco",
       "category": "Prints",
       "price": 20,
-      "image": "assets/images/xochi.jpeg",
+      "image": "assets/images/xochi/xochi.jpeg",
       "description": "11X6 Print",
       "stripeLink": "https://buy.stripe.com/eVqfZhaUO2kmcu1ePge7m02",
       "sold": false,
       "workId": "xochi"
     }
   ],
-  "_lastSync": "2026-04-21T03:11:56.802Z"
+  "_lastSync": "2026-04-21T07:24:00.432Z"
 }
