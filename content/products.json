@@ -23,7 +23,18 @@
       "stripeLink": "",
       "sold": false,
       "workId": "horse-2"
+    },
+    {
+      "id": "prod_UNEmQzFQgj7r0H",
+      "title": "Three Little Birds",
+      "category": "Prints",
+      "price": 10,
+      "image": "assets/images/birb.jpeg",
+      "description": "",
+      "stripeLink": "https://buy.stripe.com/cNi9AT8MG4sueC9az0e7m01",
+      "sold": false,
+      "workId": "birb"
     }
   ],
-  "_lastSync": "2026-04-21T01:53:36.927Z"
+  "_lastSync": "2026-04-21T02:46:57.246Z"
 }
