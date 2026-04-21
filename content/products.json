@@ -14,17 +14,6 @@
       "workId": "horse-2"
     },
     {
-      "id": "prod_UN5GRJoPkpJ9vN",
-      "title": "Horse With No Name",
-      "category": "Originals",
-      "price": 0,
-      "image": "assets/images/horse.jpeg",
-      "description": "",
-      "stripeLink": "",
-      "sold": false,
-      "workId": "horse-2"
-    },
-    {
       "id": "prod_UNEmQzFQgj7r0H",
       "title": "Three Little Birds",
       "category": "Prints",
@@ -34,7 +23,18 @@
       "stripeLink": "https://buy.stripe.com/cNi9AT8MG4sueC9az0e7m01",
       "sold": false,
       "workId": "birb"
+    },
+    {
+      "id": "prod_UNFAEaqSOEukgO",
+      "title": "Xochimilco",
+      "category": "Prints",
+      "price": 20,
+      "image": "assets/images/xochi.jpeg",
+      "description": "11X6 Print",
+      "stripeLink": "https://buy.stripe.com/eVqfZhaUO2kmcu1ePge7m02",
+      "sold": false,
+      "workId": "xochi"
     }
   ],
-  "_lastSync": "2026-04-21T02:46:57.246Z"
+  "_lastSync": "2026-04-21T03:11:56.802Z"
 }
