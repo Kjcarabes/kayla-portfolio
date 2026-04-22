@@ -440,6 +440,10 @@ async function populateFeaturedWorks() {
     featured.forEach(work => {
         container.appendChild(createWorkItem(work));
     });
+
+    // The featured-work container *is* a .work-grid, so it gets the same
+    // justified-rows treatment as the year grids on the work page.
+    await applyJustifiedLayout([container]);
 }
 
 // Populate all works on work page, grouped by year
@@ -498,6 +502,116 @@ async function populateAllWorks() {
         yearSection.appendChild(yearGrid);
         container.appendChild(yearSection);
     });
+
+    await applyJustifiedLayout(Array.from(container.querySelectorAll('.work-grid')));
+}
+
+// Wait for image dimensions, run the justified-rows layout, then fade the
+// grids in. Hooks a debounced resize listener so rows reflow when the
+// viewport changes. Used by both the work page (year sections) and the home
+// page featured grid.
+async function applyJustifiedLayout(grids) {
+    if (grids.length === 0) return;
+
+    const allImgs = grids.flatMap(g => Array.from(g.querySelectorAll('.work-item img')));
+    await Promise.all(allImgs.map(img =>
+        img.decode ? img.decode().catch(() => {}) :
+        new Promise(res => {
+            if (img.complete) return res();
+            img.addEventListener('load', res, { once: true });
+            img.addEventListener('error', res, { once: true });
+        })
+    ));
+
+    const relayout = () => grids.forEach(g => {
+        layoutJustifiedRows(g);
+        g.classList.add('laid-out');
+    });
+    relayout();
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(relayout, 120);
+    });
+}
+
+// Justified-rows layout: every row has a uniform height; widths within the
+// row scale to each image's natural aspect ratio. Mirrors the museum-style
+// hang you see on Flickr / Google Photos / most fine-art portfolio sites.
+function layoutJustifiedRows(grid) {
+    const items = Array.from(grid.querySelectorAll('.work-item'));
+    if (items.length === 0) return;
+
+    const containerWidth = grid.clientWidth;
+    if (containerWidth === 0) return;
+
+    const gap = parseFloat(getComputedStyle(grid).gap) || 16;
+
+    // Target row height tuned per viewport. On narrow screens we set the
+    // target high enough that each image typically fills its own row,
+    // which gives a clean single-column read on phones.
+    const vw = window.innerWidth;
+    let targetHeight;
+    if (vw < 600)        targetHeight = Math.min(containerWidth, 520);
+    else if (vw < 1024)  targetHeight = 280;
+    else if (vw < 1600)  targetHeight = 340;
+    else                 targetHeight = 400;
+
+    let row = [];
+    let ratioSum = 0;
+
+    const flushRow = (stretchToFit) => {
+        if (row.length === 0) return;
+        const totalGap = gap * (row.length - 1);
+        const height = stretchToFit
+            ? (containerWidth - totalGap) / ratioSum
+            : targetHeight;
+        row.forEach(({ item, ratio }) => {
+            item.style.width = (ratio * height) + 'px';
+            item.style.height = height + 'px';
+        });
+        row = [];
+        ratioSum = 0;
+    };
+
+    items.forEach((item) => {
+        const img = item.querySelector('img');
+        const ratio = (img && img.naturalWidth && img.naturalHeight)
+            ? img.naturalWidth / img.naturalHeight
+            : 1;
+
+        // Does adding this item overflow the row?
+        const gapsWith = gap * row.length;       // n items → n gaps after adding = (row.length+1)-1
+        const idealWithThis = (ratioSum + ratio) * targetHeight + gapsWith;
+
+        if (idealWithThis >= containerWidth && row.length > 0) {
+            // Two options: stretch down to include this item, or flush now (stretch up)
+            // and let this item start the next row. Pick whichever ends up closer
+            // to the target height — prevents one very wide image from squashing
+            // an otherwise-fine row into a thin strip.
+            const gapsWithout = gap * (row.length - 1);
+            const heightWith = (containerWidth - gapsWith) / (ratioSum + ratio);
+            const heightWithout = (containerWidth - gapsWithout) / ratioSum;
+            const distWith = Math.abs(heightWith - targetHeight);
+            const distWithout = Math.abs(heightWithout - targetHeight);
+
+            if (distWithout <= distWith) {
+                flushRow(true);                         // close row without this item
+                row.push({ item, ratio });              // start a new row with it
+                ratioSum += ratio;
+            } else {
+                row.push({ item, ratio });
+                ratioSum += ratio;
+                flushRow(true);                         // include and stretch down
+            }
+        } else {
+            row.push({ item, ratio });
+            ratioSum += ratio;
+        }
+    });
+
+    flushRow(false); // last (incomplete) row keeps the target height instead of stretching
 }
 
 // Lightbox functionality
@@ -612,13 +726,14 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     let statusHtml = '';
     if (isOriginal(product)) {
         if (product.sold) {
-            statusHtml = '<p class="product-card-status">Original unavailable</p>';
+            statusHtml = '<p class="product-card-status">Original unavailable — Sold!</p>';
             buttonHtml = '<span class="product-card-btn sold">Sold!</span>';
         } else {
             statusHtml = '<p class="product-card-status">Original available</p>';
             buttonHtml = inquireButtonHtml(product);
         }
     } else if (product.sold) {
+        statusHtml = '<p class="product-card-status">Sold!</p>';
         buttonHtml = '<span class="product-card-btn sold">Sold</span>';
     } else if (product.stripeLink) {
         buttonHtml = `<a href="${product.stripeLink}" target="_blank" rel="noopener" class="product-card-btn">Buy Now</a>`;
@@ -632,7 +747,7 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         attachedOriginalHtml = attachedOriginal.sold
             ? `
                 <div class="product-card-original sold">
-                    <p class="product-card-status">Original unavailable</p>
+                    <p class="product-card-status">Original unavailable — Sold!</p>
                     <span class="product-card-btn sold">Sold!</span>
                 </div>
             `
@@ -666,9 +781,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
                 <h3 class="product-card-title">${product.title}</h3>
                 ${description ? `<p class="product-card-description">${description}</p>` : ''}
                 ${medium ? `<p class="product-card-medium">${medium}</p>` : ''}
-                ${isOriginal(product) ? '' : `<p class="product-card-price">$${product.price}</p>`}
             </div>
             <div class="product-card-actions">
+                ${isOriginal(product) ? '' : `<p class="product-card-price">$${product.price}</p>`}
                 ${statusHtml}
                 ${buttonHtml}
                 ${attachedOriginalHtml}
@@ -714,6 +829,7 @@ async function populateShop() {
     }
 
     container.innerHTML = '';
+    container.classList.add('filter-all'); // initial state — matches the active "All" filter button
     displayItems.forEach(({ product, attachedOriginal, originalsTabOnly }) => {
         const card = createProductCard(product, works, attachedOriginal);
         if (originalsTabOnly) card.classList.add('originals-tab-only');
@@ -738,6 +854,8 @@ function setupShopFilters() {
 
         const filter = e.target.dataset.filter;
         grid?.classList.toggle('filter-originals', filter === 'Originals');
+        grid?.classList.toggle('filter-all', filter === 'all');
+        grid?.classList.toggle('filter-prints', filter === 'Prints');
 
         document.querySelectorAll('.product-card').forEach(item => {
             const cats = (item.dataset.categories || item.dataset.category || '').split(/\s+/);
