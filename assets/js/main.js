@@ -1075,7 +1075,6 @@ async function loadWorkDetail() {
     if (linkedProducts.length > 0) {
         shopHtml = `
             <div class="work-detail-shop">
-                <p class="work-detail-shop-title">Shop this piece</p>
                 ${linkedProducts.map(product => {
                     const original = isOriginal(product);
                     let actionHtml;
@@ -1086,14 +1085,15 @@ async function loadWorkDetail() {
                     } else {
                         actionHtml = `<a href="${product.stripeLink}" target="_blank" rel="noopener" class="work-detail-buy-btn">Buy</a>`;
                     }
-                    const priceHtml = original
-                        ? `<span class="work-detail-shop-item-price">${product.sold ? 'Original — Sold' : 'Original available'}</span>`
-                        : `<span class="work-detail-shop-item-price">$${product.price}</span>`;
+                    const titleText = original
+                        ? (product.sold ? 'Original — Sold' : 'Original available')
+                        : (product.description || product.title);
+                    const subText = original ? '' : `$${product.price}`;
                     return `
                     <div class="work-detail-shop-item">
                         <div class="work-detail-shop-item-info">
-                            <span class="work-detail-shop-item-title">${product.title}</span>
-                            ${priceHtml}
+                            <span class="work-detail-shop-item-title">${titleText}</span>
+                            ${subText ? `<span class="work-detail-shop-item-price">${subText}</span>` : ''}
                         </div>
                         ${actionHtml}
                     </div>

@@ -547,14 +547,6 @@ img {
     border-top: 1px solid var(--color-border);
 }
 
-.work-detail-shop-title {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--color-text-light);
-    margin-bottom: var(--spacing-sm);
-}
-
 .work-detail-shop-item {
     display: flex;
     align-items: center;
