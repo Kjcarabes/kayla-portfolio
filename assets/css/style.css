@@ -180,7 +180,7 @@ img {
 .page-title {
     font-size: 2.5rem;
     font-weight: 300;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 /* ===========================================
@@ -195,10 +195,12 @@ img {
 }
 
 .work-year-heading {
-    font-size: 2rem;
-    font-weight: 300;
-    margin-bottom: var(--spacing-md);
-    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-light);
 }
 
 .work-grid {
@@ -442,7 +444,7 @@ img {
    WORK DETAIL PAGE
    =========================================== */
 .work-detail-page {
-    padding: calc(var(--nav-height) + var(--spacing-lg)) var(--spacing-md) var(--spacing-xl);
+    padding: calc(var(--nav-height) + var(--spacing-sm)) var(--spacing-md) var(--spacing-xl);
     max-width: var(--container-width);
     margin: 0 auto;
 }
@@ -608,7 +610,7 @@ img {
     align-items: center;
     gap: 0.5rem;
     font-size: 0.875rem;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
     color: var(--color-text-light);
     transition: color 0.2s;
 }
@@ -1027,7 +1029,7 @@ img {
    BLOG PAGE
    =========================================== */
 .blog-page {
-    padding-top: calc(var(--nav-height) + var(--spacing-lg));
+    padding-top: calc(var(--nav-height) + var(--spacing-sm));
 }
 
 .blog-grid {
