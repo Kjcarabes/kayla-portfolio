@@ -843,11 +843,15 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         <div class="product-card-info">
             <div class="product-card-top">
                 <h3 class="product-card-title">${product.title}</h3>
-                ${description ? `<p class="product-card-description">${description}</p>` : ''}
                 ${medium ? `<p class="product-card-medium">${medium}</p>` : ''}
             </div>
             <div class="product-card-actions">
-                ${isOriginal(product) ? '' : `<p class="product-card-price">$${product.price}</p>`}
+                ${isOriginal(product) ? '' : `
+                    <div class="product-card-price-row">
+                        <span class="product-card-price">$${product.price}</span>
+                        ${description ? `<span class="product-card-description">${description}</span>` : ''}
+                    </div>
+                `}
                 ${statusHtml}
                 ${buttonHtml}
                 ${attachedOriginalHtml}

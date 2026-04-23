@@ -44,14 +44,14 @@ When visitors click on any artwork in your gallery, they're taken to a dedicated
 
 To link a shop product to an artwork, add `workId` metadata in Stripe (see Shop section below).
 
-### Description Fallback
+### Descriptions on Shop Cards
 
-Shop products automatically inherit descriptions from their linked artwork! This means:
-- If a product has its own description in Stripe, that's used
-- If a product has no description but is linked to a work (via `workId`), the work's description is used
-- This works on both the Shop page and Work Detail pages
+The **Stripe product description** is shown prominently on the shop card, right next to the price. It's one of the first things a shopper reads, so keep it short and punchy — a phrase or short sentence, not a paragraph. Example: `"Signed giclée, 11x14"` or `"Open edition"`.
 
-**Example:** If a piece in `works.json` has `description: "A study in color and emotion"`, any linked prints or originals without their own Stripe description will show that text. The `medium` field (e.g., "Acrylic on canvas, 24x36") always shows on shop products when available.
+- Shop cards use the **Stripe product description only** — they do *not* fall back to the linked work's description.
+- If you leave a product's Stripe description blank, no description shows on the shop card for that product.
+- The work's `description` in `works.json` is separate — it appears on the **Work detail page** (the artist statement), not on shop cards.
+- The `medium` field from the linked work (e.g., "Acrylic on canvas, 24x36") shows as a small label under the product title on the shop card.
 
 ---
 
@@ -79,7 +79,7 @@ Open `content/works.json` and add a new entry. Copy this template:
 ```
 
 **What each field does:**
-- `description` = artistic statement about the piece (shown on work detail page, also used as for shop products unless you override description in stripe)
+- `description` = artistic statement about the piece (shown on the work detail page only — shop cards use the Stripe product description)
 - `medium` = technical details like materials and size (shown everywhere: work detail page, shop cards, etc.)
 - `featured: true` = shows in "Selected Work" grid on homepage
 - `heroFeature: true` = shows in the big hero slideshow at top of homepage
@@ -115,7 +115,7 @@ Your shop syncs automatically with Stripe every 6 hours. **No need to edit any f
    - **Product name**: e.g., "Mountain Print 11x14"
    - **Price**: e.g., $35.00
    - **Image**: Upload a photo (this shows on your website!)
-   - **Description(optional, override work description)**: Artist Statement
+   - **Description**: short text that appears on the shop card next to the price (e.g., "Signed giclée, 11x14"). Keep it short — a phrase or short sentence. Leave blank to show no description on the card.
 
 4. **Set the category**:
    - Scroll down and click **"Additional options"**
