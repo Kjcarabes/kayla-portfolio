@@ -19,7 +19,7 @@
       "category": "Prints",
       "price": 10,
       "image": "assets/images/birb.jpeg",
-      "description": "",
+      "description": "Print",
       "stripeLink": "https://buy.stripe.com/cNi9AT8MG4sueC9az0e7m01",
       "sold": false,
       "workId": "birb"
@@ -36,5 +36,5 @@
       "workId": "xochi"
     }
   ],
-  "_lastSync": "2026-04-22T19:02:26.443Z"
+  "_lastSync": "2026-04-23T00:59:47.765Z"
 }
