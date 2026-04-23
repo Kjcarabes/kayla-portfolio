@@ -13,7 +13,15 @@
       "size": "14in x 13in",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "nfs"
+      "originalStatus": "nfs",
+      "aspectRatio": 1.135,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3850
+      ]
     },
     {
       "id": "night",
@@ -26,7 +34,15 @@
       "size": "6in x 3in",
       "featured": false,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.5768,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2457
+      ]
     },
     {
       "id": "sparkle-face",
@@ -38,7 +54,15 @@
       "medium": "Paper collage",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.75,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4284
+      ]
     },
     {
       "id": "xochi",
@@ -59,7 +83,15 @@
       "size": "2ft x 4ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.6083,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4077
+      ]
     },
     {
       "id": "moss-hall",
@@ -72,7 +104,15 @@
       "size": "4ft x 4ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.9907,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3302
+      ]
     },
     {
       "id": "garden",
@@ -85,7 +125,15 @@
       "size": "2ft x 3ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.9185,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2727
+      ]
     },
     {
       "id": "horses",
@@ -97,7 +145,15 @@
       "medium": "Oil on panel",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.4384,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        5253
+      ]
     },
     {
       "id": "voyuer",
@@ -109,7 +165,15 @@
       "medium": "Oil on canvas",
       "size": "2ft x 3ft",
       "featured": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.32,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3754
+      ]
     },
     {
       "id": "lake-self",
@@ -121,7 +185,15 @@
       "medium": "Oil on canvas",
       "size": "3ft x 4ft",
       "featured": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3492,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3280
+      ]
     },
     {
       "id": "birb",
@@ -133,7 +205,15 @@
       "medium": "Oil on canvas",
       "size": "2ft x 3ft",
       "featured": false,
-      "originalStatus": "sold"
+      "originalStatus": "sold",
+      "aspectRatio": 1.5327,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3142
+      ]
     },
     {
       "id": "bears",
@@ -145,7 +225,15 @@
       "medium": "Oil on canvas",
       "size": "6ft x 4ft",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.6552,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2276
+      ]
     },
     {
       "id": "teeth",
@@ -157,7 +245,15 @@
       "medium": "Oil on canvas",
       "size": "26in x 26in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.0003,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3024
+      ]
     },
     {
       "id": "trees",
@@ -169,7 +265,15 @@
       "medium": "Oil on canvas",
       "size": "4ft x 3ft",
       "featured": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.693,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2232
+      ]
     },
     {
       "id": "water",
@@ -181,7 +285,15 @@
       "medium": "Oil on canvas",
       "size": "26in x 26in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.9706,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2971
+      ]
     },
     {
       "id": "wood",
@@ -192,7 +304,15 @@
       "description": "Small portrait of my late grandmother from her youth",
       "medium": "Oil and soft pastel on found wood",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3333,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4032
+      ]
     },
     {
       "id": "father-dog",
@@ -204,7 +324,15 @@
       "medium": "Oil on canvas",
       "size": "4ft x 4ft",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.9964,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2737
+      ]
     },
     {
       "id": "natural",
@@ -216,7 +344,15 @@
       "medium": "Wood ash, animal skin glue and soft pastel on wood",
       "size": "6in x 12in",
       "featured": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 2.367,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3418
+      ]
     },
     {
       "id": "horse-2",
@@ -228,7 +364,15 @@
       "medium": "Oil on canvas",
       "size": "6in x 12in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.7862,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2538
+      ]
     },
     {
       "id": "Photonorphogenesis",
@@ -240,7 +384,15 @@
       "medium": "Oil on canvas",
       "size": "26in x 26in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.9953,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2107
+      ]
     },
     {
       "id": "Park",
@@ -252,7 +404,15 @@
       "medium": "Oil on canvas",
       "size": "4ft x 4ft",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.8681,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4284
+      ]
     },
     {
       "id": "Blue",
@@ -264,7 +424,15 @@
       "medium": "Oil on wood panel",
       "size": "8in x 10in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3026,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        5574
+      ]
     },
     {
       "id": "skull",
@@ -276,7 +444,12 @@
       "medium": "Oil on canvas",
       "size": "10in x 4in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.8866,
+      "widths": [
+        400,
+        800
+      ]
     },
     {
       "id": "Armadillo",
@@ -288,7 +461,15 @@
       "medium": "Oil on canvas",
       "size": "36in x 36in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2458
+      ]
     },
     {
       "id": "Apple",
@@ -300,7 +481,15 @@
       "medium": "Oil on canvas",
       "size": "6ft x 5ft",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3333,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4032
+      ]
     },
     {
       "id": "cow",
@@ -312,7 +501,15 @@
       "medium": "Oil on canvas",
       "size": "16in x 20in",
       "featured": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.2729,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4347
+      ]
     },
     {
       "id": "Bridge",
@@ -324,7 +521,15 @@
       "medium": "Oil on canvas",
       "size": "16in x 14in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.1489,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3966
+      ]
     },
     {
       "id": "red sun",
@@ -336,7 +541,15 @@
       "medium": "Oil on canvas",
       "size": "11in x 14in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3333,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3648
+      ]
     },
     {
       "id": "rabbit",
@@ -348,7 +561,15 @@
       "medium": "Oil on canvas",
       "size": "16in x 14in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.1779,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3105
+      ]
     },
     {
       "id": "shell",
@@ -360,7 +581,15 @@
       "medium": "Oil on wood panel",
       "size": "12in x 20in ",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3333,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4032
+      ]
     },
     {
       "id": "sheep",
@@ -373,7 +602,15 @@
       "size": "4ft x 5ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 1.3333,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4032
+      ]
     },
     {
       "id": "Grey sky",
@@ -385,7 +622,12 @@
       "medium": "Oil on canvas",
       "size": "10in x 10in",
       "featured": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "aspectRatio": 0.9781,
+      "widths": [
+        400,
+        800
+      ]
     }
   ],
   "_howToAdd": "Copy one of the entries above, paste it, and change the values. Make sure to add a comma after the previous entry!",

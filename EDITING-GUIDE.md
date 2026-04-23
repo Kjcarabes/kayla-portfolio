@@ -27,7 +27,7 @@ git pull
 | Update email & social links | `content/site-settings.json` (updates everywhere!) |
 | Update your bio | `about.html` |
 | Change colors/fonts | `assets/css/style.css` |
-| Replace images | `assets/images/` folder |
+| Replace images | `assets/images/` folder (auto-optimized on push!) |
 | Change hero slideshow | `content/works.json` (heroFeature) |
 
 ⚠️ **Don't edit `content/products.json` directly** - it's auto-generated from Stripe and will be overwritten!
@@ -407,12 +407,62 @@ Open `assets/css/style.css` and look at the top:
 
 ## Image Tips
 
-- **Recommended sizes:**
-  - Artwork/product images: 800-1200px wide
-  - Hero image: 1200-1600px wide
-  - About photo: 600-800px wide
+You don't have to worry about resizing your photos before uploading anymore — the site
+automatically generates smaller versions for you (see "Image Optimization" below).
 
-- **File formats:** JPG for photos/paintings, PNG if you need transparency
+- **Just upload the high-quality original** straight from your camera or phone. The site
+  will serve smaller, faster versions to visitors automatically.
+- **File formats:** JPG/JPEG for photos and paintings, PNG if you need transparency.
+  Don't use HEIC (iPhone's default) — convert to JPG first.
+- **Filenames:** lowercase, no spaces. Use dashes: `mountain-painting.jpeg`, not
+  `Mountain Painting.jpg`.
+
+---
+
+## Image Optimization (How Your Site Stays Fast)
+
+Big art photos are slow to load — a single 6 MB original can take seconds on phone
+data. The site automatically generates small WebP copies of every image so visitors
+see paintings immediately without you having to do anything.
+
+### What happens automatically
+
+When you push a new image to GitHub (e.g., you added a work in `works.json` that points
+to `assets/images/your-new-piece.jpeg`), a workflow called **Optimize images** runs in
+the background:
+
+1. It reads each image referenced in `works.json`
+2. It writes resized WebP copies into `assets/images/optimized/` at a few common widths (400, 800, 1200, 1600 pixels) plus a max-quality copy at the original size
+3. It records each work's actual `aspectRatio` and the list of generated `widths` back into `works.json` (these fields are auto-managed — don't edit them by hand)
+4. It commits those generated files back to the repo with the message `Auto-optimize images [skip ci]`
+
+Your push → wait 30-60 seconds → you'll see a new commit appear from `github-actions[bot]`. That's it.
+
+### "But what if I add an image and the workflow hasn't finished?"
+
+The site still works! If a new image hasn't been optimized yet, the page just shows the
+original full-size file (slower, but no broken images). Once the bot's commit lands,
+visitors automatically get the fast versions.
+
+### Running it locally (optional)
+
+If you want to optimize images on your own machine before pushing — for example, to test
+before committing — open the terminal in VSCode and run:
+
+```
+npm install     # only needed the very first time
+npm run optimize-images
+```
+
+This generates the same files locally that the GitHub Action would generate. Then
+`git add . && git commit -m "..." && git push` like usual.
+
+### Troubleshooting
+
+- **Workflow failed in GitHub Actions tab:** open the failed run, read the error. Usually
+  it's a corrupt image file. Try re-saving/re-exporting the image and pushing again.
+- **`aspectRatio` / `widths` look weird in `works.json`:** these are auto-generated. If
+  you accidentally hand-edit them, the next workflow run will rewrite them correctly.
 
 ---
 

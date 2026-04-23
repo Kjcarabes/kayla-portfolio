@@ -10,3 +10,6 @@ Thumbs.db
 
 # Misc
 *.log
+
+# Node tooling (image optimization, stripe sync)
+node_modules/

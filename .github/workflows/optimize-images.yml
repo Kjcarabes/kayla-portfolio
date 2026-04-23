@@ -1,0 +1,54 @@
+name: Optimize images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Trigger when raw source images change, or works.json gains/loses entries.
+      # Excludes the optimized/ subtree so the bot's own commits don't re-trigger.
+      - 'assets/images/**'
+      - '!assets/images/optimized/**'
+      - 'content/works.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate WebP variants and update works.json
+        run: npm run optimize-images
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add assets/images/optimized content/works.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push optimized images
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          # [skip ci] prevents this commit from re-triggering the workflow.
+          git commit -m "Auto-optimize images [skip ci]"
+          git push

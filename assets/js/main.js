@@ -343,15 +343,38 @@ async function loadWorks() {
     }
 }
 
+// Build the <picture> markup for an image whose path lives under assets/images/.
+// `widths` is the list of optimized WebP variants written by scripts/optimize-images.js.
+// If widths is missing (e.g. the optimizer hasn't been re-run after a new image was added),
+// we fall back to a plain <img> — slower but the site still works.
+function pictureMarkup({ image, widths, aspectRatio, alt = '', sizes, lazy = true }) {
+    const altAttr = `alt="${escapeAttr(alt)}"`;
+    const loadAttrs = lazy ? 'loading="lazy" decoding="async"' : 'decoding="async"';
+    const styleAttr = aspectRatio ? `style="aspect-ratio:${aspectRatio}"` : '';
+    const m = image && image.match(/^(?:\.\/)?assets\/images\/(.+)\.[^.]+$/);
+    if (!m || !Array.isArray(widths) || widths.length === 0) {
+        return `<img src="${escapeAttr(image || '')}" ${altAttr} ${loadAttrs} ${styleAttr}>`;
+    }
+    const baseRel = m[1];
+    const srcset = widths.map(w => `assets/images/optimized/${baseRel}-${w}.webp ${w}w`).join(', ');
+    const sizesAttr = sizes ? `sizes="${sizes}"` : '';
+    return `<picture>
+        <source type="image/webp" srcset="${srcset}" ${sizesAttr}>
+        <img src="${escapeAttr(image)}" ${altAttr} ${loadAttrs} ${styleAttr}>
+    </picture>`;
+}
+
 // Create a work item element
 function createWorkItem(work) {
     const link = document.createElement('a');
     link.className = 'work-item';
     link.href = `work-detail.html?id=${work.id}`;
     link.dataset.category = work.category;
+    if (work.aspectRatio) link.dataset.aspectRatio = work.aspectRatio;
 
+    const sizes = '(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 600px';
     link.innerHTML = `
-        <img src="${work.image}" alt="${work.title}" loading="lazy">
+        ${pictureMarkup({ image: work.image, widths: work.widths, aspectRatio: work.aspectRatio, alt: work.title, sizes })}
         <div class="work-item-overlay">
             <h3 class="work-item-title">${work.title}</h3>
             <span class="work-item-year">${workDisplayYear(work)}</span>
@@ -371,21 +394,27 @@ async function initHeroSlideshow() {
 
     if (heroWorks.length === 0) return;
 
-    // Create all slide images
+    // Create all slide images. First slide is the LCP — load it eagerly.
     heroWorks.forEach((work, index) => {
-        const img = document.createElement('img');
-        img.src = work.image;
-        img.alt = work.title;
-        img.className = 'hero-slide' + (index === 0 ? ' active' : '');
+        const slide = document.createElement('div');
+        slide.className = 'hero-slide' + (index === 0 ? ' active' : '');
+        slide.innerHTML = pictureMarkup({
+            image: work.image,
+            widths: work.widths,
+            aspectRatio: work.aspectRatio,
+            alt: work.title,
+            sizes: '100vw',
+            lazy: index !== 0,
+        });
 
-        // Fade in when loaded
+        const img = slide.querySelector('img');
         if (img.complete) {
-            img.classList.add('loaded');
+            slide.classList.add('loaded');
         } else {
-            img.addEventListener('load', () => img.classList.add('loaded'));
+            img.addEventListener('load', () => slide.classList.add('loaded'), { once: true });
         }
 
-        slideshow.appendChild(img);
+        slideshow.appendChild(slide);
     });
 
     // If only one slide, no need for navigation
@@ -513,15 +542,25 @@ async function populateAllWorks() {
 async function applyJustifiedLayout(grids) {
     if (grids.length === 0) return;
 
-    const allImgs = grids.flatMap(g => Array.from(g.querySelectorAll('.work-item img')));
-    await Promise.all(allImgs.map(img =>
-        img.decode ? img.decode().catch(() => {}) :
-        new Promise(res => {
-            if (img.complete) return res();
-            img.addEventListener('load', res, { once: true });
-            img.addEventListener('error', res, { once: true });
-        })
-    ));
+    // If every item carries a precomputed aspect ratio (set by the optimizer pipeline
+    // and surfaced as data-aspect-ratio in createWorkItem), we can lay out immediately
+    // without forcing any image to download. That lets loading="lazy" actually work.
+    // If even one item is missing it (a freshly added work that hasn't been through
+    // the optimizer yet), fall back to awaiting natural dimensions for accuracy.
+    const allItems = grids.flatMap(g => Array.from(g.querySelectorAll('.work-item')));
+    const needImageWait = allItems.some(item => !item.dataset.aspectRatio);
+
+    if (needImageWait) {
+        const allImgs = grids.flatMap(g => Array.from(g.querySelectorAll('.work-item img')));
+        await Promise.all(allImgs.map(img =>
+            img.decode ? img.decode().catch(() => {}) :
+            new Promise(res => {
+                if (img.complete) return res();
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+            })
+        ));
+    }
 
     const relayout = () => grids.forEach(g => {
         layoutJustifiedRows(g);
@@ -564,9 +603,18 @@ function layoutJustifiedRows(grid) {
     const flushRow = (stretchToFit) => {
         if (row.length === 0) return;
         const totalGap = gap * (row.length - 1);
-        const height = stretchToFit
-            ? (containerWidth - totalGap) / ratioSum
-            : targetHeight;
+        let height;
+        if (stretchToFit) {
+            height = (containerWidth - totalGap) / ratioSum;
+        } else {
+            // Last/incomplete row: keep target height, but never let the row
+            // overflow the container — a single very wide image at the target
+            // height would otherwise blow out the viewport on mobile.
+            const idealWidth = ratioSum * targetHeight + totalGap;
+            height = idealWidth > containerWidth
+                ? (containerWidth - totalGap) / ratioSum
+                : targetHeight;
+        }
         row.forEach(({ item, ratio }) => {
             item.style.width = (ratio * height) + 'px';
             item.style.height = height + 'px';
@@ -576,10 +624,15 @@ function layoutJustifiedRows(grid) {
     };
 
     items.forEach((item) => {
-        const img = item.querySelector('img');
-        const ratio = (img && img.naturalWidth && img.naturalHeight)
-            ? img.naturalWidth / img.naturalHeight
-            : 1;
+        // Prefer precomputed aspect ratio (no image load needed). Fall back to the
+        // natural dimensions for items added without running the optimizer.
+        let ratio = parseFloat(item.dataset.aspectRatio);
+        if (!ratio) {
+            const img = item.querySelector('img');
+            ratio = (img && img.naturalWidth && img.naturalHeight)
+                ? img.naturalWidth / img.naturalHeight
+                : 1;
+        }
 
         // Does adding this item overflow the row?
         const gapsWith = gap * row.length;       // n items → n gaps after adding = (row.length+1)-1
@@ -680,6 +733,8 @@ function worksAsOriginals(works) {
             category: 'Originals',
             price: 0,
             image: w.image,
+            aspectRatio: w.aspectRatio,
+            widths: w.widths,
             description: '', // shop cards don't display work descriptions
             sold: w.originalStatus === 'sold',
             workId: w.id,
@@ -771,9 +826,16 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         ? `<a href="work-detail.html?id=${product.workId}" class="product-card-link">View artwork</a>`
         : '';
 
+    const cardImageMarkup = pictureMarkup({
+        image: product.image,
+        widths: product.widths,
+        aspectRatio: product.aspectRatio,
+        alt: product.title,
+        sizes: '(max-width: 768px) 100vw, 320px',
+    });
     article.innerHTML = `
         <div class="product-card-image">
-            <img src="${product.image}" alt="${product.title}" loading="lazy">
+            ${cardImageMarkup}
             <span class="product-card-badge">${product.category}</span>
         </div>
         <div class="product-card-info">

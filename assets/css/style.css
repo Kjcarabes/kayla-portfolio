@@ -136,11 +136,22 @@ img {
 .hero-slide {
     position: absolute;
     inset: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
+
+.hero-slide picture,
+.hero-slide > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-slide picture img,
+.hero-slide > img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0;
-    transition: opacity 0.8s ease;
 }
 
 .hero-slide.loaded.active {
@@ -209,6 +220,12 @@ img {
     background: var(--color-border);
     flex: 0 0 auto;
     /* width and height are set per-item by the justified-rows layout in JS */
+}
+
+.work-item picture {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .work-item img {
@@ -736,25 +753,37 @@ img {
         top: 0;
         height: auto;
         border-right: none;
-        border-bottom: 1px solid var(--color-border);
-        padding: var(--spacing-md);
+        border-bottom: none;
+        padding: var(--spacing-sm) var(--spacing-md) 0;
+        background: transparent;
     }
 
+    /* H1 is preserved for SEO/a11y but hidden visually — pills carry the meaning. */
     .shop-title {
-        font-size: 1.25rem;
-        margin-bottom: var(--spacing-sm);
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
     }
 
     .shop-filters {
         flex-direction: row;
         flex-wrap: wrap;
+        justify-content: center;
         gap: 0.5rem;
     }
 
     .shop-filter-btn {
-        padding: 0.5rem 1rem;
+        padding: 0.4rem 0.9rem;
         border: 1px solid var(--color-border);
-        border-radius: 2px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        background: transparent;
     }
 
     .shop-filter-btn.active {
@@ -863,6 +892,12 @@ img {
     background: var(--color-bg);
     color: var(--color-text);
     border: 1px solid var(--color-border);
+}
+
+.product-card-image picture {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .product-card-image img {
