@@ -20,6 +20,7 @@ const sharp = require('sharp');
 
 const ROOT = path.resolve(__dirname, '..');
 const WORKS_PATH = path.join(ROOT, 'content/works.json');
+const INDEX_PATH = path.join(ROOT, 'index.html');
 const SOURCE_BASE = path.join(ROOT, 'assets/images');
 const OUTPUT_BASE = path.join(ROOT, 'assets/images/optimized');
 
@@ -134,6 +135,42 @@ async function main() {
 
     await fs.writeFile(WORKS_PATH, JSON.stringify(data, null, 2) + '\n');
     process.stdout.write(`\nDone. ${meta.size} images processed, ${updated} works updated in works.json.\n`);
+
+    await updateHeroPreload(works);
+}
+
+// Write a <link rel="preload"> into index.html for the first heroFeature work so the
+// browser can start fetching the LCP image before main.js runs. Matches the runtime
+// `sizes="100vw"` so DPR picks the right variant.
+async function updateHeroPreload(works) {
+    const hero = works.find(w => w.heroFeature);
+    if (!hero || !hero.image) return;
+
+    const m = hero.image.match(/^(?:\.\/)?assets\/images\/(.+)\.[^.]+$/);
+    let tag;
+    if (m && Array.isArray(hero.widths) && hero.widths.length > 0) {
+        const base = m[1];
+        const srcset = hero.widths
+            .map(w => `assets/images/optimized/${base}-${w}.webp ${w}w`)
+            .join(', ');
+        tag = `<link rel="preload" as="image" type="image/webp" imagesrcset="${srcset}" imagesizes="100vw" fetchpriority="high">`;
+    } else {
+        tag = `<link rel="preload" as="image" href="${hero.image}" fetchpriority="high">`;
+    }
+
+    const html = await fs.readFile(INDEX_PATH, 'utf8');
+    const replaced = html.replace(
+        /<!-- HERO-PRELOAD:START -->[\s\S]*?<!-- HERO-PRELOAD:END -->/,
+        `<!-- HERO-PRELOAD:START -->\n    ${tag}\n    <!-- HERO-PRELOAD:END -->`
+    );
+    if (replaced === html) {
+        process.stdout.write('! index.html has no HERO-PRELOAD markers; skipping preload injection.\n');
+        return;
+    }
+    if (replaced !== html) {
+        await fs.writeFile(INDEX_PATH, replaced);
+        process.stdout.write(`Hero preload updated for ${hero.image}.\n`);
+    }
 }
 
 main().catch(e => {

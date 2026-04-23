@@ -347,20 +347,21 @@ async function loadWorks() {
 // `widths` is the list of optimized WebP variants written by scripts/optimize-images.js.
 // If widths is missing (e.g. the optimizer hasn't been re-run after a new image was added),
 // we fall back to a plain <img> — slower but the site still works.
-function pictureMarkup({ image, widths, aspectRatio, alt = '', sizes, lazy = true }) {
+function pictureMarkup({ image, widths, aspectRatio, alt = '', sizes, lazy = true, fetchPriority }) {
     const altAttr = `alt="${escapeAttr(alt)}"`;
     const loadAttrs = lazy ? 'loading="lazy" decoding="async"' : 'decoding="async"';
+    const priorityAttr = fetchPriority ? `fetchpriority="${fetchPriority}"` : '';
     const styleAttr = aspectRatio ? `style="aspect-ratio:${aspectRatio}"` : '';
     const m = image && image.match(/^(?:\.\/)?assets\/images\/(.+)\.[^.]+$/);
     if (!m || !Array.isArray(widths) || widths.length === 0) {
-        return `<img src="${escapeAttr(image || '')}" ${altAttr} ${loadAttrs} ${styleAttr}>`;
+        return `<img src="${escapeAttr(image || '')}" ${altAttr} ${loadAttrs} ${priorityAttr} ${styleAttr}>`;
     }
     const baseRel = m[1];
     const srcset = widths.map(w => `assets/images/optimized/${baseRel}-${w}.webp ${w}w`).join(', ');
     const sizesAttr = sizes ? `sizes="${sizes}"` : '';
     return `<picture>
         <source type="image/webp" srcset="${srcset}" ${sizesAttr}>
-        <img src="${escapeAttr(image)}" ${altAttr} ${loadAttrs} ${styleAttr}>
+        <img src="${escapeAttr(image)}" ${altAttr} ${loadAttrs} ${priorityAttr} ${styleAttr}>
     </picture>`;
 }
 
@@ -405,6 +406,7 @@ async function initHeroSlideshow() {
             alt: work.title,
             sizes: '100vw',
             lazy: index !== 0,
+            fetchPriority: index === 0 ? 'high' : undefined,
         });
 
         const img = slide.querySelector('img');
