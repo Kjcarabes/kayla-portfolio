@@ -596,21 +596,17 @@
       "title": "Party animal",
       "year": "2025",
       "category": "Paintings",
-      "image": "assets/images/sheep.jpeg",
+      "image": "assets/images/party_animal.jpg",
+      "detail_images": [
+        "assets/images/party_animal.jpg",
+        "assets/images/sheep.jpeg"
+      ],
       "description": "",
       "medium": "Oil on canvas",
       "size": "4ft x 5ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available",
-      "aspectRatio": 1.3333,
-      "widths": [
-        400,
-        800,
-        1200,
-        1600,
-        4032
-      ]
+      "originalStatus": "nfs"
     },
     {
       "id": "Grey sky",
