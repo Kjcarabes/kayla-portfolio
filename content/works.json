@@ -606,7 +606,15 @@
       "size": "4ft x 5ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "nfs"
+      "originalStatus": "nfs",
+      "aspectRatio": 1.2832,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4676
+      ]
     },
     {
       "id": "Grey sky",
