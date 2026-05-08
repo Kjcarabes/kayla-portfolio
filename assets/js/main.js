@@ -755,7 +755,7 @@ function workDisplayYear(work) {
 // Returns a timestamp when the date has more granularity than just a year,
 // or null for year-only / missing values.
 function workFullDateMs(work) {
-    const v = work.date;
+    const v = work.date || work.year;
     if (!v) return null;
     const s = String(v);
     if (/^\d{4}$/.test(s)) return null;
