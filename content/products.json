@@ -1,38 +1,341 @@
 {
-  "_comment": "✏️ AUTO-GENERATED FROM STRIPE - Do not edit manually!",
-  "_instructions": "Manage products in Stripe Dashboard. This file syncs automatically.",
+  "_comment": "✏️ AUTO-GENERATED - Do not edit manually! Prints come from works.json; crafts from shop-items.json.",
+  "_instructions": "Set printPrice on a work, or add an item to shop-items.json. This file syncs automatically.",
   "products": [
     {
+      "id": "print:rabbit",
+      "title": "Another brick in the wall",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/rabbit.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "rabbit"
+    },
+    {
+      "id": "print:Armadillo",
+      "title": "Armadillo",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/armadillo.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "Armadillo"
+    },
+    {
+      "id": "print:Apple",
+      "title": "Bite me",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/apple.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "Apple"
+    },
+    {
+      "id": "print:wood",
+      "title": "Bless the telephone",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/wood.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "wood"
+    },
+    {
+      "id": "print:Blue",
+      "title": "Blue Horse",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/blue.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "Blue"
+    },
+    {
+      "id": "prod_Ukun3xtmOYXNmp",
+      "title": "Bridge over troubled water",
+      "category": "Prints",
+      "price": 10,
+      "image": "assets/images/bridge.jpeg",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/3cI3cv1ke7EG1PngXoe7m07",
+      "sold": false,
+      "workId": "Bridge",
+      "stockRemaining": 3
+    },
+    {
+      "id": "print:teeth",
+      "title": "Cavity",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/teeth.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "teeth"
+    },
+    {
+      "id": "print:Grey sky",
+      "title": "Cloudy day",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/Grey_sky.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "Grey sky"
+    },
+    {
+      "id": "print:skull",
+      "title": "CMD",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/skull.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "skull"
+    },
+    {
+      "id": "print:garden",
+      "title": "Grandma's Garden",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/garden.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "garden"
+    },
+    {
       "id": "prod_UFI9fgMIjRjC7B",
-      "title": "Horse With No Name",
+      "title": "Horse with No Name",
       "category": "Prints",
       "price": 10,
       "image": "assets/images/horse.jpeg",
-      "description": "5X7 Print ",
+      "description": "5X7 Print",
       "stripeLink": "https://buy.stripe.com/3cI00j8MG1gi9hP4aCe7m00",
       "sold": false,
       "workId": "horse-2"
     },
     {
+      "id": "print:Photonorphogenesis",
+      "title": "hotonorphogenesis",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/photomorphogenesis.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "Photonorphogenesis"
+    },
+    {
+      "id": "print:horses",
+      "title": "Leavin' on the mind",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/horses.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "horses"
+    },
+    {
+      "id": "print:water",
+      "title": "Look from above",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/water.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "water"
+    },
+    {
+      "id": "print:sparkle-face",
+      "title": "Luchadora",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/sparkle-face.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "sparkle-face"
+    },
+    {
+      "id": "prod_Ukun8wtW9t8VhI",
+      "title": "Moon over Utopia",
+      "category": "Prints",
+      "price": 10,
+      "image": "assets/images/moon.jpeg",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/bJe28raUO3oqalT36ye7m04",
+      "sold": false,
+      "workId": "moon",
+      "stockRemaining": 10
+    },
+    {
+      "id": "prod_Ukunz9aM1lxhWM",
+      "title": "Mossy Hall",
+      "category": "Prints",
+      "price": 15,
+      "image": "assets/images/mossy_hall.jpg",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/5kQcN57IC7EG2TrbD4e7m05",
+      "sold": false,
+      "workId": "moss-hall",
+      "stockRemaining": 10
+    },
+    {
+      "id": "print:father-dog",
+      "title": "My Father's Dog's Son",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/woof.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "father-dog"
+    },
+    {
+      "id": "print:lake-self",
+      "title": "Nest",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/lake-self.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "lake-self"
+    },
+    {
+      "id": "print:night",
+      "title": "Night study",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/night.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "night"
+    },
+    {
+      "id": "print:Park",
+      "title": "Parklife",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/park.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "Park"
+    },
+    {
+      "id": "print:sheep",
+      "title": "Party animal",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/party_animal.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "sheep"
+    },
+    {
+      "id": "print:red sun",
+      "title": "Red Sun",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/red-sun.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "red sun"
+    },
+    {
+      "id": "prod_Ukunbi6SVDMVVw",
+      "title": "River Cow",
+      "category": "Prints",
+      "price": 10,
+      "image": "assets/images/cow.jpeg",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/cNiaEXe706AC2Tr0Yqe7m06",
+      "sold": false,
+      "workId": "cow",
+      "stockRemaining": 10
+    },
+    {
+      "id": "print:shell",
+      "title": "soft shell",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/shell.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "shell"
+    },
+    {
+      "id": "print:bears",
+      "title": "Sun Bears",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/bears.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "bears"
+    },
+    {
+      "id": "print:trees",
+      "title": "Talking trees",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/trees.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "trees"
+    },
+    {
       "id": "prod_UNEmQzFQgj7r0H",
-      "title": "Three Little Birds",
+      "title": "Three little birds",
       "category": "Prints",
       "price": 10,
       "image": "assets/images/birb.jpeg",
       "description": "Print",
       "stripeLink": "https://buy.stripe.com/cNi9AT8MG4sueC9az0e7m01",
       "sold": false,
-      "workId": "birb"
+      "workId": "birb",
+      "stockRemaining": 2
     },
     {
-      "id": "prod_UdEyP4g3pqHoHX",
-      "title": "Tree Commission",
+      "id": "print:voyuer",
+      "title": "Voyeur",
       "category": "Prints",
-      "price": 2000,
-      "image": "https://files.stripe.com/links/MDB8YWNjdF8xU252ZWxFcmRqTjlMZDFHfGZsX2xpdmVfaTRpeTZ3aU9CczVEbzVxOGRmSHluN05R005DRlTDhJ",
-      "description": "",
-      "stripeLink": "https://buy.stripe.com/6oUdR97IC3oqcu136ye7m03",
-      "sold": true
+      "price": 0,
+      "image": "assets/images/voyeur.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "voyuer"
+    },
+    {
+      "id": "print:natural",
+      "title": "When the morning comes",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/natural.jpeg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "natural"
     },
     {
       "id": "prod_UNFAEaqSOEukgO",
@@ -43,8 +346,9 @@
       "description": "11X6 Print",
       "stripeLink": "https://buy.stripe.com/eVqfZhaUO2kmcu1ePge7m02",
       "sold": false,
-      "workId": "xochi"
+      "workId": "xochi",
+      "stockRemaining": 10
     }
   ],
-  "_lastSync": "2026-06-23T02:32:29.793Z"
+  "_lastSync": "2026-06-23T07:41:22.754Z"
 }
