@@ -1,0 +1,17 @@
+{
+  "_comment": "✏️ SHOP ITEMS THAT AREN'T ARTWORKS - crafts, merch, etc. (paintings/prints live in works.json)",
+  "_instructions": "Add an item and push. The website builds the Stripe checkout for you. price = dollars. stock = how many you have (0 = sold out, leave out = unlimited). Put images in assets/images/.",
+  "items": [
+    {
+      "_example": "Delete this example and add your own. Copy the shape below.",
+      "id": "sticker-pack",
+      "title": "Sticker Pack",
+      "category": "Crafts",
+      "price": 0,
+      "image": "assets/images/placeholder.jpg",
+      "description": "Set of 5 vinyl stickers",
+      "stock": 0,
+      "order": 0
+    }
+  ]
+}

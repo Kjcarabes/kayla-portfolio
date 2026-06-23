@@ -1,7 +1,16 @@
 name: Sync Stripe Products
 
 on:
-  # Run every 6 hours
+  # Re-sync whenever the shop source-of-truth JSON changes (a new printPrice,
+  # a craft, shipping settings). Reconciles Stripe + regenerates products.json.
+  push:
+    branches: [main]
+    paths:
+      - 'content/works.json'
+      - 'content/shop-items.json'
+      - 'content/shop-settings.json'
+
+  # Run every 6 hours (catches Stripe-side changes to manual crafts/links)
   schedule:
     - cron: '0 */6 * * *'
 

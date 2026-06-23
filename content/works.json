@@ -14,6 +14,8 @@
       "featured": true,
       "heroFeature": true,
       "originalStatus": "nfs",
+      "printPrice": 10,
+      "printStock": 10,
       "aspectRatio": 1.135,
       "widths": [
         400,
@@ -84,6 +86,9 @@
       "featured": true,
       "heroFeature": true,
       "originalStatus": "available",
+      "printPrice": 20,
+      "printDescription": "11X6 Print",
+      "printStock": 10,
       "aspectRatio": 1.6083,
       "widths": [
         400,
@@ -105,6 +110,8 @@
       "featured": true,
       "heroFeature": true,
       "originalStatus": "available",
+      "printPrice": 15,
+      "printStock": 10,
       "aspectRatio": 0.9907,
       "widths": [
         400,
@@ -157,7 +164,7 @@
     },
     {
       "id": "voyuer",
-      "title": "Voyuer",
+      "title": "Voyeur",
       "year": "2025-11-11",
       "category": "Paintings",
       "image": "assets/images/voyeur.jpg",
@@ -206,6 +213,9 @@
       "size": "2ft x 3ft",
       "featured": false,
       "originalStatus": "sold",
+      "printPrice": 10,
+      "printDescription": "Print",
+      "printStock": 2,
       "aspectRatio": 1.5327,
       "widths": [
         400,
@@ -365,6 +375,8 @@
       "size": "6in x 12in",
       "featured": false,
       "originalStatus": "available",
+      "printPrice": 10,
+      "printDescription": "5X7 Print",
       "aspectRatio": 0.7862,
       "widths": [
         400,
@@ -502,6 +514,8 @@
       "size": "16in x 20in",
       "featured": true,
       "originalStatus": "available",
+      "printPrice": 10,
+      "printStock": 10,
       "aspectRatio": 1.2729,
       "widths": [
         400,
@@ -522,6 +536,8 @@
       "size": "16in x 14in",
       "featured": false,
       "originalStatus": "available",
+      "printPrice": 10,
+      "printStock": 3,
       "aspectRatio": 1.1489,
       "widths": [
         400,

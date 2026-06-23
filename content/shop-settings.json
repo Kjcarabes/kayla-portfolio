@@ -1,0 +1,12 @@
+{
+  "_comment": "✏️ SHOP SHIPPING SETTINGS - applied to the print/craft checkouts the site auto-creates.",
+  "_instructions": "shippingCountries = where you'll ship (2-letter codes). shippingRates = flat prices a buyer PICKS at checkout (Stripe can't auto-detect their country, so label each region clearly). amount = dollars. These are estimates — verify against real USPS rates from Seattle.",
+  "shippingCountries": ["US", "CA", "GB", "IE", "DE", "FR", "NL", "IT", "ES", "SE", "AU", "NZ", "JP"],
+  "shippingRates": [
+    { "label": "US Shipping", "amount": 6, "deliveryDaysMin": 3, "deliveryDaysMax": 7 },
+    { "label": "Canada Shipping", "amount": 16, "deliveryDaysMin": 7, "deliveryDaysMax": 18 },
+    { "label": "UK & Europe Shipping", "amount": 24, "deliveryDaysMin": 8, "deliveryDaysMax": 21 },
+    { "label": "Australia & New Zealand Shipping", "amount": 28, "deliveryDaysMin": 10, "deliveryDaysMax": 24 },
+    { "label": "Japan & Rest of World Shipping", "amount": 26, "deliveryDaysMin": 10, "deliveryDaysMax": 24 }
+  ]
+}

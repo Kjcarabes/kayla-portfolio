@@ -7,7 +7,7 @@ Heyyyyy HB. This guide will help you update your website. Don't worry - you are 
 
 ## Before You Start Editing
 
-**Always pull the latest changes first!** The shop syncs automatically from Stripe, so the code may have changed since you last worked on it.
+**Always pull the latest changes first!** The shop re-syncs automatically (a bot commits the generated `products.json`), so the code may have changed since you last worked on it.
 
 Everytime before you make any changes- in your VSCode terminal (if you don't see it: hover to top menu bar -> click terminal -> new terminal), run:
 ```
@@ -22,7 +22,9 @@ git pull
 | What you want to do | Where to do it |
 |---------------------|----------------|
 | Add/remove artwork | `content/works.json` |
-| Add/remove shop products | Stripe Dashboard (syncs automatically!) |
+| Sell a print of a work | `content/works.json` (set `printPrice` — see Shop section!) |
+| Sell crafts/merch (not a painting) | `content/shop-items.json` (see Shop section) |
+| Change shipping countries / prices | `content/shop-settings.json` (see Shop section) |
 | Add/remove blog posts | `content/blog.json` |
 | Update email & social links | `content/site-settings.json` (updates everywhere!) |
 | Update your bio | `about.html` |
@@ -42,14 +44,12 @@ When visitors click on any artwork in your gallery, they're taken to a dedicated
 - Description (if you've added one)
 - **Any linked shop products** (prints or originals available for purchase)
 
-To link a shop product to an artwork, add `workId` metadata in Stripe (see Shop section below).
+A print is automatically linked to its artwork — just set `printPrice` on the work (see Shop section below). Crafts/merch link to a work via optional `workId` metadata in Stripe.
 
 ### Descriptions on Shop Cards
 
-The **Stripe product description** is shown prominently on the shop card, right next to the price. It's one of the first things a shopper reads, so keep it short and punchy — a phrase or short sentence, not a paragraph. Example: `"Signed giclée, 11x14"` or `"Open edition"`.
+For a **print**, the `printDescription` you set on the work is the little label shown on the shop card next to the price. Keep it short and punchy — a phrase, not a paragraph. Example: `"Signed giclée, 11x14"` or `"8x10 Print"`. (For crafts/merch, the Stripe product description plays this role.)
 
-- Shop cards use the **Stripe product description only** — they do *not* fall back to the linked work's description.
-- If you leave a product's Stripe description blank, no description shows on the shop card for that product.
 - The work's `description` in `works.json` is separate — it appears on the **Work detail page** (the artist statement), not on shop cards.
 - The `medium` field from the linked work (e.g., "Acrylic on canvas, 24x36") shows as a small label under the product title on the shop card.
 
@@ -74,15 +74,21 @@ Open `content/works.json` and add a new entry. Copy this template:
   "description": "An artistic statement about your piece.",
   "medium": "Acrylic on canvas, 24x36",
   "featured": true,
-  "heroFeature": true
+  "heroFeature": true,
+  "printPrice": 0,
+  "printDescription": "5x7 Print",
+  "printStock": 10
 }
 ```
 
 **What each field does:**
-- `description` = artistic statement about the piece (shown on the work detail page only — shop cards use the Stripe product description)
+- `description` = artistic statement about the piece (shown on the work detail page only — shop cards use `printDescription`)
 - `medium` = technical details like materials and size (shown everywhere: work detail page, shop cards, etc.)
 - `featured: true` = shows in "Selected Work" grid on homepage
 - `heroFeature: true` = shows in the big hero slideshow at top of homepage
+- `printPrice` = the price of a **print** of this work, in dollars. `0` (or leaving it out) means the print shows as **"Sold out"**. Set it to a real number (e.g. `25`) to start selling — that's the *only* step; the website builds the Stripe checkout for you automatically. (See "Managing Your Shop" below.)
+- `printDescription` = the little label on the print's shop card (e.g. `"5x7 Print"`). Defaults to "Print".
+- `printStock` (optional) = how many prints are in the edition. Stripe counts each sale for you, so the site shows **"Only N left"** and flips to "Sold out" automatically when they're gone — you never have to decrement anything. Leave it out for unlimited; set `0` to mark "Sold out" by hand. (The count refreshes each time the site syncs — within a minute of a push, or every few hours on its own — not the instant a sale happens, since there's no live server.)
 - Put a comma after the previous artwork's `}` before adding yours
 - Categories can be anything you want: Paintings, Drawings, Digital, Photography, etc.
 
@@ -103,45 +109,16 @@ Open `content/works.json` and add a new entry. Copy this template:
 
 ---
 
-## Managing Your Shop (Automatic Stripe Sync!)
+## Managing Your Shop
 
-Your shop syncs automatically with Stripe every 6 hours. **No need to edit any files** - just manage products in Stripe and they appear on your website!
+Good news: **for prints and originals you never have to touch Stripe.** You control the
+whole shop from `content/works.json`. The website does all the Stripe setup for you behind
+the scenes. Here's how each part of the shop works.
 
-### Adding a Product
+### Originals (paintings)
 
-1. Log into [dashboard.stripe.com](https://dashboard.stripe.com)
-2. Go to **Payment Links** → Click **+ New**
-3. Fill in the product details:
-   - **Product name**: e.g., "Mountain Print 11x14"
-   - **Price**: e.g., $35.00
-   - **Image**: Upload a photo (this shows on your website!)
-   - **Description**: short text that appears on the shop card next to the price (e.g., "Signed giclée, 11x14"). Keep it short — a phrase or short sentence. Leave blank to show no description on the card.
-
-4. **Set the category**:
-   - Scroll down and click **"Additional options"**
-   - Click **"Add metadata"**
-   - Add: Key = `category`, Value = `Originals`, `Prints`, or `Crafts`
-
-5. **Link to a work** (Optional but recommended!):
-   - In the same metadata section, add another entry
-   - Add: Key = `workId`, Value = the ID of the artwork (e.g., `sparkle-face`)
-   - This makes the product appear on that Work detail page!
-   - Find artwork IDs in `content/works.json`
-
-6. **For limited items** (originals, limited editions):
-   - Click "Advanced options"
-   - Enable **"Limit the number of payments"**
-   - Set the limit (1 for one-of-a-kind originals, or your edition size for limited prints)
-
-7. Click **Create link** - Done!
-
-Your product will appear on your website within 6 hours (or sync manually - see below).
-
-### Originals don't need Stripe at all
-
-Every work in `content/works.json` is automatically treated as an available original. Nothing to create in Stripe — the Originals tab on the shop populates from works.json directly.
-
-To mark an original's availability, add an **optional** `originalStatus` field to the work:
+Every work in `content/works.json` is automatically an available original — nothing to set
+up. To change an original's availability, add an **optional** `originalStatus` field:
 
 ```json
 {
@@ -157,45 +134,125 @@ Values:
 - `"sold"` — shows "Original Sold — Unavailable" with an X across the image
 - `"nfs"` — hides the work from the Originals tab entirely (use for pieces that were never for sale)
 
-Visitors click **Contact me** on available originals; that opens the inquiry modal and emails you. You don't handle money through the site for originals.
+Visitors click **Contact me** on available originals; that opens the inquiry modal and
+emails you. You don't handle money through the site for originals.
+
+### Prints (the easy new way!) 🎉
+
+**You no longer make payment links in Stripe.** To sell a print of any artwork, just set
+its `printPrice` in `content/works.json`:
+
+```json
+{
+  "id": "sparkle-face",
+  "title": "Luchadora",
+  ...
+  "printPrice": 25,
+  "printDescription": "8x10 Print"
+}
+```
+
+That's it. When you push to GitHub, the website automatically creates the Stripe product,
+the price, and the **Buy Now** checkout link for you. ✨
+
+**How `printPrice` works:**
+- `printPrice: 0` (or leaving it out entirely) → the print shows as **"Sold out"**. Every
+  work starts here by default, so your shop is safe — nothing sells until you say so.
+- `printPrice: 25` → the print goes **live** at $25 with a working Buy button.
+- Want to stop selling a print? Set `printPrice` back to `0`. It flips to "Sold out" and the
+  checkout link is turned off automatically.
+- **Limited editions:** add `"printStock": 10`. Stripe tracks each sale, the card shows
+  "Only N left", and it auto-closes when sold out — nothing for you to update. Leave it out
+  for unlimited; set `0` to mark "Sold out" by hand.
+- Don't want a print option for a work at all? Add `"noPrint": true` to that work.
+
+You can change the price anytime — edit the number and push, and the checkout rebuilds to
+match.
+
+> **Why this is better:** the old way meant logging into Stripe and hand-building a payment
+> link for every print. Now your artwork database (`works.json`) is the single source of
+> truth — the same file you already use for everything else.
+
+### Crafts & merch (things that aren't paintings)
+
+For shop items that *aren't* a painting in `works.json` — stickers, tote bags, zines, etc.
+— add them to **`content/shop-items.json`**. Same deal as prints: you edit the file, push,
+and the website builds the Stripe checkout for you. No Stripe dashboard needed!
+
+```json
+{
+  "items": [
+    {
+      "id": "sticker-pack",
+      "title": "Sticker Pack",
+      "category": "Crafts",
+      "price": 8,
+      "image": "assets/images/stickers.jpg",
+      "description": "Set of 5 vinyl stickers",
+      "stock": 20,
+      "order": 0
+    }
+  ]
+}
+```
+
+- `id` = a unique short name (lowercase, dashes)
+- `price` = dollars (`0` or sold-out `stock` shows it as "Sold out")
+- `stock` (optional) = how many you have; checkout closes when they sell out. Leave out for unlimited.
+- `category` = `Crafts` (or `Prints`)
+- `image` = a file in `assets/images/`
+
+The example item already in the file is ignored (it's there to copy) — just replace it.
+
+> **What about Stripe for commissions?** You can still make a payment link in Stripe for a
+> private commission or deposit, and it will **stay private** — it only shows up in the shop
+> if you deliberately add metadata `shop = true` to it. So your one-off commission links
+> never leak into the public shop. 👍
+
+### Shipping settings
+
+Open **`content/shop-settings.json`** to control shipping for all prints and crafts. It
+comes set up to ship worldwide to the biggest markets (US, Canada, UK & Europe, Australia
+& New Zealand, Japan):
+
+```json
+{
+  "shippingCountries": ["US", "CA", "GB", "IE", "DE", "FR", "NL", "IT", "ES", "SE", "AU", "NZ", "JP"],
+  "shippingRates": [
+    { "label": "US Shipping", "amount": 6, "deliveryDaysMin": 3, "deliveryDaysMax": 7 },
+    { "label": "Canada Shipping", "amount": 16, "deliveryDaysMin": 7, "deliveryDaysMax": 18 },
+    { "label": "UK & Europe Shipping", "amount": 24, "deliveryDaysMin": 8, "deliveryDaysMax": 21 },
+    { "label": "Australia & New Zealand Shipping", "amount": 28, "deliveryDaysMin": 10, "deliveryDaysMax": 24 },
+    { "label": "Japan & Rest of World Shipping", "amount": 26, "deliveryDaysMin": 10, "deliveryDaysMax": 24 }
+  ]
+}
+```
+
+- `shippingCountries` = the countries you'll ship to (2-letter codes). Add or remove freely.
+- `shippingRates` = the flat shipping prices a buyer chooses from at checkout. **Edit the
+  `amount`s to match real USPS rates from Seattle** — the numbers above are just starting
+  estimates.
+
+> ⚠️ **One thing to know:** Stripe can't detect a buyer's country and auto-pick their rate —
+> it shows *all* the options and the buyer chooses. That's why each one is clearly labeled by
+> region. The small risk: someone in Australia could pick "US Shipping" and underpay. If that
+> ever bugs you, you can ship US-only (just one rate) and add regions back later. There's no
+> way around this on a no-server site — true per-country auto-pricing needs a backend.
 
 ### Syncing Immediately (Manual Sync)
 
-Don't want to wait 6 hours?
+A `works.json` change normally syncs within a minute of pushing. To force it (or to pull in
+a Stripe craft change without waiting for the 6-hour timer):
 
-1. Go to your GitHub repo
-2. Click **Actions** tab
-3. Click **"Sync Stripe Products"** on the left
-4. Click **"Run workflow"** → **"Run workflow"**
-5. Wait ~30 seconds, refresh your site!
+1. Go to your GitHub repo → **Actions** tab
+2. Click **"Sync Stripe Products"** on the left
+3. Click **"Run workflow"** → **"Run workflow"**
+4. Wait ~30 seconds, refresh your site!
 
-### Metadata Tips
+### Print Images
 
-The sync is forgiving with metadata:
-- `category`, `Category`, or `CATEGORY`
-- `prints`, `Prints`, `print`, `Print`
-- `crafts`, `craft`, `Crafts`
-- If you forget the category, it defaults to "Prints"
-- `workId`, `workid`, `WorkId`, or `work_id`
-
-> Note: `category: Originals` in Stripe is ignored. Originals come from `works.json` (see "Originals don't need Stripe at all" above).
-
-### When Something Sells Out
-
-- Stripe automatically stops accepting payments when payment limit is reached
-- The item will automatically show as "Sold" on your site after the next sync
-- To remove a sold item entirely, delete the payment link in Stripe
-
-### Removing a Product
-
-- **Delete** the Payment Link in Stripe to remove it from your site entirely
-- **Deactivate** the Payment Link to keep it visible but show "Sold"
-
-### Product Images
-
-If a product is linked to a work (via `workId`), it automatically uses that work's image from your `assets/images/` folder. No need to upload to Stripe!
-
-If no work is linked, the image you upload to Stripe is used instead.
+Prints automatically use the artwork's own image from `works.json` — you never upload a
+print photo to Stripe. For crafts/merch, the image you upload to Stripe is used.
 
 ---
 
@@ -488,8 +545,10 @@ Don't panic! Here's what to do:
 | Blog page is blank | Check `blog.json` for missing commas or quotes |
 | Blog images not scattered | Need 2+ images in the `images` array for scattered layout |
 | Shop not updating | Run manual sync (Actions → Sync Stripe Products → Run workflow) |
-| Product not appearing | Check Payment Link is active in Stripe, wait for sync |
-| Wrong category | Edit product metadata in Stripe, run sync |
+| Print not showing / stuck "Sold out" | Set `printPrice` to a number > 0 on that work in `works.json`, push, wait ~1 min |
+| Print price wrong | Edit `printPrice` on the work in `works.json` and push |
+| Craft/merch not appearing | Check it's in `content/shop-items.json` with a `price` > 0 (and `stock` not 0), push |
+| Commission link showing in shop | Remove the `shop` = `true` metadata flag from that payment link in Stripe |
 | Changes not appearing | Did you push to GitHub? Wait 1-2 minutes. |
 
 ---

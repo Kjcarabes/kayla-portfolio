@@ -793,6 +793,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         statusHtml = '<p class="product-card-status">Sold!</p>';
         buttonHtml = '<span class="product-card-btn sold">Sold</span>';
     } else if (product.stripeLink) {
+        if (typeof product.stockRemaining === 'number' && product.stockRemaining > 0 && product.stockRemaining <= 10) {
+            statusHtml = `<p class="product-card-status">Only ${product.stockRemaining} left</p>`;
+        }
         buttonHtml = `<a href="${product.stripeLink}" target="_blank" rel="noopener" class="product-card-btn">Buy Now</a>`;
     } else {
         buttonHtml = '<span class="product-card-btn coming-soon">Coming Soon</span>';
@@ -846,9 +849,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
                 ${medium ? `<p class="product-card-medium">${medium}</p>` : ''}
             </div>
             <div class="product-card-actions">
-                ${isOriginal(product) ? '' : `
+                ${isOriginal(product) || (product.price <= 0 && !description) ? '' : `
                     <div class="product-card-price-row">
-                        <span class="product-card-price">$${product.price}</span>
+                        ${product.price > 0 ? `<span class="product-card-price">$${product.price}</span>` : ''}
                         ${description ? `<span class="product-card-description">${description}</span>` : ''}
                     </div>
                 `}

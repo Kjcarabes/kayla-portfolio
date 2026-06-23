@@ -20,7 +20,9 @@ Top-level files / dirs the user touches:
 - `assets/css/style.css` — single global stylesheet (CSS variables in `:root`)
 - `assets/js/main.js` — single global script. Multi-page: each page-specific function early-returns if its DOM root isn't present
 - `content/works.json` — the artwork database (the source of truth for everything art-related, including originals on the shop)
-- `content/products.json` — **auto-generated** from Stripe via `scripts/sync-stripe-products.js`. Don't edit by hand
+- `content/products.json` — **auto-generated** by `scripts/sync-stripe-products.js`. Don't edit by hand. Prints come from `works.json` (`printPrice`); crafts come from `shop-items.json`; the script provisions all the Stripe objects
+- `content/shop-items.json` — shop items that aren't artworks (crafts/merch). Each becomes a Stripe product+price+payment link automatically. `_example` items are skipped
+- `content/shop-settings.json` — shipping config (allowed countries + flat shipping rates) applied to the auto-created checkouts
 - `content/blog.json`, `content/site-settings.json` — straightforward content files
 - `assets/images/` — raw source images (large originals)
 - `assets/images/optimized/` — **auto-generated** WebP variants. Don't edit by hand
@@ -88,6 +90,67 @@ Where `pictureMarkup` is consumed:
 - Toggle classes: `filter-all`, `filter-prints`, `filter-originals` on `#product-grid` (set in `populateShop` initially and `setupShopFilters` on click).
 - Cards stretch to row height (`align-items: stretch`) so a card with a long medium doesn't leave its neighbors with whitespace below the buy button. Price lives **inside** `.product-card-actions` (not in `.product-card-top`) so it bottom-anchors with the rest of the action area and aligns across cards in a row even when descriptions vary in length.
 - `.product-card-medium` is line-clamped to 2 lines so a runaway value can't pull a row stretched-tall.
+
+### Prints & shop inventory: JSON is the source of truth, Stripe is just plumbing
+
+Design goal (explicit user requirement): **Kayla only ever edits JSON/code — never the
+Stripe dashboard.** The sync script provisions every Stripe object (product, price,
+payment link, shipping rate) from the JSON. The unifying rule is **default-exclude**:
+nothing appears in the shop unless it's intentionally declared inventory.
+
+Three buckets:
+
+- **Originals** — synthesized from `works.json` (`originalStatus`). Covered above.
+- **Prints** — driven from `works.json` per-work fields:
+  - `printPrice` (number): `> 0` = live at that price; `0` / omitted = sold out.
+  - `printDescription` (string, default `"Print"`): the short blurb on the shop card.
+  - `printStock` (int, optional): edition size → Stripe payment-link `restrictions.
+    completed_sessions.limit`. `0` = sold out; omitted = unlimited. Inventory tracks
+    itself: each sync counts completed Checkout Sessions for the link (`countCompleted
+    Sessions`) and writes `stockRemaining = stock − sold` into the entry. Stripe
+    auto-deactivates the link at the cap; the reconcile then shows it sold out. The
+    counter refreshes at **sync cadence** (push / 6h cron / manual dispatch), NOT per
+    pageview — there's no backend. The front-end shows "Only N left" when `stockRemaining`
+    is 1–10. Because Stripe inactivates a maxed link, `reconcilePurchasable` decides
+    available/sold-out from `stock − sold` (not the link's `active` flag) so it won't
+    wrongly reactivate a sold-out edition.
+  - `printOrder` (int, optional): sort order. `noPrint: true`: no print card at all.
+  - Default is **on for every work** — a work with no `printPrice` still shows a
+    "Sold out" print card. Deliberate (user chose the literal "every new work auto-gets a
+    print, sold out until priced"). Opt out with `noPrint`.
+- **Crafts / merch not tied to a painting** — driven from `content/shop-items.json`
+  (`id`, `title`, `category`, `price`, `image`, `description`, `stock`, `order`). Same
+  reconcile mechanics as prints. `_example` items are skipped (inline docs). There's also
+  a legacy escape hatch: a *manual* Stripe product flagged `shop: true` still shows — but
+  JSON is the documented path. Unflagged payment links (commissions/invoices) never appear.
+
+Shipping (`content/shop-settings.json`): Stripe does NOT auto-calculate shipping for
+payment links, and a payment link shows **all** `shipping_options` to **every** buyer —
+there's no per-destination filtering. So we define flat regional `shippingRates` (each →
+a Stripe shipping_rate, reused by display_name+amount) the buyer self-selects, plus
+`shippingCountries` (allowed_countries). Default covers US/Canada/UK+Europe/AU+NZ/RoW.
+Known tradeoff (documented for Kayla): a buyer can pick the wrong region and underpay;
+real per-country rates would need a backend Checkout Session — out of scope here.
+
+`scripts/sync-stripe-products.js` runs in one pass (CI + `npm run sync-products`):
+
+1. **Reconcile** — for each purchasable spec (print or craft) with `price > 0` and
+   `stock !== 0`, ensure a Stripe Product + Price + active Payment Link exists at that
+   amount, with shipping + optional stock cap (creating the first time, adopting an
+   existing product by `metadata.workId` / `metadata.shopItemId`). Price 0 / stock 0
+   deactivates any active link. Stripe can't make a $0 link, so sold-out items are
+   emitted as synthetic `sold: true` entries straight from the JSON.
+2. **Generate** — write `products.json` from the JSON-driven items + manual `shop: true`
+   products. Stripe `category: Originals` is ignored.
+
+Idempotency: a link URL is reused when an existing link already matches the desired
+amount, so re-runs don't churn URLs. Price changes create a new Price + Link and
+deactivate the old (Stripe prices/links are immutable). Needs `STRIPE_SECRET_KEY`;
+runs only in CI or via the npm script.
+
+`sync-stripe-products.yml` triggers on push to `content/works.json`,
+`content/shop-items.json`, `content/shop-settings.json`, plus a 6h cron and manual
+dispatch. It commits only `products.json` (never the source JSON) — no trigger loop.
 
 ### Mobile shop sidebar
 
