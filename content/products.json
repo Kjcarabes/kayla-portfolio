@@ -120,9 +120,10 @@
       "price": 10,
       "image": "assets/images/horse.jpeg",
       "description": "5X7 Print",
-      "stripeLink": "https://buy.stripe.com/3cI00j8MG1gi9hP4aCe7m00",
-      "sold": false,
-      "workId": "horse-2"
+      "stripeLink": "",
+      "sold": true,
+      "workId": "horse-2",
+      "stockRemaining": 0
     },
     {
       "id": "print:Photonorphogenesis",
@@ -350,5 +351,5 @@
       "stockRemaining": 10
     }
   ],
-  "_lastSync": "2026-06-23T07:54:53.549Z"
+  "_lastSync": "2026-06-23T08:03:14.576Z"
 }
