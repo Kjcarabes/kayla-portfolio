@@ -377,6 +377,7 @@
       "originalStatus": "available",
       "printPrice": 10,
       "printDescription": "5X7 Print",
+      "printStock": 0,
       "aspectRatio": 0.7862,
       "widths": [
         400,

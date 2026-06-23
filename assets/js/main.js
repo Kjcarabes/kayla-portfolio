@@ -783,7 +783,7 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     let statusHtml = '';
     if (isOriginal(product)) {
         if (product.nfs) {
-            statusHtml = '<p class="product-card-status">Original unavailable — Not for sale (NFS)</p>';
+            statusHtml = '<p class="product-card-status">Original unavailable — Not for sale</p>';
             buttonHtml = '<span class="product-card-btn sold">Not for sale</span>';
         } else if (product.sold) {
             statusHtml = '<p class="product-card-status">Original unavailable — Sold!</p>';
@@ -793,7 +793,8 @@ function createProductCard(product, works = [], attachedOriginal = null) {
             buttonHtml = inquireButtonHtml(product);
         }
     } else if (product.sold) {
-        buttonHtml = '<span class="product-card-btn sold">Sold out</span>';
+        const soldLabel = product.category === 'Prints' ? 'Print sold out' : 'Sold out';
+        buttonHtml = `<span class="product-card-btn sold">${soldLabel}</span>`;
     } else if (product.stripeLink) {
         if (typeof product.stockRemaining === 'number' && product.stockRemaining > 0 && product.stockRemaining <= 10) {
             statusHtml = `<p class="product-card-status">Only ${product.stockRemaining} left</p>`;
@@ -809,7 +810,7 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         if (attachedOriginal.nfs) {
             attachedOriginalHtml = `
                 <div class="product-card-original sold">
-                    <p class="product-card-status">Original unavailable — Not for sale (NFS)</p>
+                    <p class="product-card-status">Original unavailable — Not for sale</p>
                     <span class="product-card-btn sold">Not for sale</span>
                 </div>
             `;
@@ -831,7 +832,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     }
 
     // Shop cards show the product's own description only — no fallback to the linked work's.
-    const description = product.description || '';
+    // When sold out, the button itself carries the label (e.g. "Print sold out"), so the
+    // redundant blurb above it is suppressed.
+    const description = product.sold ? '' : (product.description || '');
     const linkedWork = product.workId ? works.find(w => w.id === product.workId) : null;
 
     // Get medium from linked work
@@ -1105,7 +1108,7 @@ async function loadWorkDetail() {
                     }
                     let titleText;
                     if (original) {
-                        if (product.nfs) titleText = 'Original — Not for sale (NFS)';
+                        if (product.nfs) titleText = 'Original — Not for sale';
                         else if (product.sold) titleText = 'Original — Sold';
                         else titleText = 'Original available';
                     } else {
