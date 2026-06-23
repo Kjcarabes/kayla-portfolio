@@ -790,8 +790,7 @@ function createProductCard(product, works = [], attachedOriginal = null) {
             buttonHtml = inquireButtonHtml(product);
         }
     } else if (product.sold) {
-        statusHtml = '<p class="product-card-status">Sold!</p>';
-        buttonHtml = '<span class="product-card-btn sold">Sold</span>';
+        buttonHtml = '<span class="product-card-btn sold">Sold out</span>';
     } else if (product.stripeLink) {
         if (typeof product.stockRemaining === 'number' && product.stockRemaining > 0 && product.stockRemaining <= 10) {
             statusHtml = `<p class="product-card-status">Only ${product.stockRemaining} left</p>`;
@@ -889,8 +888,14 @@ async function populateShop() {
         if (p.workId && originalsByWorkId.has(p.workId)) workIdsWithPrintSibling.add(p.workId);
     }
 
+    // Available prints/crafts first, sold-out last (stable, so relative order is otherwise preserved).
+    const isPurchasable = (p) => !p.sold && !!p.stripeLink;
+    const orderedNonOriginal = [...nonOriginalProducts].sort(
+        (a, b) => (isPurchasable(b) ? 1 : 0) - (isPurchasable(a) ? 1 : 0)
+    );
+
     const displayItems = [];
-    for (const p of nonOriginalProducts) {
+    for (const p of orderedNonOriginal) {
         const attached = p.workId ? originalsByWorkId.get(p.workId) : null;
         displayItems.push({ product: p, attachedOriginal: attached || null, originalsTabOnly: false });
     }

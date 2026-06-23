@@ -1402,13 +1402,13 @@ img {
 #product-grid.filter-originals .product-card.originals-tab-only { display: block; }
 
 /* "All" and "Prints" both render combined cards (one per work, with the original's
-   status surfaced as a sub-block). The per-product badge is redundant in those views,
-   and the non-clickable "Sold!" button only adds vertical noise that misaligns rows
-   — the status label still communicates sold-ness. */
+   status surfaced as a sub-block). The per-product badge is redundant in those views.
+   The print's own sold-out button is shown (grey "Sold out"); only the attached
+   original's redundant sold button is hidden — its status label communicates sold-ness. */
 #product-grid.filter-all .product-card-badge,
 #product-grid.filter-prints .product-card-badge { display: none; }
-#product-grid.filter-all .product-card-btn.sold,
-#product-grid.filter-prints .product-card-btn.sold { display: none; }
+#product-grid.filter-all .product-card-original .product-card-btn.sold,
+#product-grid.filter-prints .product-card-original .product-card-btn.sold { display: none; }
 
 .work-detail-buy-btn.sold {
     background: var(--color-border);

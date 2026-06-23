@@ -44,6 +44,25 @@ const CATEGORY_MAP = {
 
 const DEFAULT_PRINT_DESCRIPTION = 'Print';
 
+// Public site origin — Stripe needs absolute, fetchable URLs for product images
+// so the painting shows on the payment-link checkout page.
+const SITE_URL = 'https://www.kaylacarabes.com';
+
+// Absolute image URL(s) for a Stripe product. Prefer an optimized WebP variant
+// when the optimizer has run (smaller, faster for Stripe to fetch); fall back to
+// the original path otherwise. Returns [] for a missing image.
+function stripeImageUrls(image, widths) {
+  if (!image) return [];
+  let rel = image.replace(/^\.\//, '');
+  const m = rel.match(/^assets\/images\/(.+)\.[^.]+$/);
+  if (m && Array.isArray(widths) && widths.length) {
+    const capped = widths.filter(w => w <= 1600);
+    const w = capped.length ? Math.max(...capped) : Math.max(...widths);
+    rel = `assets/images/optimized/${m[1]}-${w}.webp`;
+  }
+  return [`${SITE_URL}/${rel}`];
+}
+
 // Shown on Stripe's checkout page when a buyer reaches a link that just hit its
 // stock cap (Stripe auto-deactivates it before our next sync flips the card).
 // Stripe only allows inactive_message on links that have `restrictions` set, so
@@ -198,6 +217,7 @@ async function createProduct(spec) {
   const product = await stripe.products.create({
     name: spec.title,
     description: spec.description || undefined,
+    images: spec.images?.length ? spec.images : undefined,
     metadata: spec.productMetadata,
   });
   console.log(`Created Stripe product for "${spec.title}"`);
@@ -303,6 +323,11 @@ async function reconcilePurchasable(spec, ctx) {
   if (live) {
     const ensured = product || await createProduct(spec);
     ownedProductIds.add(ensured.id);
+    // Keep an already-created product's image current (e.g. the painting changed).
+    if (spec.images?.length && (ensured.images || []).join('|') !== spec.images.join('|')) {
+      await stripe.products.update(ensured.id, { images: spec.images });
+      console.log(`Updated images for "${spec.title}"`);
+    }
     const url = await ensureActiveLink({
       product: ensured,
       cents: spec.priceCents,
@@ -339,6 +364,7 @@ function printSpec(work) {
     category: 'Prints',
     description: work.printDescription || DEFAULT_PRINT_DESCRIPTION,
     image: work.image,
+    images: stripeImageUrls(work.image, work.widths),
     priceCents: dollarsToCents(work.printPrice),
     stock: parseStock(work.printStock),
     workId: work.id,
@@ -358,6 +384,7 @@ function craftSpec(item) {
     category,
     description: item.description || '',
     image: item.image || 'assets/images/placeholder.jpg',
+    images: stripeImageUrls(item.image || 'assets/images/placeholder.jpg', item.widths),
     priceCents: dollarsToCents(item.price),
     stock: parseStock(item.stock),
     order: intOr(item.order, 0),
