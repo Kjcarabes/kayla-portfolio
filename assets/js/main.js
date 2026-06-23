@@ -725,22 +725,22 @@ function escapeAttr(s) {
 const isOriginal = (product) => (product.category || '').toLowerCase() === 'originals';
 
 // Every work is implicitly an available original unless `originalStatus` says otherwise.
-// "available" (default) | "sold" | "nfs" (not for sale — hides it from the Originals tab entirely).
+// "available" (default) | "sold" | "nfs" (not for sale — Kayla still owns it; shown as
+// "Original unavailable — Not for sale" so galleries know it's not available to buy).
 function worksAsOriginals(works) {
-    return works
-        .filter(w => (w.originalStatus || 'available') !== 'nfs')
-        .map(w => ({
-            id: `original:${w.id}`,
-            title: w.title,
-            category: 'Originals',
-            price: 0,
-            image: w.image,
-            aspectRatio: w.aspectRatio,
-            widths: w.widths,
-            description: '', // shop cards don't display work descriptions
-            sold: w.originalStatus === 'sold',
-            workId: w.id,
-        }));
+    return works.map(w => ({
+        id: `original:${w.id}`,
+        title: w.title,
+        category: 'Originals',
+        price: 0,
+        image: w.image,
+        aspectRatio: w.aspectRatio,
+        widths: w.widths,
+        description: '', // shop cards don't display work descriptions
+        sold: w.originalStatus === 'sold',
+        nfs: w.originalStatus === 'nfs',
+        workId: w.id,
+    }));
 }
 
 // Works accept either `date` (full ISO or just a year) or the legacy `year` field.
@@ -782,7 +782,10 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     let buttonHtml = '';
     let statusHtml = '';
     if (isOriginal(product)) {
-        if (product.sold) {
+        if (product.nfs) {
+            statusHtml = '<p class="product-card-status">Original unavailable — Not for sale (NFS)</p>';
+            buttonHtml = '<span class="product-card-btn sold">Not for sale</span>';
+        } else if (product.sold) {
             statusHtml = '<p class="product-card-status">Original unavailable — Sold!</p>';
             buttonHtml = '<span class="product-card-btn sold">Sold!</span>';
         } else {
@@ -803,19 +806,28 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     // Attached original (on a print card): show status + Contact-me below the print's own CTA.
     let attachedOriginalHtml = '';
     if (attachedOriginal) {
-        attachedOriginalHtml = attachedOriginal.sold
-            ? `
+        if (attachedOriginal.nfs) {
+            attachedOriginalHtml = `
+                <div class="product-card-original sold">
+                    <p class="product-card-status">Original unavailable — Not for sale (NFS)</p>
+                    <span class="product-card-btn sold">Not for sale</span>
+                </div>
+            `;
+        } else if (attachedOriginal.sold) {
+            attachedOriginalHtml = `
                 <div class="product-card-original sold">
                     <p class="product-card-status">Original unavailable — Sold!</p>
                     <span class="product-card-btn sold">Sold!</span>
                 </div>
-            `
-            : `
+            `;
+        } else {
+            attachedOriginalHtml = `
                 <div class="product-card-original">
                     <p class="product-card-status">Original available</p>
                     ${inquireButtonHtml(attachedOriginal)}
                 </div>
             `;
+        }
     }
 
     // Shop cards show the product's own description only — no fallback to the linked work's.
@@ -1069,15 +1081,11 @@ async function loadWorkDetail() {
     document.title = `${work.title} | Kayla Carabes`;
 
     // Prints/crafts from Stripe — only show when available (and never Stripe originals, those are
-    // driven from works.json now). Then prepend the synthesized original unless the work is "nfs".
+    // driven from works.json now). The synthesized original is always prepended — including "nfs",
+    // shown as "Not for sale" so galleries know Kayla still owns the piece.
     const printsAndCrafts = products.filter(p => p.workId === workId && !isOriginal(p) && !p.sold);
-    const status = work.originalStatus || 'available';
-    const syntheticOriginal = status === 'nfs'
-        ? null
-        : worksAsOriginals([work])[0];
-    const linkedProducts = syntheticOriginal
-        ? [syntheticOriginal, ...printsAndCrafts]
-        : printsAndCrafts;
+    const syntheticOriginal = worksAsOriginals([work])[0];
+    const linkedProducts = [syntheticOriginal, ...printsAndCrafts];
 
     let shopHtml = '';
     if (linkedProducts.length > 0) {
@@ -1086,16 +1094,23 @@ async function loadWorkDetail() {
                 ${linkedProducts.map(product => {
                     const original = isOriginal(product);
                     let actionHtml;
-                    if (original && product.sold) {
+                    if (original && product.nfs) {
+                        actionHtml = '<span class="work-detail-buy-btn sold">Not for sale</span>';
+                    } else if (original && product.sold) {
                         actionHtml = '<span class="work-detail-buy-btn sold">Sold</span>';
                     } else if (original) {
                         actionHtml = inquireButtonHtml(product, 'work-detail');
                     } else {
                         actionHtml = `<a href="${product.stripeLink}" target="_blank" rel="noopener" class="work-detail-buy-btn">Buy</a>`;
                     }
-                    const titleText = original
-                        ? (product.sold ? 'Original — Sold' : 'Original available')
-                        : (product.description || product.title);
+                    let titleText;
+                    if (original) {
+                        if (product.nfs) titleText = 'Original — Not for sale (NFS)';
+                        else if (product.sold) titleText = 'Original — Sold';
+                        else titleText = 'Original available';
+                    } else {
+                        titleText = product.description || product.title;
+                    }
                     const subText = original ? '' : `$${product.price}`;
                     return `
                     <div class="work-detail-shop-item">
