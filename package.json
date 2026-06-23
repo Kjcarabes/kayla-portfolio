@@ -5,7 +5,8 @@
   "description": "Local-only build tools for Kayla's portfolio (image optimization, Stripe sync). The site itself is plain static HTML/CSS/JS.",
   "scripts": {
     "optimize-images": "node scripts/optimize-images.js",
-    "sync-products": "node scripts/sync-stripe-products.js"
+    "sync-products": "node scripts/sync-stripe-products.js",
+    "generate-seo": "node scripts/generate-seo.js"
   },
   "dependencies": {
     "sharp": "^0.33.5",

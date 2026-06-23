@@ -1056,6 +1056,102 @@ function getUrlParam(param) {
     return urlParams.get(param);
 }
 
+const SITE_ORIGIN = 'https://www.kaylacarabes.com';
+
+// Create-or-update a <meta> tag by attribute (name= or property=).
+function setMetaTag(attr, key, content) {
+    let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+    if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+}
+
+function setCanonical(url) {
+    let el = document.getElementById('canonical-link') || document.head.querySelector('link[rel="canonical"]');
+    if (!el) {
+        el = document.createElement('link');
+        el.rel = 'canonical';
+        document.head.appendChild(el);
+    }
+    el.href = url;
+}
+
+function injectJsonLd(id, obj) {
+    let el = document.getElementById(id);
+    if (!el) {
+        el = document.createElement('script');
+        el.type = 'application/ld+json';
+        el.id = id;
+        document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify(obj);
+}
+
+// Per-artwork SEO/social meta + structured data. The work-detail page is a
+// query-param URL whose body is rendered client-side, so without this an engine
+// only ever sees the generic default head. Engines that render JS (Googlebot)
+// pick this up; the static work.html ItemList + sitemap cover no-JS crawlers.
+function applyWorkDetailSeo(work, products = []) {
+    const url = `${SITE_ORIGIN}/work-detail.html?id=${encodeURIComponent(work.id)}`;
+    const year = workDisplayYear(work);
+    const absImg = work.image && work.image.startsWith('http')
+        ? work.image
+        : `${SITE_ORIGIN}/${String(work.image || '').replace(/^\//, '')}`;
+    // Social scrapers cap image size (X ~5MB) and originals can be larger, so prefer a
+    // small optimized WebP variant for og:image/twitter:image. Fall back to the original.
+    const widths = Array.isArray(work.widths) ? work.widths : [];
+    const optMatch = String(work.image || '').match(/^(?:\.\/)?assets\/images\/(.+)\.[^.]+$/);
+    let socialImg = absImg;
+    if (optMatch && widths.length) {
+        const w = widths.includes(1200) ? 1200 : (widths.filter(x => x <= 1600).pop() || widths[0]);
+        socialImg = `${SITE_ORIGIN}/assets/images/optimized/${optMatch[1]}-${w}.webp`;
+    }
+    const mediumBits = [work.medium, work.size].filter(Boolean).join(', ');
+    const description = (work.description && work.description.trim())
+        ? `${work.description.trim()} — ${work.title} by Kayla Carabes${year ? `, ${year}` : ''}.`
+        : `${work.title}${year ? ` (${year})` : ''}${mediumBits ? `, ${mediumBits}` : ''} — original artwork by Kayla Carabes.`;
+    const social = `${work.title} — Kayla Carabes`;
+
+    document.title = `${work.title}${year ? ` (${year})` : ''} | Kayla Carabes`;
+    setMetaTag('name', 'description', description);
+    setCanonical(url);
+    setMetaTag('property', 'og:type', 'article');
+    setMetaTag('property', 'og:title', social);
+    setMetaTag('property', 'og:description', description);
+    setMetaTag('property', 'og:image', socialImg);
+    setMetaTag('property', 'og:url', url);
+    setMetaTag('name', 'twitter:title', social);
+    setMetaTag('name', 'twitter:description', description);
+    setMetaTag('name', 'twitter:image', socialImg);
+
+    const artwork = {
+        '@context': 'https://schema.org',
+        '@type': 'VisualArtwork',
+        name: work.title,
+        url,
+        image: absImg,
+        creator: { '@type': 'Person', name: 'Kayla Carabes', url: `${SITE_ORIGIN}/` },
+        artform: work.category === 'Paintings' ? 'Painting' : (work.category || 'Artwork'),
+    };
+    if (work.medium) artwork.artMedium = work.medium;
+    if (work.size) artwork.width = work.size;
+    if (year) artwork.dateCreated = year;
+    const livePrint = products.find(p => p.workId === work.id && !p.sold && p.stripeLink && p.price > 0);
+    if (livePrint) {
+        artwork.offers = {
+            '@type': 'Offer',
+            price: String(livePrint.price),
+            priceCurrency: 'USD',
+            availability: 'https://schema.org/InStock',
+            url: livePrint.stripeLink,
+        };
+    }
+    injectJsonLd('work-detail-jsonld', artwork);
+}
+
 // Load and display work detail
 async function loadWorkDetail() {
     const container = document.getElementById('work-detail');
@@ -1080,8 +1176,8 @@ async function loadWorkDetail() {
         return;
     }
 
-    // Update page title
-    document.title = `${work.title} | Kayla Carabes`;
+    // Per-artwork title, social meta, canonical, and VisualArtwork JSON-LD.
+    applyWorkDetailSeo(work, products);
 
     // Prints/crafts from Stripe — only show when available (and never Stripe originals, those are
     // driven from works.json now). The synthesized original is always prepended — including "nfs",

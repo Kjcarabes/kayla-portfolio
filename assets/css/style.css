@@ -58,6 +58,22 @@ img {
     display: block;
 }
 
+/* Visually hidden but available to screen readers and crawlers. Used for the
+   SEO content fallbacks (which main.js replaces on hydration) and the home
+   page's descriptive <h1>/intro, so the minimal visual design is preserved
+   while search/answer engines still read real content. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* ===========================================
    NAVIGATION
    =========================================== */
