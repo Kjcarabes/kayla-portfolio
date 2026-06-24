@@ -649,6 +649,45 @@
         400,
         800
       ]
+    },
+    {
+      "id": "blackberry-bird",
+      "title": "Blackberry Bird",
+      "year": "2025-05-19",
+      "category": "Etchings",
+      "image": "assets/images/Blackberry-Bird.jpeg",
+      "description": "",
+      "medium": "Copperplate etching (intaglio)",
+      "size": "5in x 7in",
+      "featured": false,
+      "originalStatus": "available",
+      "noPrint": true
+    },
+    {
+      "id": "nest-red",
+      "title": "Nest (Red)",
+      "year": "2024-12-04",
+      "category": "Etchings",
+      "image": "assets/images/Nest-Red.jpeg",
+      "description": "",
+      "medium": "Copperplate etching (intaglio)",
+      "size": "5in x 7in",
+      "featured": false,
+      "originalStatus": "available",
+      "noPrint": true
+    },
+    {
+      "id": "nest-yellow",
+      "title": "Nest (Yellow)",
+      "year": "2024-12-04",
+      "category": "Etchings",
+      "image": "assets/images/Nest-Yellow.jpeg",
+      "description": "",
+      "medium": "Copperplate etching (intaglio)",
+      "size": "5in x 7in",
+      "featured": false,
+      "originalStatus": "available",
+      "noPrint": true
     }
   ],
   "_howToAdd": "Copy one of the entries above, paste it, and change the values. Make sure to add a comma after the previous entry!",
