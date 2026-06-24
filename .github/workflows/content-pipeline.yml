@@ -1,0 +1,92 @@
+name: Content pipeline
+
+# One job that regenerates every committed-but-derived artifact, in dependency order:
+#   1. Optimize images   -> assets/images/optimized/** + works.json aspectRatio/widths
+#   2. Sync Stripe        -> content/products.json (reads works.json / shop-items.json)
+#   3. Generate SEO       -> sitemap.xml + per-page JSON-LD/content (reads works/products/blog)
+# Running them in a single checkout with ONE commit + push removes the race the three
+# separate auto-committing workflows used to hit on `main` (each pushed independently,
+# so the loser got rejected with "fetch first").
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Raw images (not the bot's own optimized output), the content sources, and the
+      # generator scripts themselves.
+      - 'assets/images/**'
+      - '!assets/images/optimized/**'
+      - 'content/works.json'
+      - 'content/shop-items.json'
+      - 'content/shop-settings.json'
+      - 'content/blog.json'
+      - 'scripts/optimize-images.js'
+      - 'scripts/sync-stripe-products.js'
+      - 'scripts/generate-seo.js'
+
+  # Every 6h: reconcile Stripe-side changes (stock counts, manual products) and refresh
+  # derived content even without a content push. Covers the old daily SEO safety net too.
+  schedule:
+    - cron: '0 */6 * * *'
+
+  workflow_dispatch:
+
+# Serialize runs so a push and the cron (or two quick pushes) never push concurrently.
+concurrency:
+  group: content-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Optimize images
+        run: npm run optimize-images
+
+      - name: Sync Stripe products
+        # A Stripe outage/secret issue shouldn't block committing fresh images + SEO;
+        # products.json just stays as-is and the next run (6h cron) reconciles it.
+        continue-on-error: true
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: npm run sync-products
+
+      - name: Generate SEO
+        run: npm run generate-seo
+
+      - name: Commit and push generated content
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add assets/images/optimized content/works.json content/products.json \
+                  sitemap.xml index.html work.html shop.html blog.html
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+          # [skip ci] keeps this commit from re-triggering the pipeline.
+          git commit -m "Regenerate derived content (images, products, SEO) [skip ci]"
+          # One push, and concurrency serializes runs — but keep a rebase+retry as a
+          # belt-and-suspenders for the rare push/cron overlap.
+          for attempt in 1 2 3 4 5; do
+            if git push; then exit 0; fi
+            echo "push rejected (attempt $attempt) — rebasing on origin/main"
+            git pull --rebase origin main || true
+          done
+          echo "push still failing after 5 attempts"; exit 1
