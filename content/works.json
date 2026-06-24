@@ -661,7 +661,15 @@
       "size": "5in x 7in",
       "featured": false,
       "originalStatus": "available",
-      "noPrint": true
+      "noPrint": true,
+      "aspectRatio": 0.7679,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2190
+      ]
     },
     {
       "id": "nest-red",
@@ -674,7 +682,13 @@
       "size": "5in x 7in",
       "featured": false,
       "originalStatus": "available",
-      "noPrint": true
+      "noPrint": true,
+      "aspectRatio": 0.7363,
+      "widths": [
+        400,
+        800,
+        1200
+      ]
     },
     {
       "id": "nest-yellow",
@@ -687,7 +701,15 @@
       "size": "5in x 7in",
       "featured": false,
       "originalStatus": "available",
-      "noPrint": true
+      "noPrint": true,
+      "aspectRatio": 0.7561,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3023
+      ]
     }
   ],
   "_howToAdd": "Copy one of the entries above, paste it, and change the values. Make sure to add a comma after the previous entry!",
