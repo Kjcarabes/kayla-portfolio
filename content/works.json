@@ -24,6 +24,20 @@
         1600,
         3850
       ]
+    }, {
+      "id": "side of road copy.jpg",
+      "title": "Side of the road",
+      "date": "2026-07-10",
+      "category": "Paintings",
+      "image": "assets/images/side of road copy.jpg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "3ft x 4ft",
+      "featured": true,
+      "heroFeature": true,
+      "originalStatus": "available"
+
+
     },
     {
       "id": "night",
