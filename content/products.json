@@ -272,6 +272,17 @@
       "stockRemaining": 10
     },
     {
+      "id": "print:side of road copy.jpg",
+      "title": "Side of the road",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/side of road copy.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "side of road copy.jpg"
+    },
+    {
       "id": "print:shell",
       "title": "soft shell",
       "category": "Prints",
@@ -351,5 +362,5 @@
       "stockRemaining": 10
     }
   ],
-  "_lastSync": "2026-07-22T19:22:31.702Z"
+  "_lastSync": "2026-07-22T20:12:08.126Z"
 }

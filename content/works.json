@@ -24,7 +24,8 @@
         1600,
         3850
       ]
-    }, {
+    },
+    {
       "id": "side of road copy.jpg",
       "title": "Side of the road",
       "date": "2026-07-10",
@@ -35,9 +36,15 @@
       "size": "3ft x 4ft",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "available"
-
-
+      "originalStatus": "available",
+      "aspectRatio": 1.3564,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4632
+      ]
     },
     {
       "id": "night",
