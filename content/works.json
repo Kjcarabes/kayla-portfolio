@@ -45,6 +45,20 @@
         1600,
         4632
       ]
+    },{
+      "id": "25 portrait",
+      "title": "25th portrait",
+      "date": "2026-05-10",
+      "category": "Paintings",
+      "image": "assets/images/25 portait.jpg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "16in x 20in",
+      "featured": false,
+      "heroFeature": false,
+      "originalStatus": "nfs"
+
+
     },
     {
       "id": "night",
