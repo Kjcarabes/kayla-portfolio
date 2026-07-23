@@ -3,6 +3,17 @@
   "_instructions": "Set printPrice on a work, or add an item to shop-items.json. This file syncs automatically.",
   "products": [
     {
+      "id": "print:25 portrait",
+      "title": "25th portrait",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/25 portait.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "25 portrait"
+    },
+    {
       "id": "print:rabbit",
       "title": "Another brick in the wall",
       "category": "Prints",
@@ -362,5 +373,5 @@
       "stockRemaining": 10
     }
   ],
-  "_lastSync": "2026-07-23T02:50:44.163Z"
+  "_lastSync": "2026-07-23T08:29:25.575Z"
 }

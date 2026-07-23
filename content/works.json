@@ -45,7 +45,8 @@
         1600,
         4632
       ]
-    },{
+    },
+    {
       "id": "25 portrait",
       "title": "25th portrait",
       "date": "2026-05-10",
@@ -56,9 +57,15 @@
       "size": "16in x 20in",
       "featured": false,
       "heroFeature": false,
-      "originalStatus": "nfs"
-
-
+      "originalStatus": "nfs",
+      "aspectRatio": 0.817,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        2919
+      ]
     },
     {
       "id": "night",
