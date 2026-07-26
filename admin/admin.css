@@ -85,6 +85,8 @@ a { color: var(--primary); }
 
 /* ── Panels / layout ── */
 .panels { max-width: 820px; margin: 0 auto; padding: 1.5rem 1.25rem 6rem; }
+/* Table-heavy tabs use the full width so nothing needs horizontal scrolling */
+.panels.wide { max-width: 1320px; }
 .panel { display: none; }
 .panel.active { display: block; }
 
@@ -163,26 +165,34 @@ details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
 .nl-recipient { padding: .2rem 0; border-bottom: 1px solid #eef1f5; }
 .nl-recipient:last-child { border-bottom: none; }
 
-/* Inquiries table */
-.inq-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
-.inq-table { border-collapse: collapse; width: 100%; font-size: .82rem; }
-.inq-table th, .inq-table td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: .45rem .65rem; text-align: left; vertical-align: top; }
-.inq-table th { background: #f3f6fb; font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+/* Read-only tables (inquiries) */
+.inq-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+.inq-table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+.inq-table th { background: #eef2f8; font-weight: 600; white-space: nowrap; text-align: left; padding: .6rem .75rem; border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+.inq-table td { padding: .55rem .75rem; text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; max-width: 340px; border-bottom: 1px solid #edf0f4; border-right: 1px solid #f2f4f7; }
+.inq-table tbody tr:nth-child(even) { background: #fafbfd; }
+.inq-table tbody tr:hover { background: #eef4fd; }
 .inq-table tr:last-child td { border-bottom: none; }
 .inq-table th:last-child, .inq-table td:last-child { border-right: none; }
 
 /* Sales dashboard — editable price list / sale record grids */
-.sales-table { border-collapse: collapse; width: 100%; font-size: .82rem; }
-.sales-table th, .sales-table td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: left; }
-.sales-table th { background: #f3f6fb; font-weight: 600; white-space: nowrap; padding: .45rem .5rem; }
-.sales-table th:last-child, .sales-table td:last-child { border-right: none; }
+.sales-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.sales-table thead th { background: #eef2f8; font-weight: 600; white-space: nowrap; text-align: left; padding: .6rem .6rem; border-bottom: 2px solid var(--border); position: sticky; top: 0; }
+.sales-table td { vertical-align: top; border-bottom: 1px solid #edf0f4; border-right: 1px solid #f2f4f7; }
+.sales-table tbody tr:hover { background: #f7f9fc; }
 .sales-table tr:last-child td { border-bottom: none; }
-.cell-input { width: 100%; min-width: 74px; border: none; background: transparent; padding: .4rem .45rem; font: inherit; color: var(--ink); }
-.cell-input:focus { outline: 2px solid var(--primary); outline-offset: -2px; background: #fff; }
-.list-cell { padding: .4rem .5rem; color: var(--muted); white-space: nowrap; }
+.sales-table th:last-child, .sales-table td:last-child { border-right: none; }
+.cell-input { width: 100%; min-width: 110px; border: none; background: transparent; padding: .5rem .55rem; font: inherit; color: var(--ink); border-radius: 6px; }
+.cell-input[type=number] { min-width: 84px; }
+.cell-input[type=date] { min-width: 138px; }
+.cell-input:focus { outline: none; background: #fff; box-shadow: inset 0 0 0 2px var(--primary); }
+.cell-textarea { min-width: 210px; line-height: 1.4; resize: vertical; field-sizing: content; min-height: 2.4em; white-space: pre-wrap; }
+.cell-notes { min-width: 210px; }
+.list-cell { padding: .5rem .6rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sales-table td:last-child { text-align: center; }
-.sales-table td:last-child button { border: none; background: none; color: var(--danger); cursor: pointer; padding: .3rem .4rem; }
-.sales-save-bar { margin-top: .9rem; display: flex; align-items: center; gap: .7rem; }
+.sales-table td:last-child button { border: none; background: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: .4rem .5rem; }
+.sales-table td:last-child button:hover { color: #8c231a; }
+.sales-save-bar { margin-top: 1rem; display: flex; align-items: center; gap: .7rem; }
 
 /* Fair-price calculator */
 .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }

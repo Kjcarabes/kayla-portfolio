@@ -173,6 +173,8 @@ function switchTab(tab) {
   state.activeTab = tab;
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   $$('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+  const panels = $('.panels');
+  if (panels) panels.classList.toggle('wide', tab === 'sales' || tab === 'analytics');
   renderActiveTab();
 }
 function renderActiveTab() {
@@ -362,7 +364,7 @@ function workFields(i) {
     ${(getByPath(state.files[f], `${p}.detail_images`) || []).map((_, j) => `
       <div style="display:flex;gap:.5rem;align-items:flex-start">
         <div style="flex:1">${imageField(f, `${p}.detail_images.${j}`, `Detail image ${j + 1}`)}</div>
-        <button data-action="del-detail-img" data-i="${i}" data-j="${j}" class="danger" style="margin-top:1.5rem">Remove</button>
+        <button data-action="del-detail-img" data-i="${i}" data-j="${j}" class="btn danger" style="margin-top:1.5rem">Remove</button>
       </div>`).join('')}
     <button class="add-btn" data-action="add-detail-img" data-i="${i}">+ Add detail image</button>
   `;
@@ -534,7 +536,7 @@ function renderBlog() {
         ${(post.images || []).map((_, j) => `
           <div style="display:flex;gap:.5rem;align-items:flex-start">
             <div style="flex:1">${imageField(f, `posts.${i}.images.${j}`, `Image ${j + 1}`)}</div>
-            <button data-action="del-blog-img" data-i="${i}" data-j="${j}" class="danger" style="margin-top:1.5rem">Remove</button>
+            <button data-action="del-blog-img" data-i="${i}" data-j="${j}" class="btn danger" style="margin-top:1.5rem">Remove</button>
           </div>
         `).join('')}
         <button class="add-btn" data-action="add-blog-img" data-i="${i}">+ Add image</button>
@@ -711,6 +713,7 @@ const money = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFra
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const salesInput = (key, val, type = 'text') => `<input class="cell-input" type="${type}" data-sales="${escapeAttr(key)}" value="${escapeAttr(val ?? '')}" spellcheck="${type === 'text' ? 'true' : 'false'}">`;
 const salesSelect = (key, val, opts) => `<select class="cell-input" data-sales="${escapeAttr(key)}">${opts.map(o => `<option ${o === val ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+const salesTextarea = (key, val) => `<textarea class="cell-input cell-textarea" data-sales="${escapeAttr(key)}" spellcheck="true">${escapeHtml(val ?? '')}</textarea>`;
 
 function renderSales() {
   const root = $('[data-panel="sales"]');
@@ -820,7 +823,7 @@ function renderPriceTable() {
       <td>${salesInput(`priceList.${i}.floor`, r.floor, 'number')}</td>
       <td>${salesSelect(`priceList.${i}.status`, r.status || 'Available', ['Available', 'Sold', 'NFS'])}</td>
       <td>${salesInput(`priceList.${i}.sell`, r.sell, 'number')}</td>
-      <td>${salesInput(`priceList.${i}.notes`, r.notes)}</td>
+      <td class="cell-notes">${salesTextarea(`priceList.${i}.notes`, r.notes)}</td>
       <td><button data-action="del-price" data-i="${i}" class="danger">✕</button></td>
     </tr>`).join('')}
     </tbody></table></div>
@@ -848,7 +851,7 @@ function renderSaleTable() {
       <td>${salesInput(`saleRecord.${i}.buyerName`, r.buyerName)}</td>
       <td>${salesInput(`saleRecord.${i}.buyerPhone`, r.buyerPhone)}</td>
       <td>${salesInput(`saleRecord.${i}.buyerEmail`, r.buyerEmail, 'email')}</td>
-      <td>${salesInput(`saleRecord.${i}.buyerNotes`, r.buyerNotes)}</td>
+      <td class="cell-notes">${salesTextarea(`saleRecord.${i}.buyerNotes`, r.buyerNotes)}</td>
       <td><button data-action="del-sale" data-i="${i}" class="danger">✕</button></td>
     </tr>`).join('')}
     </tbody></table></div>
