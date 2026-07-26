@@ -1,0 +1,15 @@
+name = "kayla-admin"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Which repo the admin commits to. (Secrets are set separately — see README.)
+[vars]
+GH_OWNER = "Kjcarabes"
+GH_REPO = "kayla-portfolio"
+GH_BRANCH = "main"
+
+# Secrets (do NOT put these here — set with `wrangler secret put`):
+#   GITHUB_TOKEN     — fine-grained PAT, this repo only, Contents: Read+Write
+#   ADMIN_PASSWORD   — the password Kayla types to log into /admin
+#   IG_USER_ID       — (optional) Instagram Business account ID, for auto-post
+#   IG_ACCESS_TOKEN  — (optional) long-lived Instagram Graph API token

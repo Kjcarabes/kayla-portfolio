@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Admin — Kayla Carabes</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/jpeg" href="/assets/images/color-theory.jpeg">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- Connect / login screen -->
+  <div id="connect-screen" class="connect-wrap">
+    <h1>Site Admin</h1>
+    <p>Sign in to add work, edit the shop, and update the site.</p>
+    <div class="field">
+      <label class="field-label" for="worker-url">Admin server URL</label>
+      <input type="url" id="worker-url" placeholder="https://kayla-admin.<subdomain>.workers.dev">
+    </div>
+    <div class="field">
+      <label class="field-label" for="admin-secret">Password</label>
+      <input type="password" id="admin-secret" placeholder="Your admin password">
+    </div>
+    <p id="connect-error" class="error-text" hidden></p>
+    <button id="connect-btn" class="primary" style="width:100%">Sign in</button>
+  </div>
+
+  <!-- Editor -->
+  <div id="editor" hidden>
+    <div class="topbar">
+      <span class="topbar-title">Kayla Carabes — Admin</span>
+      <span class="topbar-spacer"></span>
+      <span id="dirty-status" class="dirty-status muted">No changes</span>
+      <button id="save-btn" class="primary" disabled>Publish</button>
+      <button id="logout-btn">Log out</button>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="works">Works</button>
+      <button class="tab" data-tab="blog">Blog</button>
+      <button class="tab" data-tab="shop">Shop</button>
+      <button class="tab" data-tab="settings">Settings</button>
+      <button class="tab" data-tab="card">Card page</button>
+    </nav>
+
+    <div class="panels">
+      <div class="panel active" data-panel="works"></div>
+      <div class="panel" data-panel="blog"></div>
+      <div class="panel" data-panel="shop"></div>
+      <div class="panel" data-panel="settings"></div>
+      <div class="panel" data-panel="card"></div>
+    </div>
+  </div>
+
+  <div id="modal-root"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
