@@ -111,6 +111,7 @@ pulls the recipient list on demand. Unsubscribes are recorded in **column C**;
 // ONE doPost + ONE doGet, bound to the signups Sheet.
 const SEND_SECRET = 'PUT_A_LONG_RANDOM_STRING_HERE'; // must match NEWSLETTER_SEND_SECRET
 const FROM_NAME = 'Kayla Carabes';
+const INQUIRIES_SHEET_ID = 'sheet_id'; // the separate "inquiries on originals" spreadsheet ID
 
 function doPost(e) {
   // Newsletter actions = a JSON body carrying the secret (from the Worker).
@@ -119,6 +120,7 @@ function doPost(e) {
   if (payload && payload.secret) {
     if (payload.secret !== SEND_SECRET) return json({ ok: false, error: 'unauthorized' });
     if (payload.action === 'list') return json({ ok: true, emails: collectEmails() });
+    if (payload.action === 'inquiries') return listInquiries();
     return sendNewsletter(payload);
   }
   // Otherwise it's a signup from the site form (unchanged behavior).
@@ -166,6 +168,30 @@ function collectEmails() {
     if (!String(row[2] || '').trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) seen[email] = true;
   });
   return Object.keys(seen);
+}
+
+// Return the inquiries sheet rows, and auto-add any new inquiry email to the
+// mailing list (skips emails already present — including unsubscribed ones).
+function listInquiries() {
+  if (!INQUIRIES_SHEET_ID || INQUIRIES_SHEET_ID.indexOf('PUT_') === 0) return json({ ok: false, error: 'INQUIRIES_SHEET_ID not set' });
+  var rows = SpreadsheetApp.openById(INQUIRIES_SHEET_ID).getSheets()[0].getDataRange().getValues();
+  var sign = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var existing = {};
+  sign.getDataRange().getValues().forEach(function (r) {
+    var e = String(r[0] || '').trim().toLowerCase(); if (e) existing[e] = true;
+  });
+  var added = 0;
+  rows.forEach(function (row, idx) {
+    if (idx === 0) return; // header row
+    row.forEach(function (cell) {
+      var e = String(cell || '').trim().toLowerCase();
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) && !existing[e]) {
+        sign.appendRow([e, new Date().toISOString(), '', 'from inquiry']);
+        existing[e] = true; added++;
+      }
+    });
+  });
+  return json({ ok: true, rows: rows, added: added });
 }
 
 function markUnsubscribed(email) {

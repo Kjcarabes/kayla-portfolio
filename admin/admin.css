@@ -163,6 +163,49 @@ details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
 .nl-recipient { padding: .2rem 0; border-bottom: 1px solid #eef1f5; }
 .nl-recipient:last-child { border-bottom: none; }
 
+/* Inquiries table */
+.inq-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+.inq-table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+.inq-table th, .inq-table td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: .45rem .65rem; text-align: left; vertical-align: top; }
+.inq-table th { background: #f3f6fb; font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+.inq-table tr:last-child td { border-bottom: none; }
+.inq-table th:last-child, .inq-table td:last-child { border-right: none; }
+
+/* Sales dashboard — editable price list / sale record grids */
+.sales-table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+.sales-table th, .sales-table td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: left; }
+.sales-table th { background: #f3f6fb; font-weight: 600; white-space: nowrap; padding: .45rem .5rem; }
+.sales-table th:last-child, .sales-table td:last-child { border-right: none; }
+.sales-table tr:last-child td { border-bottom: none; }
+.cell-input { width: 100%; min-width: 74px; border: none; background: transparent; padding: .4rem .45rem; font: inherit; color: var(--ink); }
+.cell-input:focus { outline: 2px solid var(--primary); outline-offset: -2px; background: #fff; }
+.list-cell { padding: .4rem .5rem; color: var(--muted); white-space: nowrap; }
+.sales-table td:last-child { text-align: center; }
+.sales-table td:last-child button { border: none; background: none; color: var(--danger); cursor: pointer; padding: .3rem .4rem; }
+.sales-save-bar { margin-top: .9rem; display: flex; align-items: center; gap: .7rem; }
+
+/* Fair-price calculator */
+.calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
+.calc-rates { margin-top: .9rem; }
+.calc-rates summary { cursor: pointer; color: var(--primary); font-size: .85rem; }
+.calc-result { margin-top: 1rem; padding: 1rem 1.2rem; background: #f3f6fb; border-radius: 10px; }
+.calc-result strong { font-size: 1.5rem; }
+@media (max-width: 560px) { .calc-grid { grid-template-columns: 1fr 1fr; } }
+
+/* Analytics */
+.stat-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.stat { flex: 1; background: #f3f6fb; border-radius: 10px; padding: 1rem 1.2rem; }
+.stat-num { font-size: 1.8rem; font-weight: 700; }
+.stat-label { color: var(--muted); font-size: .85rem; }
+[data-panel="analytics"] h4 { margin: 1.1rem 0 .5rem; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.an-bars { display: flex; align-items: flex-end; gap: 3px; height: 90px; padding: .3rem 0; }
+.an-bar { flex: 1; display: flex; align-items: flex-end; min-width: 4px; }
+.an-bar span { display: block; width: 100%; background: var(--primary); border-radius: 2px 2px 0 0; min-height: 2px; opacity: .85; }
+.an-list { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-size: .85rem; }
+.an-list-row { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .75rem; border-bottom: 1px solid #eef1f5; }
+.an-list-row:last-child { border-bottom: none; }
+.an-list-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ── Image picker ── */
 .image-picker { display: flex; gap: .8rem; align-items: flex-start; }
 .image-preview {

@@ -20,6 +20,8 @@ const state = {
   pendingInstagram: null, // { imagePath, caption } set by the add-work flow
   dirty: new Set(),
   openRows: new Set(), // which rows are expanded (survives re-render), keyed "tab:id"
+  sales: null,         // { markup, priceList[], saleRecord[] } from private KV
+  salesOriginal: null,
   activeTab: 'works',
 };
 
@@ -174,7 +176,7 @@ function switchTab(tab) {
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, about: renderAbout, newsletter: renderNewsletter, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, about: renderAbout, newsletter: renderNewsletter, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -242,6 +244,12 @@ function imageField(file, key, label) {
 // =================== DELEGATED INPUT ===================
 document.addEventListener('input', (e) => {
   const t = e.target;
+  if (t.dataset.sales && state.sales) {
+    const v = t.type === 'number' ? (t.value === '' ? null : Number(t.value)) : t.value;
+    setByPath(state.sales, t.dataset.sales, v);
+    updateSalesComputed();
+    return;
+  }
   if (!t.dataset.file || !t.dataset.key) return;
   let value;
   if (t.type === 'checkbox') value = t.checked;
@@ -698,6 +706,271 @@ async function loadSubscribers() {
   }
 }
 
+// =================== PANEL: INQUIRIES ===================
+const money = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const salesInput = (key, val, type = 'text') => `<input class="cell-input" type="${type}" data-sales="${escapeAttr(key)}" value="${escapeAttr(val ?? '')}" spellcheck="${type === 'text' ? 'true' : 'false'}">`;
+const salesSelect = (key, val, opts) => `<select class="cell-input" data-sales="${escapeAttr(key)}">${opts.map(o => `<option ${o === val ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+
+function renderSales() {
+  const root = $('[data-panel="sales"]');
+  root.innerHTML = `
+    <div class="section">
+      <h3>Leads <span class="muted">— inquiries on originals</span></h3>
+      <p class="tab-hint" style="margin:0 0 .6rem">New inquiry emails are added to your mailing list automatically (ones already on the list, including anyone who unsubscribed, are left alone).</p>
+      <div id="inq-note" class="muted" style="margin-bottom:.7rem"></div>
+      <div id="inq-table">Loading…</div>
+      <button class="btn" data-action="refresh-inquiries" style="margin-top:.7rem">Refresh</button>
+    </div>
+
+    <div class="section">
+      <h3>Fair-price calculator</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Suggests a target price = (size × base rate) + (hours × hourly rate) + materials. That's the Target Price; your markup below sets the List Price.</p>
+      <div class="calc-grid">
+        <div class="field"><label class="field-label">Width (in)</label><input type="number" id="calc-w"></div>
+        <div class="field"><label class="field-label">Height (in)</label><input type="number" id="calc-h"></div>
+        <div class="field"><label class="field-label">Hours spent</label><input type="number" id="calc-hours"></div>
+        <div class="field"><label class="field-label">Material cost ($)</label><input type="number" id="calc-material"></div>
+      </div>
+      <details class="calc-rates">
+        <summary>Rates &amp; material assumptions</summary>
+        <div class="calc-grid" style="margin-top:.7rem">
+          <div class="field"><label class="field-label">Base value ($/in²)</label><input type="number" id="calc-base" step="0.01"></div>
+          <div class="field"><label class="field-label">Hourly rate ($/hr)</label><input type="number" id="calc-hourly"></div>
+          <div class="field"><label class="field-label">Material est. ($/in²)</label><input type="number" id="calc-matrate" step="0.01"></div>
+        </div>
+        <p class="field-hint">Material cost is prefilled from size × the material rate. That ~$0.20/in² estimate assumes: canvas ~$0.08, stretcher bars ~$0.04, oil paint ~$0.06, gesso/medium ~$0.02 per in². Edit the rate or the dollar amount if you know the real cost.</p>
+      </details>
+      <div class="calc-result">
+        <div>Suggested target price: <strong id="calc-target">—</strong></div>
+        <div class="muted" id="calc-persqin"></div>
+      </div>
+    </div>
+
+    <div class="section" id="price-section"><h3>Price list</h3><div class="muted">Loading…</div></div>
+    <div class="section" id="sale-section"><h3>Sale record</h3><div class="muted">Loading…</div></div>
+  `;
+  loadInquiries();
+  wireCalculator();
+  loadSales();
+}
+
+function wireCalculator() {
+  const g = id => document.getElementById(id);
+  let rates;
+  try { rates = JSON.parse(localStorage.getItem('kadmin_calc_rates')); } catch { rates = null; }
+  rates = rates || { base: 0.50, hourly: 35, matrate: 0.20 };
+  g('calc-base').value = rates.base;
+  g('calc-hourly').value = rates.hourly;
+  g('calc-matrate').value = rates.matrate;
+  let materialTouched = false;
+  const recompute = () => {
+    const sqin = (Number(g('calc-w').value) || 0) * (Number(g('calc-h').value) || 0);
+    const base = Number(g('calc-base').value) || 0, hourly = Number(g('calc-hourly').value) || 0, matrate = Number(g('calc-matrate').value) || 0;
+    if (!materialTouched) g('calc-material').value = sqin ? round2(sqin * matrate) : '';
+    const material = Number(g('calc-material').value) || 0;
+    const hours = Number(g('calc-hours').value) || 0;
+    const target = sqin * base + hours * hourly + material;
+    g('calc-target').textContent = money(target);
+    g('calc-persqin').textContent = sqin ? `${money(target / sqin)} / in²  ·  ${sqin.toLocaleString()} in²` : '';
+    localStorage.setItem('kadmin_calc_rates', JSON.stringify({ base, hourly, matrate }));
+  };
+  ['calc-w', 'calc-h', 'calc-hours', 'calc-base', 'calc-hourly', 'calc-matrate'].forEach(id => g(id).addEventListener('input', recompute));
+  g('calc-material').addEventListener('input', () => { materialTouched = true; recompute(); });
+  recompute();
+}
+
+async function loadSales() {
+  try {
+    const r = await fetch(`${state.workerUrl}/api/sales`, {
+      method: 'POST', headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    state.sales = data.data || { markup: 135, priceList: [], saleRecord: [] };
+    if (typeof state.sales.markup !== 'number') state.sales.markup = 135;
+    if (!Array.isArray(state.sales.priceList)) state.sales.priceList = [];
+    if (!Array.isArray(state.sales.saleRecord)) state.sales.saleRecord = [];
+    state.salesOriginal = JSON.parse(JSON.stringify(state.sales));
+    renderPriceTable();
+    renderSaleTable();
+  } catch (err) {
+    const p = $('#price-section');
+    if (p) p.innerHTML = `<h3>Price list</h3><p class="error-text">Couldn’t load sales data: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderPriceTable() {
+  const sec = $('#price-section');
+  if (!sec || !state.sales) return;
+  const s = state.sales;
+  const markup = Number(s.markup) || 0;
+  sec.innerHTML = `
+    <h3>Price list</h3>
+    <div class="field" style="max-width:240px"><label class="field-label">Markup % (List = Target × this)</label><input type="number" data-sales="markup" value="${escapeAttr(s.markup)}"></div>
+    <div class="inq-scroll"><table class="sales-table"><thead><tr>
+      <th>Work</th><th>Year</th><th>Size (in²)</th><th>Target</th><th>List</th><th>Floor</th><th>Status</th><th>Sell</th><th>Notes</th><th></th>
+    </tr></thead><tbody>
+    ${s.priceList.map((r, i) => `<tr>
+      <td>${salesInput(`priceList.${i}.work`, r.work)}</td>
+      <td>${salesInput(`priceList.${i}.year`, r.year, 'number')}</td>
+      <td>${salesInput(`priceList.${i}.size`, r.size)}</td>
+      <td>${salesInput(`priceList.${i}.target`, r.target, 'number')}</td>
+      <td class="list-cell" data-list="${i}">${money(round2(r.target * markup / 100))}</td>
+      <td>${salesInput(`priceList.${i}.floor`, r.floor, 'number')}</td>
+      <td>${salesSelect(`priceList.${i}.status`, r.status || 'Available', ['Available', 'Sold', 'NFS'])}</td>
+      <td>${salesInput(`priceList.${i}.sell`, r.sell, 'number')}</td>
+      <td>${salesInput(`priceList.${i}.notes`, r.notes)}</td>
+      <td><button data-action="del-price" data-i="${i}" class="danger">✕</button></td>
+    </tr>`).join('')}
+    </tbody></table></div>
+    <button class="add-btn" data-action="add-price">+ Add work</button>
+    <div class="sales-save-bar"><button class="btn primary" data-action="save-sales" id="sales-save">Save sales data</button> <span id="sales-status" class="muted"></span></div>
+  `;
+}
+
+function renderSaleTable() {
+  const sec = $('#sale-section');
+  if (!sec || !state.sales) return;
+  const s = state.sales;
+  const total = s.saleRecord.reduce((a, r) => a + (Number(r.sell) || 0), 0);
+  sec.innerHTML = `
+    <h3>Sale record <span class="muted" style="font-weight:400">— Total sold: <strong id="sale-total">${money(total)}</strong></span></h3>
+    <div class="inq-scroll"><table class="sales-table"><thead><tr>
+      <th>Work</th><th>Year</th><th>Size</th><th>Sell</th><th>Sell date</th><th>Buyer name</th><th>Phone</th><th>Email</th><th>Notes</th><th></th>
+    </tr></thead><tbody>
+    ${s.saleRecord.map((r, i) => `<tr>
+      <td>${salesInput(`saleRecord.${i}.work`, r.work)}</td>
+      <td>${salesInput(`saleRecord.${i}.year`, r.year, 'number')}</td>
+      <td>${salesInput(`saleRecord.${i}.size`, r.size)}</td>
+      <td>${salesInput(`saleRecord.${i}.sell`, r.sell, 'number')}</td>
+      <td>${salesInput(`saleRecord.${i}.sellDate`, r.sellDate, 'date')}</td>
+      <td>${salesInput(`saleRecord.${i}.buyerName`, r.buyerName)}</td>
+      <td>${salesInput(`saleRecord.${i}.buyerPhone`, r.buyerPhone)}</td>
+      <td>${salesInput(`saleRecord.${i}.buyerEmail`, r.buyerEmail, 'email')}</td>
+      <td>${salesInput(`saleRecord.${i}.buyerNotes`, r.buyerNotes)}</td>
+      <td><button data-action="del-sale" data-i="${i}" class="danger">✕</button></td>
+    </tr>`).join('')}
+    </tbody></table></div>
+    <button class="add-btn" data-action="add-sale">+ Add sale</button>
+    <div class="sales-save-bar"><button class="btn primary" data-action="save-sales" id="sales-save2">Save sales data</button> <span id="sales-status2" class="muted"></span></div>
+  `;
+}
+
+// Recompute List Price cells + Total sold in place (no re-render → no focus loss).
+function updateSalesComputed() {
+  const s = state.sales;
+  if (!s) return;
+  const markup = Number(s.markup) || 0;
+  document.querySelectorAll('#price-section .list-cell').forEach(cell => {
+    const t = Number(s.priceList[Number(cell.dataset.list)]?.target) || 0;
+    cell.textContent = money(round2(t * markup / 100));
+  });
+  const totalEl = document.getElementById('sale-total');
+  if (totalEl) totalEl.textContent = money(s.saleRecord.reduce((a, r) => a + (Number(r.sell) || 0), 0));
+}
+
+async function saveSales() {
+  const setStatus = (msg, color) => ['sales-status', 'sales-status2'].forEach(id => { const e = document.getElementById(id); if (e) { e.textContent = msg; e.style.color = color || ''; } });
+  ['sales-save', 'sales-save2'].forEach(id => { const b = document.getElementById(id); if (b) { b.disabled = true; b.textContent = 'Saving…'; } });
+  try {
+    const r = await fetch(`${state.workerUrl}/api/sales-save`, {
+      method: 'POST', headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' }, body: JSON.stringify({ data: state.sales }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    state.salesOriginal = JSON.parse(JSON.stringify(state.sales));
+    setStatus('Saved ✓', 'var(--ok)');
+  } catch (err) {
+    setStatus(`Failed: ${err.message}`, 'var(--danger)');
+  } finally {
+    ['sales-save', 'sales-save2'].forEach(id => { const b = document.getElementById(id); if (b) { b.disabled = false; b.textContent = 'Save sales data'; } });
+  }
+}
+
+function renderInquiries() { renderSales(); } // legacy alias
+
+// =================== PANEL: ANALYTICS ===================
+function renderAnalytics() {
+  const root = $('[data-panel="analytics"]');
+  root.innerHTML = `
+    <div class="section">
+      <h3>Site analytics <span class="muted" id="an-range" style="font-weight:400;font-size:.85rem"></span></h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Live from Cloudflare Web Analytics — the last 30 days on kaylacarabes.com.</p>
+      <div id="an-body">Loading…</div>
+      <button class="btn" data-action="refresh-analytics" style="margin-top:.8rem">Refresh</button>
+    </div>
+  `;
+  loadAnalytics();
+}
+
+async function loadAnalytics() {
+  const body = $('#an-body');
+  const rangeEl = $('#an-range');
+  if (!body) return;
+  body.textContent = 'Loading…';
+  body.style.color = '';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/analytics`, {
+      method: 'POST', headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    if (rangeEl) rangeEl.textContent = `${data.range.from} → ${data.range.to}`;
+    const maxDay = Math.max(1, ...(data.byDay || []).map(d => d.pageviews));
+    const list = (rows, empty) => rows.length ? rows : null;
+    body.innerHTML = `
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">${(data.pageviews || 0).toLocaleString()}</div><div class="stat-label">Pageviews</div></div>
+        <div class="stat"><div class="stat-num">${(data.visits || 0).toLocaleString()}</div><div class="stat-label">Visits</div></div>
+      </div>
+      <h4>Pageviews by day</h4>
+      <div class="an-bars">${(data.byDay || []).map(d => `<div class="an-bar" title="${d.date}: ${d.pageviews} views"><span style="height:${Math.round(d.pageviews / maxDay * 100)}%"></span></div>`).join('') || '<span class="muted">No data yet.</span>'}</div>
+      <h4>Top pages</h4>
+      <div class="an-list">${list(data.topPages || [])
+        ? data.topPages.map(p => `<div class="an-list-row"><span>${escapeHtml(p.path || '/')}</span><b>${p.pageviews.toLocaleString()}</b></div>`).join('')
+        : '<span class="muted">No data yet.</span>'}</div>
+      <h4>Top referrers</h4>
+      <div class="an-list">${(data.topReferers || []).filter(x => x.host).length
+        ? data.topReferers.filter(x => x.host).map(p => `<div class="an-list-row"><span>${escapeHtml(p.host)}</span><b>${p.pageviews.toLocaleString()}</b></div>`).join('')
+        : '<span class="muted">Mostly direct traffic.</span>'}</div>
+    `;
+  } catch (err) {
+    body.innerHTML = `<p class="error-text">Couldn’t load analytics: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function loadInquiries() {
+  const table = $('#inq-table');
+  const note = $('#inq-note');
+  if (!table) return;
+  table.textContent = 'Loading…';
+  table.style.color = '';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/inquiries`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    const rows = data.rows || [];
+    if (note) note.textContent = data.added
+      ? `Added ${data.added} new email${data.added === 1 ? '' : 's'} to the mailing list.`
+      : 'No new emails to add.';
+    if (rows.length < 2) { table.innerHTML = '<span class="muted">No inquiries yet.</span>'; return; }
+    const header = rows[0];
+    const body = rows.slice(1);
+    table.innerHTML = `<div class="inq-scroll"><table class="inq-table">
+      <thead><tr>${header.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+      <tbody>${body.map(row => `<tr>${header.map((_, c) => `<td>${escapeHtml(row[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>`;
+  } catch (err) {
+    table.textContent = `Couldn’t load inquiries: ${err.message}`;
+    table.style.color = 'var(--danger)';
+  }
+}
+
 // =================== PANEL: CARD ===================
 function renderCard() {
   const root = $('[data-panel="card"]');
@@ -785,6 +1058,14 @@ document.addEventListener('click', (e) => {
 
     'send-newsletter': () => sendNewsletter(),
     'refresh-subscribers': () => loadSubscribers(),
+    'refresh-inquiries': () => loadInquiries(),
+
+    'add-price': () => { state.sales.priceList.push({ work: '', year: '', size: '', target: null, floor: null, status: 'Available', sell: null, notes: '' }); renderPriceTable(); },
+    'del-price': () => { if (confirm('Delete this row?')) { state.sales.priceList.splice(i, 1); renderPriceTable(); } },
+    'add-sale': () => { state.sales.saleRecord.push({ work: '', year: '', size: '', sell: null, sellDate: '', buyerName: '', buyerPhone: '', buyerEmail: '', buyerNotes: '' }); renderSaleTable(); },
+    'del-sale': () => { if (confirm('Delete this sale?')) { state.sales.saleRecord.splice(i, 1); renderSaleTable(); } },
+    'save-sales': () => saveSales(),
+    'refresh-analytics': () => loadAnalytics(),
 
     'add-cardlink': () => { cardLinks().push({ label: '', url: '' }); rerender(); },
     'del-cardlink': () => { state.files[FILE.card].links.splice(i, 1); rerender(); },

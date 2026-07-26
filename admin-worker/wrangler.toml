@@ -3,6 +3,12 @@ main = "worker.js"
 compatibility_date = "2024-11-01"
 
 # Which repo the admin commits to. (Secrets are set separately — see README.)
+# Private storage for the sales dashboard (price list + sale record).
+# One-time: `npx wrangler kv namespace create SALES` → paste the printed id below → redeploy.
+[[kv_namespaces]]
+binding = "SALES"
+id = "c87b874683d84ab296e6c88047c7a604"
+
 [vars]
 GH_OWNER = "Kjcarabes"
 GH_REPO = "kayla-portfolio"
@@ -10,6 +16,8 @@ GH_BRANCH = "main"
 # Instagram-login path (no Facebook Page). For the Facebook-Page path instead,
 # set this to "https://graph.facebook.com/v21.0".
 IG_API_BASE = "https://graph.instagram.com/v21.0"
+# Cloudflare Web Analytics site tag (already public in the site's beacon).
+CF_SITE_TAG = "c924106269a54cb584b22aaef454b221"
 
 # Secrets (do NOT put these here — set with `wrangler secret put`):
 #   GITHUB_TOKEN            — fine-grained PAT, this repo only, Contents: Read+Write
@@ -18,3 +26,5 @@ IG_API_BASE = "https://graph.instagram.com/v21.0"
 #   IG_ACCESS_TOKEN         — (optional) long-lived Instagram Graph API token
 #   NEWSLETTER_SEND_URL     — (optional) the newsletter-send Apps Script /exec URL
 #   NEWSLETTER_SEND_SECRET  — (optional) shared secret matching that script
+#   CF_API_TOKEN            — (optional) Cloudflare API token, Account Analytics: Read
+#   CF_ACCOUNT_ID           — (optional) Cloudflare account ID (for the analytics tab)
