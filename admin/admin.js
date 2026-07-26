@@ -6,9 +6,12 @@
  * photo to Instagram in the same action. No build step — plain vanilla JS.
  */
 
+// The deployed Cloudflare Worker (admin-worker/). Update here if it's redeployed.
+const WORKER_URL = 'https://kayla-admin.bb69z8ddnz.workers.dev';
+
 // =================== STATE ===================
 const state = {
-  workerUrl: localStorage.getItem('kadmin_worker_url') || '',
+  workerUrl: WORKER_URL,
   secret: localStorage.getItem('kadmin_secret') || '',
   files: {},           // path -> parsed JSON (edit target)
   original: {},        // path -> snapshot at load (change detection)
@@ -88,11 +91,11 @@ function updateDirtyStatus() {
 
 // =================== CONNECT ===================
 async function connect() {
-  const url = $('#worker-url').value.trim().replace(/\/$/, '');
+  const url = WORKER_URL;
   const secret = $('#admin-secret').value;
   const errEl = $('#connect-error');
   errEl.hidden = true;
-  if (!url || !secret) { errEl.textContent = 'Both fields are required.'; errEl.hidden = false; return; }
+  if (!secret) { errEl.textContent = 'Enter your password.'; errEl.hidden = false; return; }
 
   const btn = $('#connect-btn');
   btn.disabled = true; btn.textContent = 'Signing in…';
@@ -105,11 +108,9 @@ async function connect() {
     if (!r.ok) throw new Error(`Server error ${r.status}.`);
     const data = await r.json();
 
-    state.workerUrl = url;
     state.secret = secret;
     state.files = JSON.parse(JSON.stringify(data.files));
     state.original = JSON.parse(JSON.stringify(data.files));
-    localStorage.setItem('kadmin_worker_url', url);
     localStorage.setItem('kadmin_secret', secret);
 
     $('#connect-screen').hidden = true;
@@ -124,7 +125,6 @@ async function connect() {
   }
 }
 function disconnect() {
-  localStorage.removeItem('kadmin_worker_url');
   localStorage.removeItem('kadmin_secret');
   location.reload();
 }
@@ -690,11 +690,11 @@ function toast(html, cls) {
 }
 
 // =================== BOOT ===================
-$('#worker-url').value = state.workerUrl;
 $('#admin-secret').value = state.secret;
+$('#admin-secret').addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
 $('#connect-btn').onclick = connect;
 $('#logout-btn').onclick = disconnect;
 $('#save-btn').onclick = showSaveModal;
 $$('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
 
-if (state.workerUrl && state.secret) connect();
+if (state.secret) connect();

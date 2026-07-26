@@ -15,12 +15,8 @@
     <h1>Site Admin</h1>
     <p>Sign in to add work, edit the shop, and update the site.</p>
     <div class="field">
-      <label class="field-label" for="worker-url">Admin server URL</label>
-      <input type="url" id="worker-url" placeholder="https://kayla-admin.<subdomain>.workers.dev">
-    </div>
-    <div class="field">
       <label class="field-label" for="admin-secret">Password</label>
-      <input type="password" id="admin-secret" placeholder="Your admin password">
+      <input type="password" id="admin-secret" placeholder="Your admin password" autofocus>
     </div>
     <p id="connect-error" class="error-text" hidden></p>
     <button id="connect-btn" class="primary" style="width:100%">Sign in</button>

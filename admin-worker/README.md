@@ -28,8 +28,10 @@ npx wrangler secret put GITHUB_TOKEN      # paste the fine-grained PAT
 npx wrangler secret put ADMIN_PASSWORD    # the password Kayla will type
 ```
 
-The Worker URL it prints (e.g. `https://kayla-admin.<you>.workers.dev`) is what
-Kayla enters on the admin sign-in screen, once, on her device.
+The Worker URL is baked into the admin (`WORKER_URL` at the top of
+`admin/admin.js`) — currently `https://kayla-admin.bb69z8ddnz.workers.dev`. If
+you ever redeploy under a different name, update that one constant. Kayla only
+types her **password** on the sign-in screen.
 
 `GH_OWNER` / `GH_REPO` / `GH_BRANCH` are already set in `wrangler.toml`.
 
