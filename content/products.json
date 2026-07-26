@@ -148,16 +148,16 @@
       "workId": "Photonorphogenesis"
     },
     {
-      "id": "print:jimothy-takes-seattle",
+      "id": "prod_UxS71uezbrRC0P",
       "title": "Jimothy Takes Seattle",
       "category": "Prints",
       "price": 20,
       "image": "assets/images/img_5099.jpeg",
       "description": "Print",
-      "stripeLink": "",
-      "sold": true,
+      "stripeLink": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
+      "sold": false,
       "workId": "jimothy-takes-seattle",
-      "stockRemaining": 0
+      "stockRemaining": 300
     },
     {
       "id": "print:horses",
@@ -385,5 +385,5 @@
       "stockRemaining": 10
     }
   ],
-  "_lastSync": "2026-07-26T18:54:02.221Z"
+  "_lastSync": "2026-07-26T18:56:20.594Z"
 }
