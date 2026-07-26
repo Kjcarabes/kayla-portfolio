@@ -148,18 +148,6 @@
       "workId": "Photonorphogenesis"
     },
     {
-      "id": "prod_UxS71uezbrRC0P",
-      "title": "Jimothy Takes Seattle",
-      "category": "Prints",
-      "price": 20,
-      "image": "assets/images/img_5099.jpeg",
-      "description": "Print",
-      "stripeLink": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
-      "sold": false,
-      "workId": "jimothy-takes-seattle",
-      "stockRemaining": 300
-    },
-    {
       "id": "print:horses",
       "title": "Leavin' on the mind",
       "category": "Prints",
@@ -383,7 +371,19 @@
       "sold": false,
       "workId": "xochi",
       "stockRemaining": 10
+    },
+    {
+      "id": "prod_UxS71uezbrRC0P",
+      "title": "Jimothy Takes Seattle",
+      "category": "Prints",
+      "price": 20,
+      "image": "assets/images/img_5099.jpeg",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
+      "sold": false,
+      "workId": "jimothy-takes-seattle",
+      "stockRemaining": 300
     }
   ],
-  "_lastSync": "2026-07-26T18:56:20.594Z"
+  "_lastSync": "2026-07-26T19:01:46.317Z"
 }
