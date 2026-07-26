@@ -174,7 +174,7 @@ function switchTab(tab) {
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, about: renderAbout, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, about: renderAbout, newsletter: renderNewsletter, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -633,8 +633,31 @@ function renderSettings() {
       </div>
       <button class="add-btn" data-action="add-social">+ Add social link</button>
     </div>
+  `;
+}
+
+// =================== PANEL: NEWSLETTER ===================
+function renderNewsletter() {
+  const root = $('[data-panel="newsletter"]');
+  const f = FILE.settings;
+  root.innerHTML = `
     <div class="section">
-      <h3>Newsletter</h3>
+      <h3>Send a newsletter</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Emails everyone who has signed up. Sends from your Gmail; every message includes an unsubscribe link.</p>
+      <div class="field"><label class="field-label">Subject</label><input type="text" id="nl-subject" spellcheck="true"></div>
+      <div class="field"><label class="field-label">Message</label><textarea id="nl-body" rows="8" spellcheck="true" placeholder="Write your update…"></textarea></div>
+      <button class="btn primary" data-action="send-newsletter" id="nl-send">Send to subscribers</button>
+      <span id="nl-status" class="muted" style="margin-left:.7rem"></span>
+    </div>
+    <div class="section">
+      <h3>Recipients <span id="nl-count" class="muted"></span></h3>
+      <p class="tab-hint" style="margin:0 0 .6rem">Everyone currently subscribed — this is exactly who the message goes to.</p>
+      <div id="nl-recipients" class="nl-recipients muted">Loading subscribers…</div>
+      <button class="btn" data-action="refresh-subscribers" style="margin-top:.6rem">Refresh</button>
+    </div>
+    <div class="section">
+      <h3>Signup popup</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">The popup that invites visitors to join the mailing list.</p>
       ${checkbox(f, 'newsletter.enabled', 'Enabled')}
       ${input(f, 'newsletter.heading', 'Heading')}
       ${textarea(f, 'newsletter.message', 'Message', { rows: 2 })}
@@ -644,6 +667,35 @@ function renderSettings() {
       ${input(f, 'newsletter.showAfterDays', 'Show popup again after N days', { type: 'number' })}
     </div>
   `;
+  loadSubscribers();
+}
+
+// Pull the current subscriber list (via Worker → Apps Script) so Kayla sees who
+// a newsletter will reach before sending.
+async function loadSubscribers() {
+  const box = $('#nl-recipients');
+  const countEl = $('#nl-count');
+  if (!box) return;
+  box.textContent = 'Loading subscribers…';
+  box.style.color = '';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/subscribers`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    const emails = data.emails || [];
+    if (countEl) countEl.textContent = `(${emails.length})`;
+    box.style.color = '';
+    box.innerHTML = emails.length
+      ? emails.map(e => `<div class="nl-recipient">${escapeHtml(e)}</div>`).join('')
+      : '<span class="muted">No subscribers yet.</span>';
+  } catch (err) {
+    box.textContent = `Couldn’t load subscribers: ${err.message}`;
+    box.style.color = 'var(--danger)';
+  }
 }
 
 // =================== PANEL: CARD ===================
@@ -731,6 +783,9 @@ document.addEventListener('click', (e) => {
     'add-social': () => { socials().push({ name: '', url: '' }); rerender(); },
     'del-social': () => { state.files[FILE.settings].socialLinks.splice(i, 1); rerender(); },
 
+    'send-newsletter': () => sendNewsletter(),
+    'refresh-subscribers': () => loadSubscribers(),
+
     'add-cardlink': () => { cardLinks().push({ label: '', url: '' }); rerender(); },
     'del-cardlink': () => { state.files[FILE.card].links.splice(i, 1); rerender(); },
     'move-cardlink-up': () => { moveItem(state.files[FILE.card].links, i, -1); rerender(); },
@@ -750,6 +805,37 @@ document.addEventListener('toggle', (e) => {
 }, true);
 
 function rerender() { renderActiveTab(); recomputeDirty(); }
+
+// Compose + send a newsletter to all subscribers (via the Worker → Apps Script).
+// This is a direct action — it does NOT go through the save/commit flow.
+async function sendNewsletter() {
+  const subject = $('#nl-subject').value.trim();
+  const body = $('#nl-body').value.trim();
+  const status = $('#nl-status');
+  if (!subject || !body) { status.textContent = 'Add a subject and message first.'; status.style.color = 'var(--danger)'; return; }
+  if (!confirm('Send this to ALL newsletter subscribers? This cannot be undone.')) return;
+
+  const btn = $('#nl-send');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  status.textContent = ''; status.style.color = '';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/newsletter`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, body }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    status.textContent = `Sent to ${data.sent} subscriber${data.sent === 1 ? '' : 's'} ✓`;
+    status.style.color = 'var(--ok)';
+    $('#nl-subject').value = ''; $('#nl-body').value = '';
+  } catch (err) {
+    status.textContent = `Failed: ${err.message}`;
+    status.style.color = 'var(--danger)';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Send to subscribers';
+  }
+}
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
 // =================== SAVE ===================

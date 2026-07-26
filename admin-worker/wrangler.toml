@@ -12,7 +12,9 @@ GH_BRANCH = "main"
 IG_API_BASE = "https://graph.instagram.com/v21.0"
 
 # Secrets (do NOT put these here — set with `wrangler secret put`):
-#   GITHUB_TOKEN     — fine-grained PAT, this repo only, Contents: Read+Write
-#   ADMIN_PASSWORD   — the password Kayla types to log into /admin
-#   IG_USER_ID       — (optional) Instagram Business account ID, for auto-post
-#   IG_ACCESS_TOKEN  — (optional) long-lived Instagram Graph API token
+#   GITHUB_TOKEN            — fine-grained PAT, this repo only, Contents: Read+Write
+#   ADMIN_PASSWORD          — the password Kayla types to log into /admin
+#   IG_USER_ID              — (optional) Instagram Business account ID, for auto-post
+#   IG_ACCESS_TOKEN         — (optional) long-lived Instagram Graph API token
+#   NEWSLETTER_SEND_URL     — (optional) the newsletter-send Apps Script /exec URL
+#   NEWSLETTER_SEND_SECRET  — (optional) shared secret matching that script
