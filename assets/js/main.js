@@ -1350,12 +1350,12 @@ async function initCardPage() {
     });
 }
 
-// Card page newsletter signup — reuses the site's flow (same Google Apps Script
-// formAction, same FormData + no-cors POST, same success message + localStorage
-// flag) but rendered inline on /card instead of as the timed popup.
+// Card page mailing-list signup — a button that opens a popup with the email
+// field. Same flow as the site (Google Apps Script formAction, FormData +
+// no-cors POST, success message + localStorage flag).
 async function initCardNewsletter() {
-    const form = document.getElementById('card-newsletter');
-    if (!form) return;
+    const openBtn = document.getElementById('card-newsletter-open');
+    if (!openBtn) return;
     if (localStorage.getItem('newsletter_subscribed')) return;
 
     let nl;
@@ -1368,13 +1368,40 @@ async function initCardNewsletter() {
     }
     if (!nl || !nl.enabled || !nl.formAction) return;
 
-    const input = form.querySelector('input[type="email"]');
-    if (nl.placeholder) input.placeholder = nl.placeholder;
-    form.hidden = false;
+    openBtn.hidden = false;
+    openBtn.addEventListener('click', () => openCardNewsletterModal(nl));
+}
 
-    form.addEventListener('submit', async (e) => {
+function openCardNewsletterModal(nl) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'card-modal-backdrop';
+    backdrop.innerHTML = `
+        <div class="card-modal" role="dialog" aria-modal="true">
+            <button class="card-modal-close" aria-label="Close">&times;</button>
+            <h3>${nl.heading || 'Stay in the loop'}</h3>
+            <p>${nl.message || ''}</p>
+            <form class="card-modal-form">
+                <input type="email" name="email" placeholder="${nl.placeholder || 'your@email.com'}" required autocomplete="email" aria-label="Email address">
+                <button type="submit" class="card-link card-link--primary">${nl.buttonText || 'Subscribe'}</button>
+            </form>
+        </div>`;
+    document.body.appendChild(backdrop);
+
+    const close = () => {
+        backdrop.remove();
+        document.removeEventListener('keydown', onKey);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    backdrop.querySelector('.card-modal-close').addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+
+    const input = backdrop.querySelector('input[type="email"]');
+    input.focus();
+
+    backdrop.querySelector('.card-modal-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const btn = form.querySelector('button');
+        const btn = backdrop.querySelector('button[type="submit"]');
         const original = btn.textContent;
         btn.textContent = '...';
         btn.disabled = true;
@@ -1384,9 +1411,12 @@ async function initCardNewsletter() {
             fd.append('timestamp', new Date().toISOString());
             await fetch(nl.formAction, { method: 'POST', mode: 'no-cors', body: fd });
             localStorage.setItem('newsletter_subscribed', 'true');
-            form.hidden = true;
-            const msg = document.getElementById('card-newsletter-msg');
-            if (msg) { msg.textContent = nl.successMessage || 'Thanks for subscribing!'; msg.hidden = false; }
+            const modal = backdrop.querySelector('.card-modal');
+            modal.innerHTML = `<button class="card-modal-close" aria-label="Close">&times;</button><p style="margin-top:1rem">${nl.successMessage || 'Thanks for subscribing!'}</p>`;
+            modal.querySelector('.card-modal-close').addEventListener('click', close);
+            const openBtn = document.getElementById('card-newsletter-open');
+            if (openBtn) openBtn.hidden = true;
+            setTimeout(close, 2500);
         } catch (error) {
             console.error('Newsletter signup error:', error);
             btn.textContent = original;

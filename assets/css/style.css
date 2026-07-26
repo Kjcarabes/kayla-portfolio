@@ -1736,15 +1736,55 @@ img {
     opacity: 0.85;
 }
 
-.card-newsletter {
+.card-newsletter-open {
+    margin-top: 0.75rem;
+    cursor: pointer;
+    font-family: var(--font-main);
+}
+
+/* Mailing-list signup popup (opened from the card button) */
+.card-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1.5rem;
+}
+
+.card-modal {
+    position: relative;
     width: 100%;
+    max-width: 400px;
+    padding: 2.25rem 1.5rem 1.75rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.card-modal h3 {
+    font-family: var(--font-logo);
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.card-modal p {
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+.card-modal-form {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    margin-top: 0.75rem;
 }
 
-.card-newsletter-input {
+.card-modal-form input {
     width: 100%;
     padding: 1rem 1.25rem;
     border: 1px solid var(--color-border);
@@ -1755,21 +1795,25 @@ img {
     text-align: center;
 }
 
-.card-newsletter-input::placeholder {
+.card-modal-form input::placeholder {
     color: var(--color-text-light);
 }
 
-.card-newsletter-btn {
+.card-modal-form .card-link {
     cursor: pointer;
-    text-align: center;
     font-family: var(--font-main);
+    text-align: center;
 }
 
-.card-newsletter-msg {
-    width: 100%;
-    margin-top: 0.75rem;
-    padding: 1rem 1.25rem;
-    text-align: center;
+.card-modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.85rem;
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
     color: var(--color-text-light);
 }
 
