@@ -3,6 +3,20 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, featured, heroFeature",
   "works": [
     {
+      "id": "jimothy-takes-seattle",
+      "title": "Jimothy Takes Seattle",
+      "date": "2026-07-26",
+      "category": "Paintings",
+      "image": "assets/images/img_5099.jpeg",
+      "description": "Little Jimothy the racoon takes a little walk through Seattle!",
+      "size": "24x24",
+      "featured": false,
+      "heroFeature": false,
+      "originalStatus": "available",
+      "printPrice": 20,
+      "printStock": 0
+    },
+    {
       "id": "moon",
       "title": "Moon over Utopia",
       "date": "2026-01-10",
