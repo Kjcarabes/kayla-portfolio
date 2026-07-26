@@ -718,6 +718,7 @@ const salesTextarea = (key, val) => `<textarea class="cell-input cell-textarea" 
 function renderSales() {
   const root = $('[data-panel="sales"]');
   root.innerHTML = `
+    <div class="sales-total-banner" id="sales-total-banner">💰 Total made: … 🤑</div>
     <div class="section">
       <h3>Leads <span class="muted">— inquiries on originals</span></h3>
       <p class="tab-hint" style="margin:0 0 .6rem">New inquiry emails are added to your mailing list automatically (ones already on the list, including anyone who unsubscribed, are left alone).</p>
@@ -797,6 +798,7 @@ async function loadSales() {
     state.salesOriginal = JSON.parse(JSON.stringify(state.sales));
     renderPriceTable();
     renderSaleTable();
+    updateTotalBanner();
   } catch (err) {
     const p = $('#price-section');
     if (p) p.innerHTML = `<h3>Price list</h3><p class="error-text">Couldn’t load sales data: ${escapeHtml(err.message)}</p>`;
@@ -858,6 +860,7 @@ function renderSaleTable() {
     <button class="add-btn" data-action="add-sale">+ Add sale</button>
     <div class="sales-save-bar"><button class="btn primary" data-action="save-sales" id="sales-save2">Save sales data</button> <span id="sales-status2" class="muted"></span></div>
   `;
+  updateTotalBanner();
 }
 
 // Recompute List Price cells + Total sold in place (no re-render → no focus loss).
@@ -871,6 +874,14 @@ function updateSalesComputed() {
   });
   const totalEl = document.getElementById('sale-total');
   if (totalEl) totalEl.textContent = money(s.saleRecord.reduce((a, r) => a + (Number(r.sell) || 0), 0));
+  updateTotalBanner();
+}
+
+function updateTotalBanner() {
+  const el = document.getElementById('sales-total-banner');
+  if (!el || !state.sales) return;
+  const total = (state.sales.saleRecord || []).reduce((a, r) => a + (Number(r.sell) || 0), 0);
+  el.textContent = `💰 Total made: ${money(total)} 🤑`;
 }
 
 async function saveSales() {

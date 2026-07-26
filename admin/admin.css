@@ -175,6 +175,20 @@ details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
 .inq-table tr:last-child td { border-bottom: none; }
 .inq-table th:last-child, .inq-table td:last-child { border-right: none; }
 
+/* Sales — big "total made" banner */
+.sales-total-banner {
+  background: linear-gradient(90deg, #159a4f, #2ecc71);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-align: center;
+  letter-spacing: .01em;
+  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  margin-bottom: 1.3rem;
+  box-shadow: 0 4px 16px rgba(21, 154, 79, .3);
+}
+
 /* Sales dashboard — editable price list / sale record grids */
 .sales-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .sales-table thead th { background: #eef2f8; font-weight: 600; white-space: nowrap; text-align: left; padding: .6rem .6rem; border-bottom: 2px solid var(--border); position: sticky; top: 0; }
