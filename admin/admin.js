@@ -15,9 +15,11 @@ const state = {
   secret: localStorage.getItem('kadmin_secret') || '',
   files: {},           // path -> parsed JSON (edit target)
   original: {},        // path -> snapshot at load (change detection)
+  baseShas: {},        // path -> git blob SHA at load (optimistic-lock guard)
   pendingImages: [],   // { path, base64, contentType, dataUrl }
   pendingInstagram: null, // { imagePath, caption } set by the add-work flow
   dirty: new Set(),
+  openWorks: new Set(), // which work rows are expanded (survives re-render)
   activeTab: 'works',
 };
 
@@ -25,11 +27,31 @@ const FILE = {
   works: 'content/works.json',
   blog: 'content/blog.json',
   shop: 'content/shop-items.json',
+  about: 'content/about.json',
   settings: 'content/site-settings.json',
   card: 'content/card.json',
 };
 
 const SITE = 'https://www.kaylacarabes.com';
+
+// A little love note in the top banner — random each load, greeting is time-aware.
+function cuteMessage() {
+  const h = new Date().getHours();
+  const tod = h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'night';
+  const msgs = [
+    `good ${tod} beauuuuuutiful ❤️`,
+    `hey there, you're lookin' my t fyne 😮‍💨`,
+    `hey there sexy, uploading art? 👀`,
+    `I love u honeybear 🍯🐻`,
+    `you're totally the sesame ball 🥮`,
+    `hey baby, nice art you got there 😘`,
+    'hey love 😗'
+  ];
+  return msgs[Math.floor(Math.random() * msgs.length)];
+}
+
+// Inline Instagram glyph (CSP-safe — no external image), gradient-tinted.
+const IG_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-3px"><defs><linearGradient id="iggrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".45" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5.5" fill="none" stroke="url(#iggrad)" stroke-width="2"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="url(#iggrad)" stroke-width="2"/><circle cx="17.6" cy="6.4" r="1.4" fill="url(#iggrad)"/></svg>';
 
 // =================== UTIL ===================
 const $ = (s, el = document) => el.querySelector(s);
@@ -111,6 +133,7 @@ async function connect() {
     state.secret = secret;
     state.files = JSON.parse(JSON.stringify(data.files));
     state.original = JSON.parse(JSON.stringify(data.files));
+    state.baseShas = data.shas || {};
     localStorage.setItem('kadmin_secret', secret);
 
     $('#connect-screen').hidden = true;
@@ -137,7 +160,7 @@ function switchTab(tab) {
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, about: renderAbout, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -171,6 +194,18 @@ function checkbox(file, key, label) {
       <input type="checkbox" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" ${v ? 'checked' : ''}> ${escapeHtml(label)}
     </label>`;
 }
+// Text input with autocomplete suggestions — lets Kayla pick an existing value
+// or type a brand-new one (used for categories).
+function datalistInput(file, key, label, options, opts = {}) {
+  const v = getByPath(state.files[file], key) ?? '';
+  const listId = `dl-${String(key).replace(/[^a-z0-9]/gi, '')}`;
+  return `<div class="field">
+      <label class="field-label">${escapeHtml(label)}</label>
+      <input type="text" list="${listId}" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v)}" ${opts.placeholder ? `placeholder="${escapeAttr(opts.placeholder)}"` : ''}>
+      <datalist id="${listId}">${options.map(o => `<option value="${escapeAttr(o)}"></option>`).join('')}</datalist>
+    </div>`;
+}
+
 function imageField(file, key, label) {
   const path = getByPath(state.files[file], key) || '';
   const src = imgPreviewSrc(path);
@@ -228,6 +263,7 @@ document.addEventListener('change', async (e) => {
 
 // =================== PANEL: WORKS ===================
 const CATEGORY_OPTS = [{ value: 'Paintings', label: 'Paintings' }, { value: 'Etchings', label: 'Etchings' }];
+const CATEGORY_LIST = ['Paintings', 'Etchings'];
 const STATUS_OPTS = [
   { value: 'available', label: 'Available (for sale)' },
   { value: 'sold', label: 'Sold' },
@@ -243,7 +279,7 @@ function renderWorks() {
       <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram in the same step — image sizes are generated automatically after publishing.</p>
     </div>
     ${works.map((w, i) => `
-      <details class="list-item">
+      <details class="list-item" data-work-id="${escapeAttr(w.id)}" ${state.openWorks.has(w.id) ? 'open' : ''}>
         <summary class="list-item-header">
           <span class="summary-main">
             <span class="summary-caret">▶</span>
@@ -273,7 +309,7 @@ function workFields(i) {
     </div>
     <div class="field-row">
       ${input(f, `${p}.date`, 'Date', { type: 'date' })}
-      ${select(f, `${p}.category`, 'Category', CATEGORY_OPTS)}
+      ${datalistInput(f, `${p}.category`, 'Category (pick or type a new one)', CATEGORY_LIST)}
     </div>
     <div class="field-row">
       ${input(f, `${p}.medium`, 'Medium', { placeholder: 'Oil on canvas' })}
@@ -292,7 +328,17 @@ function workFields(i) {
       ${input(f, `${p}.printPrice`, 'Print price ($ — 0 or blank = sold out)', { type: 'number' })}
       ${input(f, `${p}.printStock`, 'Print stock (blank = unlimited)', { type: 'number' })}
     </div>
-    ${input(f, `${p}.printDescription`, 'Print description', { placeholder: 'Print' })}
+    <div class="field-row">
+      ${input(f, `${p}.printDescription`, 'Print description', { placeholder: 'Print' })}
+      ${input(f, `${p}.printOrder`, 'Print sort order (lower = first)', { type: 'number' })}
+    </div>
+    <h4>Extra detail images (shown on this work’s own page)</h4>
+    ${(getByPath(state.files[f], `${p}.detail_images`) || []).map((_, j) => `
+      <div style="display:flex;gap:.5rem;align-items:flex-start">
+        <div style="flex:1">${imageField(f, `${p}.detail_images.${j}`, `Detail image ${j + 1}`)}</div>
+        <button data-action="del-detail-img" data-i="${i}" data-j="${j}" class="danger" style="margin-top:1.5rem">Remove</button>
+      </div>`).join('')}
+    <button class="add-btn" data-action="add-detail-img" data-i="${i}">+ Add detail image</button>
   `;
 }
 
@@ -303,6 +349,7 @@ function showAddWorkModal() {
   root.innerHTML = `
     <div class="modal-backdrop">
       <div class="modal">
+        <button class="modal-close" id="aw-x" aria-label="Close">&times;</button>
         <h2>Add a new work</h2>
         <div id="aw-image">${'' /* filled below */}</div>
         <div class="field"><label class="field-label">Title</label><input type="text" id="aw-title"></div>
@@ -323,13 +370,17 @@ function showAddWorkModal() {
           </div>
           <div class="field"><label class="field-label">Print price ($, blank = none)</label><input type="number" id="aw-printprice"></div>
         </div>
+        <div class="field-row">
+          <div class="field"><label class="field-label">Print stock / edition size (blank = unlimited)</label><input type="number" id="aw-printstock"></div>
+          <div class="field"><label class="field-label">Print note (optional)</label><input type="text" id="aw-printdesc" placeholder="e.g. Made to order — ships in ~2 weeks"></div>
+        </div>
         <div>
           <label class="field-checkbox"><input type="checkbox" id="aw-featured"> Featured on home</label>
           <label class="field-checkbox"><input type="checkbox" id="aw-hero"> Hero slideshow</label>
         </div>
 
         <h4>Instagram</h4>
-        <label class="field-checkbox"><input type="checkbox" id="aw-ig" checked> Also post this photo to Instagram</label>
+        <label class="field-checkbox"><input type="checkbox" id="aw-ig" checked> ${IG_ICON} Also post this photo to Instagram</label>
         <div class="field"><label class="field-label">Caption</label><textarea id="aw-caption" rows="3"></textarea></div>
 
         <p id="aw-error" class="error-text" hidden></p>
@@ -375,6 +426,7 @@ function showAddWorkModal() {
   });
 
   $('#aw-cancel').onclick = () => { root.innerHTML = ''; };
+  $('#aw-x').onclick = () => { root.innerHTML = ''; };
   $('#aw-publish').onclick = () => submitAddWork(picked);
 }
 
@@ -390,6 +442,8 @@ function submitAddWork(picked) {
   if (existingIds.has(id)) { let n = 2; while (existingIds.has(`${id}-${n}`)) n++; id = `${id}-${n}`; }
 
   const printPrice = $('#aw-printprice').value === '' ? undefined : Number($('#aw-printprice').value);
+  const printStock = $('#aw-printstock').value === '' ? undefined : Number($('#aw-printstock').value);
+  const printDesc = $('#aw-printdesc').value.trim() || undefined;
   const work = {
     id, title,
     date: $('#aw-date').value || undefined,
@@ -403,6 +457,8 @@ function submitAddWork(picked) {
     originalStatus: $('#aw-status').value,
   };
   if (printPrice !== undefined) work.printPrice = printPrice;
+  if (printStock !== undefined) work.printStock = printStock;
+  if (printDesc) work.printDescription = printDesc;
   Object.keys(work).forEach(k => work[k] === undefined && delete work[k]);
 
   works.unshift(work);
@@ -431,7 +487,7 @@ function renderBlog() {
           <span class="summary-main">
             <span class="summary-caret">▶</span>
             ${post.images && post.images[0] ? `<img class="row-thumb" src="${escapeAttr(imgPreviewSrc(post.images[0]))}" alt="" loading="lazy">` : ''}
-            <span class="list-item-title">${escapeHtml(post.id || `Post ${i + 1}`)} <span class="muted">· ${escapeHtml(post.date || '')}</span></span>
+            <span class="list-item-title">${escapeHtml(post.title || post.id || `Post ${i + 1}`)} <span class="muted">· ${escapeHtml(post.date || '')}</span></span>
           </span>
           <span class="list-item-actions">
             <button data-action="move-blog-up" data-i="${i}">↑</button>
@@ -439,8 +495,9 @@ function renderBlog() {
             <button data-action="del-blog" data-i="${i}" class="danger">Delete</button>
           </span>
         </summary>
+        ${input(f, `posts.${i}.title`, 'Title (heading shown on the post)')}
         <div class="field-row">
-          ${input(f, `posts.${i}.id`, 'Title / ID')}
+          ${input(f, `posts.${i}.id`, 'ID (internal identifier)')}
           ${input(f, `posts.${i}.date`, 'Date', { type: 'date' })}
         </div>
         ${textarea(f, `posts.${i}.content`, 'Content', { rows: 4 })}
@@ -495,6 +552,37 @@ function renderShop() {
         </div>
       </details>
     `).join('')}
+  `;
+}
+
+// =================== PANEL: ABOUT ===================
+function renderAbout() {
+  const root = $('[data-panel="about"]');
+  const f = FILE.about;
+  const ex = getByPath(state.files[f], 'exhibitions') || [];
+  root.innerHTML = `
+    <div class="section">
+      <h3>Bio</h3>
+      ${textarea(f, 'bio', 'Bio (shown on the About page)', { rows: 7 })}
+    </div>
+    <div class="section">
+      <h3>Exhibitions</h3>
+      <div>${ex.map((x, i) => `
+        <div class="list-item">
+          <div class="list-item-header">
+            <div class="list-item-title">${escapeHtml(x.title || `Exhibition ${i + 1}`)}</div>
+            <div class="list-item-actions">
+              <button data-action="move-ex-up" data-i="${i}">↑</button>
+              <button data-action="move-ex-down" data-i="${i}">↓</button>
+              <button data-action="del-ex" data-i="${i}" class="danger">Delete</button>
+            </div>
+          </div>
+          ${input(f, `exhibitions.${i}.title`, 'Title')}
+          ${input(f, `exhibitions.${i}.details`, 'Details (venue | date)')}
+        </div>`).join('')}
+      </div>
+      <button class="add-btn" data-action="add-ex">+ Add exhibition</button>
+    </div>
   `;
 }
 
@@ -592,6 +680,7 @@ document.addEventListener('click', (e) => {
   const works = getByPath(state.files[FILE.works], 'works');
   const blog = getByPath(state.files[FILE.blog], 'posts');
   const shopItems = getByPath(state.files[FILE.shop], 'items');
+  const exhibitions = () => (state.files[FILE.about].exhibitions ||= []);
   const socials = () => (state.files[FILE.settings].socialLinks ||= []);
   const cardLinks = () => (state.files[FILE.card].links ||= []);
 
@@ -600,8 +689,10 @@ document.addEventListener('click', (e) => {
     'del-work': () => { if (confirm('Delete this work?')) { works.splice(i, 1); rerender(); } },
     'move-work-up': () => { moveItem(works, i, -1); rerender(); },
     'move-work-down': () => { moveItem(works, i, 1); rerender(); },
+    'add-detail-img': () => { (works[i].detail_images ||= []).push(''); rerender(); },
+    'del-detail-img': () => { works[i].detail_images.splice(j, 1); rerender(); },
 
-    'add-blog': () => { blog.unshift({ id: 'New post', date: todayStr(), images: [], content: '' }); rerender(); },
+    'add-blog': () => { blog.unshift({ id: 'new-post', title: '', date: todayStr(), images: [], content: '' }); rerender(); },
     'del-blog': () => { if (confirm('Delete this post?')) { blog.splice(i, 1); rerender(); } },
     'move-blog-up': () => { moveItem(blog, i, -1); rerender(); },
     'move-blog-down': () => { moveItem(blog, i, 1); rerender(); },
@@ -610,6 +701,11 @@ document.addEventListener('click', (e) => {
 
     'add-shop': () => { shopItems.push({ id: 'new-item', title: '', category: 'Crafts', price: 0, image: '', description: '', stock: 0, order: shopItems.length }); rerender(); },
     'del-shop': () => { if (confirm('Delete this item?')) { shopItems.splice(i, 1); rerender(); } },
+
+    'add-ex': () => { exhibitions().push({ title: '', details: '' }); rerender(); },
+    'del-ex': () => { state.files[FILE.about].exhibitions.splice(i, 1); rerender(); },
+    'move-ex-up': () => { moveItem(state.files[FILE.about].exhibitions, i, -1); rerender(); },
+    'move-ex-down': () => { moveItem(state.files[FILE.about].exhibitions, i, 1); rerender(); },
 
     'add-social': () => { socials().push({ name: '', url: '' }); rerender(); },
     'del-social': () => { state.files[FILE.settings].socialLinks.splice(i, 1); rerender(); },
@@ -621,6 +717,16 @@ document.addEventListener('click', (e) => {
   };
   if (handlers[action]) { handlers[action](); }
 });
+
+// Remember which work rows are expanded so a re-render (add image, reorder, etc.)
+// doesn't collapse the row you're editing. (toggle doesn't bubble → capture.)
+document.addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (d.tagName === 'DETAILS' && d.dataset.workId) {
+    if (d.open) state.openWorks.add(d.dataset.workId);
+    else state.openWorks.delete(d.dataset.workId);
+  }
+}, true);
 
 function rerender() { renderActiveTab(); recomputeDirty(); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -644,6 +750,7 @@ function showSaveModal() {
   const root = $('#modal-root');
   root.innerHTML = `
     <div class="modal-backdrop"><div class="modal">
+      <button class="modal-close" id="save-x" aria-label="Close">&times;</button>
       <h2>Publish changes?</h2>
       <p class="muted">Commits to the site. It’ll be live in ~1–2 minutes (images get optimized automatically).</p>
       <ul class="changes-list">${summary.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
@@ -655,6 +762,7 @@ function showSaveModal() {
       </div>
     </div></div>`;
   $('#cancel-save').onclick = () => { root.innerHTML = ''; };
+  $('#save-x').onclick = () => { root.innerHTML = ''; };
   $('#confirm-save').onclick = () => doSave($('#commit-message').value.trim() || 'Update site via admin', $('#confirm-save'));
 }
 
@@ -662,7 +770,7 @@ async function doSave(message, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
   const files = [...state.dirty].map(path => ({ path, content: JSON.stringify(state.files[path], null, 2) + '\n' }));
   const images = state.pendingImages.map(img => ({ path: img.path, base64: img.base64 }));
-  const payload = { message, files, images };
+  const payload = { message, files, images, baseShas: state.baseShas };
   if (state.pendingInstagram) payload.instagram = state.pendingInstagram;
 
   try {
@@ -675,6 +783,7 @@ async function doSave(message, btn) {
     if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
 
     state.original = JSON.parse(JSON.stringify(state.files));
+    if (data.newShas) state.baseShas = { ...state.baseShas, ...data.newShas };
     state.pendingImages = [];
     const ig = state.pendingInstagram ? data.instagram : null;
     state.pendingInstagram = null;
@@ -708,5 +817,8 @@ $('#connect-btn').onclick = connect;
 $('#logout-btn').onclick = disconnect;
 $('#save-btn').onclick = showSaveModal;
 $$('.tab').forEach(t => t.onclick = () => switchTab(t.dataset.tab));
+
+const _cute = cuteMessage();
+$$('.cute-banner').forEach(el => { el.textContent = _cute; });
 
 if (state.secret) connect();

@@ -265,8 +265,60 @@ async function loadSiteSettings() {
     if (settings) applySiteSettings(settings);
 }
 
+// About page: render bio + exhibitions from content/about.json (the HTML holds a
+// no-JS/SEO fallback that this replaces).
+async function initAbout() {
+    const bioEl = document.getElementById('about-bio');
+    const exEl = document.getElementById('exhibitions-list');
+    if (!bioEl && !exEl) return;
+    let data;
+    try {
+        data = await (await fetch('content/about.json')).json();
+    } catch (err) {
+        console.error('Error loading about content:', err);
+        return;
+    }
+    if (bioEl && data.bio) bioEl.textContent = data.bio;
+    if (exEl && Array.isArray(data.exhibitions)) {
+        exEl.innerHTML = '';
+        data.exhibitions.forEach(x => {
+            const li = document.createElement('li');
+            const t = document.createElement('span'); t.className = 'exhibition-title'; t.textContent = x.title || '';
+            const d = document.createElement('span'); d.className = 'exhibition-details'; d.textContent = x.details || '';
+            li.append(t, d);
+            exEl.appendChild(li);
+        });
+    }
+}
+
+// Keep the JSON-LD Person node (structured data for search/AI engines) in sync
+// with the editable social links + email, so changing them in one place updates
+// the SEO metadata too. Runs on every page; no-ops if there's no Person node.
+function syncPersonJsonLd(settings) {
+    const urls = (settings.socialLinks || []).map(s => s.url).filter(Boolean);
+    // Treat www/non-www and http/https as the same profile so we don't duplicate.
+    const norm = (u) => String(u).replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase();
+    document.querySelectorAll('script[type="application/ld+json"]').forEach(tag => {
+        let data;
+        try { data = JSON.parse(tag.textContent); } catch { return; }
+        const nodes = data['@graph'] || [data];
+        let changed = false;
+        nodes.forEach(node => {
+            if (!node || node['@type'] !== 'Person') return;
+            const existing = Array.isArray(node.sameAs) ? node.sameAs : [];
+            const seen = new Set(existing.map(norm));
+            const additions = urls.filter(u => !seen.has(norm(u)));
+            if (additions.length) { node.sameAs = [...existing, ...additions]; changed = true; }
+            if (settings.email && node.email !== `mailto:${settings.email}`) { node.email = `mailto:${settings.email}`; changed = true; }
+        });
+        if (changed) tag.textContent = JSON.stringify(data);
+    });
+}
+
 // Apply settings to the page
 function applySiteSettings(settings) {
+    syncPersonJsonLd(settings);
+
     // Update all footer social links
     document.querySelectorAll('.social-links').forEach(container => {
         container.innerHTML = '';
@@ -1427,6 +1479,7 @@ function openCardNewsletterModal(nl) {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSiteSettings();
+    initAbout();
     initCardPage();
     initCardNewsletter();
     initHeroSlideshow();
