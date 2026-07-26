@@ -19,7 +19,7 @@ const state = {
   pendingImages: [],   // { path, base64, contentType, dataUrl }
   pendingInstagram: null, // { imagePath, caption } set by the add-work flow
   dirty: new Set(),
-  openWorks: new Set(), // which work rows are expanded (survives re-render)
+  openRows: new Set(), // which rows are expanded (survives re-render), keyed "tab:id"
   activeTab: 'works',
 };
 
@@ -43,7 +43,7 @@ function cuteMessage() {
     `hey there, you're lookin' my t fyne 😮‍💨`,
     `hey there sexy, uploading art? 👀`,
     `I love u honeybear 🍯🐻`,
-    `you're totally the sesame ball 🥮`,
+    `you're totally the sesame ball 🍘`,
     `hey baby, nice art you got there 😘`,
     'hey love 😗'
   ];
@@ -82,6 +82,20 @@ function imgPreviewSrc(path) {
   if (!path) return '';
   const pending = state.pendingImages.find(p => p.path === path);
   if (pending) return pending.dataUrl;
+  return `${SITE}/${path}`;
+}
+
+// Small thumbnail source: use the optimized WebP variant when one exists (so the
+// list doesn't download full-size originals). `widths` comes from works.json.
+function thumbSrc(path, widths) {
+  if (!path) return '';
+  const pending = state.pendingImages.find(p => p.path === path);
+  if (pending) return pending.dataUrl;
+  if (Array.isArray(widths) && widths.length) {
+    const w = Math.min(...widths);
+    const rel = path.replace(/^assets\/images\//, '').replace(/\.[^.]+$/, '');
+    return `${SITE}/assets/images/optimized/${rel}-${w}.webp`;
+  }
   return `${SITE}/${path}`;
 }
 
@@ -166,9 +180,13 @@ function renderActiveTab() {
 // =================== FIELD HELPERS ===================
 function input(file, key, label, opts = {}) {
   const v = getByPath(state.files[file], key) ?? '';
+  const type = opts.type || 'text';
+  // Spellcheck plain-text (prose) fields by default; off for urls/emails/numbers/dates
+  // and anywhere opts.spellcheck is explicitly false (IDs/slugs).
+  const spell = opts.spellcheck !== undefined ? opts.spellcheck : (type === 'text');
   return `<div class="field">
       <label class="field-label">${escapeHtml(label)}</label>
-      <input type="${opts.type || 'text'}" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v)}" ${opts.placeholder ? `placeholder="${escapeAttr(opts.placeholder)}"` : ''}>
+      <input type="${type}" spellcheck="${spell}" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v)}" ${opts.placeholder ? `placeholder="${escapeAttr(opts.placeholder)}"` : ''}>
       ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
     </div>`;
 }
@@ -176,7 +194,7 @@ function textarea(file, key, label, opts = {}) {
   const v = getByPath(state.files[file], key) ?? '';
   return `<div class="field">
       <label class="field-label">${escapeHtml(label)}</label>
-      <textarea data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" rows="${opts.rows || 4}">${escapeHtml(v)}</textarea>
+      <textarea spellcheck="true" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" rows="${opts.rows || 4}">${escapeHtml(v)}</textarea>
     </div>`;
 }
 function select(file, key, label, options) {
@@ -201,7 +219,7 @@ function datalistInput(file, key, label, options, opts = {}) {
   const listId = `dl-${String(key).replace(/[^a-z0-9]/gi, '')}`;
   return `<div class="field">
       <label class="field-label">${escapeHtml(label)}</label>
-      <input type="text" list="${listId}" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v)}" ${opts.placeholder ? `placeholder="${escapeAttr(opts.placeholder)}"` : ''}>
+      <input type="text" spellcheck="false" list="${listId}" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v)}" ${opts.placeholder ? `placeholder="${escapeAttr(opts.placeholder)}"` : ''}>
       <datalist id="${listId}">${options.map(o => `<option value="${escapeAttr(o)}"></option>`).join('')}</datalist>
     </div>`;
 }
@@ -279,11 +297,11 @@ function renderWorks() {
       <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram in the same step — image sizes are generated automatically after publishing.</p>
     </div>
     ${works.map((w, i) => `
-      <details class="list-item" data-work-id="${escapeAttr(w.id)}" ${state.openWorks.has(w.id) ? 'open' : ''}>
+      <details class="list-item" data-open-key="works:${escapeAttr(w.id)}" ${state.openRows.has(`works:${w.id}`) ? 'open' : ''}>
         <summary class="list-item-header">
           <span class="summary-main">
             <span class="summary-caret">▶</span>
-            <img class="row-thumb" src="${escapeAttr(imgPreviewSrc(w.image))}" alt="" loading="lazy">
+            <img class="row-thumb" src="${escapeAttr(thumbSrc(w.image, w.widths))}" alt="" loading="lazy" width="42" height="42">
             <span class="list-item-title">${escapeHtml(w.title || w.id || `Work ${i + 1}`)} <span class="muted">· ${escapeHtml(w.originalStatus || '')}</span></span>
           </span>
           <span class="list-item-actions">
@@ -305,7 +323,7 @@ function workFields(i) {
     ${imageField(f, `${p}.image`, 'Image')}
     <div class="field-row">
       ${input(f, `${p}.title`, 'Title')}
-      ${input(f, `${p}.id`, 'ID (URL slug — keep unique)')}
+      ${input(f, `${p}.id`, 'ID (URL slug — keep unique)', { spellcheck: false })}
     </div>
     <div class="field-row">
       ${input(f, `${p}.date`, 'Date', { type: 'date' })}
@@ -352,7 +370,7 @@ function showAddWorkModal() {
         <button class="modal-close" id="aw-x" aria-label="Close">&times;</button>
         <h2>Add a new work</h2>
         <div id="aw-image">${'' /* filled below */}</div>
-        <div class="field"><label class="field-label">Title</label><input type="text" id="aw-title"></div>
+        <div class="field"><label class="field-label">Title</label><input type="text" id="aw-title" spellcheck="true"></div>
         <div class="field-row">
           <div class="field"><label class="field-label">Date</label><input type="date" id="aw-date" value="${today}"></div>
           <div class="field"><label class="field-label">Category</label>
@@ -360,10 +378,10 @@ function showAddWorkModal() {
           </div>
         </div>
         <div class="field-row">
-          <div class="field"><label class="field-label">Medium</label><input type="text" id="aw-medium" placeholder="Oil on canvas"></div>
+          <div class="field"><label class="field-label">Medium</label><input type="text" id="aw-medium" placeholder="Oil on canvas" spellcheck="true"></div>
           <div class="field"><label class="field-label">Size</label><input type="text" id="aw-size" placeholder="16in x 20in"></div>
         </div>
-        <div class="field"><label class="field-label">Description</label><textarea id="aw-description" rows="3"></textarea></div>
+        <div class="field"><label class="field-label">Description</label><textarea id="aw-description" rows="3" spellcheck="true"></textarea></div>
         <div class="field-row">
           <div class="field"><label class="field-label">Original status</label>
             <select id="aw-status">${STATUS_OPTS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select>
@@ -372,7 +390,7 @@ function showAddWorkModal() {
         </div>
         <div class="field-row">
           <div class="field"><label class="field-label">Print stock / edition size (blank = unlimited)</label><input type="number" id="aw-printstock"></div>
-          <div class="field"><label class="field-label">Print note (optional)</label><input type="text" id="aw-printdesc" placeholder="e.g. Made to order — ships in ~2 weeks"></div>
+          <div class="field"><label class="field-label">Print note (optional)</label><input type="text" id="aw-printdesc" placeholder="e.g. Made to order — ships in ~2 weeks" spellcheck="true"></div>
         </div>
         <div>
           <label class="field-checkbox"><input type="checkbox" id="aw-featured"> Featured on home</label>
@@ -380,8 +398,8 @@ function showAddWorkModal() {
         </div>
 
         <h4>Instagram</h4>
-        <label class="field-checkbox"><input type="checkbox" id="aw-ig" checked> ${IG_ICON} Also post this photo to Instagram</label>
-        <div class="field"><label class="field-label">Caption</label><textarea id="aw-caption" rows="3"></textarea></div>
+        <label class="field-checkbox"><input type="checkbox" id="aw-ig" checked> ${IG_ICON} Also post this photo to Instagram <span class="muted">(JPG only)</span></label>
+        <div class="field"><label class="field-label">Caption</label><textarea id="aw-caption" rows="3" spellcheck="true"></textarea></div>
 
         <p id="aw-error" class="error-text" hidden></p>
         <div class="modal-actions">
@@ -396,7 +414,7 @@ function showAddWorkModal() {
       <label class="field-label">Image (required)</label>
       <div class="image-picker">
         <div class="image-preview" id="aw-preview">No image</div>
-        <div class="image-controls"><input type="file" accept="image/*" id="aw-file"><span class="image-path" id="aw-filename">Choose a JPG</span></div>
+        <div class="image-controls"><input type="file" accept="image/*" id="aw-file"><span class="image-path" id="aw-filename">JPG, PNG, etc. (JPG needed to auto-post to Instagram)</span></div>
       </div>
     </div>`;
 
@@ -465,8 +483,11 @@ function submitAddWork(picked) {
   state.pendingImages = state.pendingImages.filter(p => p.path !== picked.path);
   state.pendingImages.push(picked);
 
-  if ($('#aw-ig').checked) {
+  const isJpg = /jpe?g$/i.test(picked.path) || picked.contentType === 'image/jpeg';
+  if ($('#aw-ig').checked && isJpg) {
     state.pendingInstagram = { imagePath: picked.path, caption: $('#aw-caption').value };
+  } else if ($('#aw-ig').checked && !isJpg) {
+    toast('Instagram only accepts JPGs — this will publish to the site but skip Instagram.', 'error');
   }
   recomputeDirty();
 
@@ -482,11 +503,11 @@ function renderBlog() {
   root.innerHTML = `
     <div class="section"><button class="btn primary big-add" data-action="add-blog">+ Add a blog post</button></div>
     ${posts.map((post, i) => `
-      <details class="list-item">
+      <details class="list-item" data-open-key="blog:${escapeAttr(post.id)}" ${state.openRows.has(`blog:${post.id}`) ? 'open' : ''}>
         <summary class="list-item-header">
           <span class="summary-main">
             <span class="summary-caret">▶</span>
-            ${post.images && post.images[0] ? `<img class="row-thumb" src="${escapeAttr(imgPreviewSrc(post.images[0]))}" alt="" loading="lazy">` : ''}
+            ${post.images && post.images[0] ? `<img class="row-thumb" src="${escapeAttr(thumbSrc(post.images[0]))}" alt="" loading="lazy" width="42" height="42">` : ''}
             <span class="list-item-title">${escapeHtml(post.title || post.id || `Post ${i + 1}`)} <span class="muted">· ${escapeHtml(post.date || '')}</span></span>
           </span>
           <span class="list-item-actions">
@@ -497,7 +518,7 @@ function renderBlog() {
         </summary>
         ${input(f, `posts.${i}.title`, 'Title (heading shown on the post)')}
         <div class="field-row">
-          ${input(f, `posts.${i}.id`, 'ID (internal identifier)')}
+          ${input(f, `posts.${i}.id`, 'ID (internal identifier)', { spellcheck: false })}
           ${input(f, `posts.${i}.date`, 'Date', { type: 'date' })}
         </div>
         ${textarea(f, `posts.${i}.content`, 'Content', { rows: 4 })}
@@ -525,11 +546,11 @@ function renderShop() {
       <p class="tab-hint" style="margin:.7rem 0 0">Only for <strong>crafts &amp; merch</strong> — paintings &amp; prints are managed automatically from Works, not here. Publishing builds the Stripe checkout for you.</p>
     </div>
     ${items.map((it, i) => it._example ? '' : `
-      <details class="list-item">
+      <details class="list-item" data-open-key="shop:${escapeAttr(it.id)}" ${state.openRows.has(`shop:${it.id}`) ? 'open' : ''}>
         <summary class="list-item-header">
           <span class="summary-main">
             <span class="summary-caret">▶</span>
-            ${it.image ? `<img class="row-thumb" src="${escapeAttr(imgPreviewSrc(it.image))}" alt="" loading="lazy">` : ''}
+            ${it.image ? `<img class="row-thumb" src="${escapeAttr(thumbSrc(it.image))}" alt="" loading="lazy" width="42" height="42">` : ''}
             <span class="list-item-title">${escapeHtml(it.title || it.id || `Item ${i + 1}`)}</span>
           </span>
           <span class="list-item-actions">
@@ -539,7 +560,7 @@ function renderShop() {
         ${imageField(f, `items.${i}.image`, 'Image')}
         <div class="field-row">
           ${input(f, `items.${i}.title`, 'Title')}
-          ${input(f, `items.${i}.id`, 'ID (unique)')}
+          ${input(f, `items.${i}.id`, 'ID (unique)', { spellcheck: false })}
         </div>
         <div class="field-row">
           ${input(f, `items.${i}.category`, 'Category', { placeholder: 'Crafts' })}
@@ -654,7 +675,7 @@ function renderCard() {
           </div>
           <div class="field-row">
             ${input(f, `links.${i}.label`, 'Label')}
-            ${input(f, `links.${i}.url`, 'URL')}
+            ${input(f, `links.${i}.url`, 'URL', { spellcheck: false })}
           </div>
           ${checkbox(f, `links.${i}.external`, 'Opens in new tab (external)')}
         </div>`).join('')}
@@ -722,9 +743,9 @@ document.addEventListener('click', (e) => {
 // doesn't collapse the row you're editing. (toggle doesn't bubble → capture.)
 document.addEventListener('toggle', (e) => {
   const d = e.target;
-  if (d.tagName === 'DETAILS' && d.dataset.workId) {
-    if (d.open) state.openWorks.add(d.dataset.workId);
-    else state.openWorks.delete(d.dataset.workId);
+  if (d.tagName === 'DETAILS' && d.dataset.openKey) {
+    if (d.open) state.openRows.add(d.dataset.openKey);
+    else state.openRows.delete(d.dataset.openKey);
   }
 }, true);
 

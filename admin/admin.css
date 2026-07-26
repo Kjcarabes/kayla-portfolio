@@ -102,7 +102,10 @@ a { color: var(--primary); }
 /* ── Fields ── */
 .field { margin-bottom: .85rem; }
 .field-label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .3rem; color: #374151; }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: .85rem; }
+/* Keep the two inputs in a row aligned even if one label wraps to two lines */
+.field-row .field { display: flex; flex-direction: column; margin-bottom: 0; }
+.field-row .field > input, .field-row .field > select { margin-top: auto; }
 input[type=text], input[type=url], input[type=email], input[type=tel],
 input[type=number], input[type=date], textarea, select {
   width: 100%; padding: .55rem .65rem;
