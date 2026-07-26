@@ -69,7 +69,7 @@ const passJson = {
   labelColor: 'rgb(160, 160, 160)',
   generic: {
     primaryFields: [
-      { key: 'role', label: '', value: 'Painter/Artist' },
+      { key: 'role', label: '', value: 'Painter' },
     ],
     secondaryFields: [
       { key: 'loc', label: 'BASED IN', value: 'Seattle, WA' },

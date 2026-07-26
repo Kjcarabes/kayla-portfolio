@@ -16,7 +16,6 @@
     { "label": "Shop originals & prints", "url": "/shop.html" },
     { "label": "Instagram — @kayla_carabes", "url": "https://instagram.com/kayla_carabes", "external": true },
     { "label": "LinkedIn", "url": "https://linkedin.com/in/kayla-carabes", "external": true },
-    { "label": "Email me", "url": "mailto:kjcarabes@gmail.com" },
-    { "label": "Visit the full website", "url": "/" }
+    { "label": "Email me", "url": "mailto:kjcarabes@gmail.com" }
   ]
 }

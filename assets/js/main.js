@@ -1350,9 +1350,55 @@ async function initCardPage() {
     });
 }
 
+// Card page newsletter signup — reuses the site's flow (same Google Apps Script
+// formAction, same FormData + no-cors POST, same success message + localStorage
+// flag) but rendered inline on /card instead of as the timed popup.
+async function initCardNewsletter() {
+    const form = document.getElementById('card-newsletter');
+    if (!form) return;
+    if (localStorage.getItem('newsletter_subscribed')) return;
+
+    let nl;
+    try {
+        const res = await fetch('/content/site-settings.json');
+        nl = (await res.json()).newsletter;
+    } catch (err) {
+        console.error('Error loading newsletter settings:', err);
+        return;
+    }
+    if (!nl || !nl.enabled || !nl.formAction) return;
+
+    const input = form.querySelector('input[type="email"]');
+    if (nl.placeholder) input.placeholder = nl.placeholder;
+    form.hidden = false;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button');
+        const original = btn.textContent;
+        btn.textContent = '...';
+        btn.disabled = true;
+        try {
+            const fd = new FormData();
+            fd.append('email', input.value);
+            fd.append('timestamp', new Date().toISOString());
+            await fetch(nl.formAction, { method: 'POST', mode: 'no-cors', body: fd });
+            localStorage.setItem('newsletter_subscribed', 'true');
+            form.hidden = true;
+            const msg = document.getElementById('card-newsletter-msg');
+            if (msg) { msg.textContent = nl.successMessage || 'Thanks for subscribing!'; msg.hidden = false; }
+        } catch (error) {
+            console.error('Newsletter signup error:', error);
+            btn.textContent = original;
+            btn.disabled = false;
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadSiteSettings();
     initCardPage();
+    initCardNewsletter();
     initHeroSlideshow();
     populateFeaturedWorks();
     populateAllWorks();

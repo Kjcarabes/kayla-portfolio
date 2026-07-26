@@ -92,6 +92,14 @@
             <div class="card-links-list" id="card-links-list"></div>
         </nav>
 
+        <!-- Newsletter signup — same backend + flow as the rest of the site (initCardNewsletter).
+             Hidden until JS confirms the newsletter is enabled and the visitor isn't already subscribed. -->
+        <form class="card-newsletter" id="card-newsletter" hidden>
+            <input class="card-newsletter-input" type="email" name="email" placeholder="your@email.com" required autocomplete="email" aria-label="Email address">
+            <button class="card-link card-newsletter-btn" type="submit">Sign up for my newsletter</button>
+        </form>
+        <p class="card-newsletter-msg" id="card-newsletter-msg" hidden></p>
+
         <p class="card-footer">&copy; <span id="year"></span> Kayla Carabes</p>
     </main>
 
