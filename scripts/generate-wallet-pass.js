@@ -63,13 +63,13 @@ const passJson = {
   serialNumber: 'kayla-carabes-card-1', // required; stable so re-runs update the same pass
   organizationName: 'Kayla Carabes',
   description: 'Kayla Carabes — Artist business card',
-  logoText: 'Kayla Carabes',
+  logoText: 'Painter',
   foregroundColor: 'rgb(250, 250, 250)',
   backgroundColor: 'rgb(26, 26, 26)',
   labelColor: 'rgb(160, 160, 160)',
   generic: {
     primaryFields: [
-      { key: 'role', label: '', value: 'Painter' },
+      { key: 'name', label: '', value: 'Kayla Carabes' },
     ],
     secondaryFields: [
       { key: 'loc', label: 'BASED IN', value: 'Seattle, WA' },
