@@ -13,3 +13,9 @@ Thumbs.db
 
 # Node tooling (image optimization, stripe sync)
 node_modules/
+
+# Apple Wallet pass signing — private certs + build scratch, never commit
+certs/
+.pass-build/
+
+.env

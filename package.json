@@ -6,7 +6,8 @@
   "scripts": {
     "optimize-images": "node scripts/optimize-images.js",
     "sync-products": "node scripts/sync-stripe-products.js",
-    "generate-seo": "node scripts/generate-seo.js"
+    "generate-seo": "node scripts/generate-seo.js",
+    "generate-pass": "node scripts/generate-wallet-pass.js"
   },
   "dependencies": {
     "sharp": "^0.33.5",

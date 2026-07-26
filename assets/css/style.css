@@ -1606,3 +1606,138 @@ img {
     font-size: 0.95rem;
     color: var(--color-text);
 }
+
+/* ===========================================
+   CARD / LINK-IN-BIO PAGE  (/card)
+   Standalone digital business card — the destination for the
+   printed/Wallet QR. Linktree-style, mobile-first, brand-matched.
+   Not linked from the site nav on purpose.
+   =========================================== */
+.card-page {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--spacing-lg) var(--spacing-md);
+}
+
+.card {
+    width: 100%;
+    max-width: 460px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.card-banner {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--color-border);
+}
+
+.card-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-banner-logo {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.card-photo {
+    width: 132px;
+    height: 132px;
+    margin-top: -66px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--color-bg);
+    background: var(--color-bg);
+    position: relative;
+    z-index: 1;
+}
+
+.card-name {
+    font-family: var(--font-logo);
+    font-size: 2.4rem;
+    font-weight: 600;
+    line-height: 1.1;
+    margin-top: var(--spacing-md);
+}
+
+.card-tagline {
+    color: var(--color-text-light);
+    letter-spacing: 0.02em;
+    margin-top: 0.4rem;
+}
+
+.card-location {
+    color: var(--color-text-light);
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+}
+
+.card-links {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: var(--spacing-lg);
+}
+
+/* JSON-driven link list injected by initCardPage() from content/card.json */
+.card-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.card-link {
+    display: block;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--color-border);
+    background: #fff;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    transition: transform 0.15s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Respect the `hidden` attribute (e.g. the Wallet button before the pass exists) —
+   the display:block above would otherwise override it. */
+.card-link[hidden] {
+    display: none;
+}
+
+.card-link:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-accent);
+}
+
+.card-link--primary {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+.card-link--primary:hover {
+    opacity: 0.85;
+}
+
+.card-footer {
+    margin-top: var(--spacing-lg);
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+}

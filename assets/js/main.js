@@ -1305,8 +1305,54 @@ function setupImageFadeIn() {
 }
 
 // Initialize based on current page
+// Card / link-in-bio page (/card): render the tappable link buttons from
+// content/card.json so links can be edited without touching HTML. Root-relative
+// fetch because this page lives in a /card/ subdirectory, unlike the root pages.
+async function initCardPage() {
+    const list = document.getElementById('card-links-list');
+    if (!list) return;
+
+    let data = {};
+    try {
+        const res = await fetch('/content/card.json');
+        data = await res.json();
+    } catch (err) {
+        console.error('Error loading card content:', err);
+    }
+
+    // Profile — override the HTML defaults (which stay as the no-JS/SEO fallback)
+    const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+    const setSrc = (id, val) => { const el = document.getElementById(id); if (el && val) el.src = val; };
+    setText('card-name', data.name);
+    setText('card-tagline', data.tagline);
+    setText('card-location', data.location);
+    setSrc('card-photo', data.photo);
+    setSrc('card-banner-img', data.featured);
+    setSrc('card-banner-logo', data.logo);
+    const photoEl = document.getElementById('card-photo');
+    if (photoEl && data.name) photoEl.alt = data.name;
+
+    const links = (Array.isArray(data.links) && data.links.length)
+        ? data.links
+        : [{ label: 'Visit the full website', url: '/' }];
+
+    list.innerHTML = '';
+    links.forEach(link => {
+        const a = document.createElement('a');
+        a.className = 'card-link';
+        a.href = link.url;
+        a.textContent = link.label;
+        if (link.external) {
+            a.target = '_blank';
+            a.rel = 'noopener';
+        }
+        list.appendChild(a);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadSiteSettings();
+    initCardPage();
     initHeroSlideshow();
     populateFeaturedWorks();
     populateAllWorks();
