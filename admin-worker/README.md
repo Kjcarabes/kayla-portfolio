@@ -112,6 +112,7 @@ pulls the recipient list on demand. Unsubscribes are recorded in **column C**;
 const SEND_SECRET = 'PUT_A_LONG_RANDOM_STRING_HERE'; // must match NEWSLETTER_SEND_SECRET
 const FROM_NAME = 'Kayla Carabes';
 const INQUIRIES_SHEET_ID = 'sheet_id'; // the separate "inquiries on originals" spreadsheet ID
+const NOTIFY_EMAILS = ['kjcarabes@gmail.com', 'jrstarkman@gmail.com']; // who gets emailed on a new inquiry
 
 function doPost(e) {
   // Newsletter actions = a JSON body carrying the secret (from the Worker).
@@ -123,9 +124,28 @@ function doPost(e) {
     if (payload.action === 'inquiries') return listInquiries();
     return sendNewsletter(payload);
   }
-  // Otherwise it's a signup from the site form (unchanged behavior).
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  sheet.appendRow([e.parameter.email, e.parameter.timestamp || new Date().toISOString()]);
+  // Otherwise it's a form POST from the site (one URL for both, by design).
+  var p = e.parameter || {};
+  if (p.name || p.productTitle || p.phone || p.message) return logInquiry(p); // an inquiry
+  // Plain newsletter signup (email only).
+  SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().appendRow([p.email, p.timestamp || new Date().toISOString()]);
+  return ContentService.createTextOutput('Success');
+}
+
+// A site inquiry → log to the inquiries sheet (8 cols) + email you.
+function logInquiry(p) {
+  var sheet = SpreadsheetApp.openById(INQUIRIES_SHEET_ID).getSheets()[0];
+  if (sheet.getLastRow() === 0) sheet.appendRow(['Timestamp', 'Name', 'Email', 'Phone', 'Preferred Contact', 'Artwork', 'Product ID', 'Message']);
+  sheet.appendRow([new Date(), p.name || '', p.email || '', p.phone || '', p.contactPreference || '', p.productTitle || '', p.productId || '', p.message || '']);
+  var subject = p.productTitle ? ('New artwork inquiry: ' + p.productTitle) : 'New artwork inquiry';
+  var body = 'New inquiry from your website!\n\n'
+    + 'Artwork:   ' + (p.productTitle || '(not specified)') + '\n'
+    + 'Name:      ' + (p.name || '') + '\n'
+    + 'Email:     ' + (p.email || '(none)') + '\n'
+    + 'Phone:     ' + (p.phone || '(none)') + '\n'
+    + 'Preferred: ' + (p.contactPreference || '') + '\n\nMessage:\n' + (p.message || '(none)');
+  var opts = {}; if (p.email) opts.replyTo = p.email;
+  MailApp.sendEmail(NOTIFY_EMAILS.join(','), subject, body, opts);
   return ContentService.createTextOutput('Success');
 }
 
