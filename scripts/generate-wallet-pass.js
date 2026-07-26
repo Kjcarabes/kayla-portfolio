@@ -69,7 +69,7 @@ const passJson = {
   labelColor: 'rgb(160, 160, 160)',
   generic: {
     primaryFields: [
-      { key: 'role', label: '', value: 'Painter & Multidisciplinary Artist' },
+      { key: 'role', label: '', value: 'Painter/Artist' },
     ],
     secondaryFields: [
       { key: 'loc', label: 'BASED IN', value: 'Seattle, WA' },
@@ -88,7 +88,7 @@ const passJson = {
   },
   barcodes: [
     { format: 'PKBarcodeFormatQR', message: 'https://www.kaylacarabes.com/card',
-      messageEncoding: 'iso-8859-1', altText: 'kaylacarabes.com/card' },
+      messageEncoding: 'iso-8859-1' },
   ],
 };
 
