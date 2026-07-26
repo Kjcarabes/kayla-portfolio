@@ -7,6 +7,9 @@ compatibility_date = "2024-11-01"
 GH_OWNER = "Kjcarabes"
 GH_REPO = "kayla-portfolio"
 GH_BRANCH = "main"
+# Instagram-login path (no Facebook Page). For the Facebook-Page path instead,
+# set this to "https://graph.facebook.com/v21.0".
+IG_API_BASE = "https://graph.instagram.com/v21.0"
 
 # Secrets (do NOT put these here — set with `wrangler secret put`):
 #   GITHUB_TOKEN     — fine-grained PAT, this repo only, Contents: Read+Write

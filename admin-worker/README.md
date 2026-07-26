@@ -37,10 +37,29 @@ types her **password** on the sign-in screen.
 
 ## 3. Instagram auto-post (optional, enable when ready)
 
-Requires an Instagram **Business or Creator** account linked to a Facebook Page,
-and a Meta app with `instagram_content_publish` (needs Meta app review to run in
-production). Once you have the account's **IG user ID** and a **long-lived
-access token**:
+Uses **Instagram API with Instagram login** (Business/Creator account, no
+Facebook Page). `IG_API_BASE` in `wrangler.toml` is already set to
+`graph.instagram.com` for this path.
+
+Getting the two values, in the Meta app dashboard → **Instagram → API setup with
+Instagram business login**:
+
+1. Make sure the IG account is a **Business/Creator** account and has **accepted
+   the tester invite** (Instagram app → Settings → Apps and websites → Tester
+   invites → Accept).
+2. Under **"Generate access tokens"**, click **Generate token** for the account,
+   authorize — copy the **short-lived** token.
+3. **IG user ID:** open in a browser →
+   `https://graph.instagram.com/me?fields=user_id,username&access_token=SHORT_TOKEN`
+   The `user_id` it returns is `IG_USER_ID`.
+4. **Token lifetime:** the dashboard's "Generate token" button already returns a
+   **long-lived (~60-day) token** — use it directly as `IG_ACCESS_TOKEN`, no
+   exchange step needed. Verify expiry at
+   developers.facebook.com/tools/debug/accesstoken (paste the token; "Expires"
+   should be ~60 days out). Only if you have a genuinely *short-lived* token do
+   you exchange it, and it must use the **Instagram** app secret (Instagram → API
+   setup), not the Facebook app secret:
+   `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=INSTAGRAM_APP_SECRET&access_token=SHORT_TOKEN`
 
 ```
 npx wrangler secret put IG_USER_ID

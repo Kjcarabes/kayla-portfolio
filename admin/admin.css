@@ -105,6 +105,20 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--primary); o
 .list-item-title { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-item-actions { display: flex; gap: .3rem; flex-shrink: 0; }
 
+/* Collapsible rows — the whole summary is a click target that expands the fields */
+details.list-item { padding: 0; overflow: hidden; }
+details.list-item > summary { list-style: none; cursor: pointer; padding: .8rem 1rem; margin: 0; transition: background .15s; }
+details.list-item > summary::-webkit-details-marker { display: none; }
+details.list-item > summary:hover { background: #eef1f7; }
+details.list-item[open] > summary { background: #f3f6fb; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+details.list-item > :not(summary) { padding-left: 1rem; padding-right: 1rem; }
+details.list-item[open] { padding-bottom: 1rem; }
+.summary-main { display: flex; align-items: center; gap: .65rem; flex: 1; min-width: 0; }
+.summary-caret { color: var(--primary); flex-shrink: 0; font-size: .7rem; transition: transform .15s; }
+details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
+.row-thumb { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; background: #eaeaea; flex-shrink: 0; }
+.tab-hint { color: var(--muted); font-size: .85rem; margin: 0 0 1rem; }
+
 /* ── Image picker ── */
 .image-picker { display: flex; gap: .8rem; align-items: flex-start; }
 .image-preview {

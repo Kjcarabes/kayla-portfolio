@@ -240,12 +240,16 @@ function renderWorks() {
   root.innerHTML = `
     <div class="section">
       <button class="btn primary big-add" data-action="add-work">+ Add a new work</button>
-      <div class="field-hint" style="margin-top:.6rem">Adding a work can also post it to Instagram in the same step. Image sizes/WebP are generated automatically after publishing.</div>
+      <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram in the same step — image sizes are generated automatically after publishing.</p>
     </div>
     ${works.map((w, i) => `
       <details class="list-item">
-        <summary class="list-item-header" style="cursor:pointer">
-          <span class="list-item-title">${escapeHtml(w.title || w.id || `Work ${i + 1}`)} <span class="muted">· ${escapeHtml(w.originalStatus || '')}</span></span>
+        <summary class="list-item-header">
+          <span class="summary-main">
+            <span class="summary-caret">▶</span>
+            <img class="row-thumb" src="${escapeAttr(imgPreviewSrc(w.image))}" alt="" loading="lazy">
+            <span class="list-item-title">${escapeHtml(w.title || w.id || `Work ${i + 1}`)} <span class="muted">· ${escapeHtml(w.originalStatus || '')}</span></span>
+          </span>
           <span class="list-item-actions">
             <button data-action="move-work-up" data-i="${i}">↑</button>
             <button data-action="move-work-down" data-i="${i}">↓</button>
@@ -423,8 +427,12 @@ function renderBlog() {
     <div class="section"><button class="btn primary big-add" data-action="add-blog">+ Add a blog post</button></div>
     ${posts.map((post, i) => `
       <details class="list-item">
-        <summary class="list-item-header" style="cursor:pointer">
-          <span class="list-item-title">${escapeHtml(post.id || `Post ${i + 1}`)} <span class="muted">· ${escapeHtml(post.date || '')}</span></span>
+        <summary class="list-item-header">
+          <span class="summary-main">
+            <span class="summary-caret">▶</span>
+            ${post.images && post.images[0] ? `<img class="row-thumb" src="${escapeAttr(imgPreviewSrc(post.images[0]))}" alt="" loading="lazy">` : ''}
+            <span class="list-item-title">${escapeHtml(post.id || `Post ${i + 1}`)} <span class="muted">· ${escapeHtml(post.date || '')}</span></span>
+          </span>
           <span class="list-item-actions">
             <button data-action="move-blog-up" data-i="${i}">↑</button>
             <button data-action="move-blog-down" data-i="${i}">↓</button>
@@ -457,12 +465,16 @@ function renderShop() {
   root.innerHTML = `
     <div class="section">
       <button class="btn primary big-add" data-action="add-shop">+ Add a shop item</button>
-      <div class="field-hint" style="margin-top:.6rem">Crafts &amp; merch (not paintings). Publishing builds the Stripe checkout automatically.</div>
+      <p class="tab-hint" style="margin:.7rem 0 0">Only for <strong>crafts &amp; merch</strong> — paintings &amp; prints are managed automatically from Works, not here. Publishing builds the Stripe checkout for you.</p>
     </div>
-    ${items.map((it, i) => `
-      <details class="list-item" ${it._example ? '' : ''}>
-        <summary class="list-item-header" style="cursor:pointer">
-          <span class="list-item-title">${escapeHtml(it.title || it.id || `Item ${i + 1}`)}${it._example ? ' <span class="muted">· example, delete me</span>' : ''}</span>
+    ${items.map((it, i) => it._example ? '' : `
+      <details class="list-item">
+        <summary class="list-item-header">
+          <span class="summary-main">
+            <span class="summary-caret">▶</span>
+            ${it.image ? `<img class="row-thumb" src="${escapeAttr(imgPreviewSrc(it.image))}" alt="" loading="lazy">` : ''}
+            <span class="list-item-title">${escapeHtml(it.title || it.id || `Item ${i + 1}`)}</span>
+          </span>
           <span class="list-item-actions">
             <button data-action="del-shop" data-i="${i}" class="danger">Delete</button>
           </span>
