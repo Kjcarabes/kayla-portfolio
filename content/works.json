@@ -39,7 +39,7 @@
       "featured": true,
       "heroFeature": true,
       "originalStatus": "nfs",
-      "printPrice": 10,
+      "printPrice": 15,
       "printStock": 10,
       "aspectRatio": 1.135,
       "widths": [
@@ -177,7 +177,7 @@
       "featured": true,
       "heroFeature": true,
       "originalStatus": "available",
-      "printPrice": 15,
+      "printPrice": 20,
       "printStock": 10,
       "aspectRatio": 0.9907,
       "widths": [
@@ -280,7 +280,7 @@
       "size": "2ft x 3ft",
       "featured": false,
       "originalStatus": "sold",
-      "printPrice": 10,
+      "printPrice": 15,
       "printDescription": "Print",
       "printStock": 2,
       "aspectRatio": 1.5327,
@@ -442,7 +442,7 @@
       "size": "6in x 12in",
       "featured": false,
       "originalStatus": "available",
-      "printPrice": 10,
+      "printPrice": 15,
       "printDescription": "5X7 Print",
       "printStock": 0,
       "aspectRatio": 0.7862,
@@ -582,7 +582,7 @@
       "size": "16in x 20in",
       "featured": true,
       "originalStatus": "available",
-      "printPrice": 10,
+      "printPrice": 15,
       "printStock": 10,
       "aspectRatio": 1.2729,
       "widths": [
@@ -604,7 +604,7 @@
       "size": "16in x 14in",
       "featured": false,
       "originalStatus": "available",
-      "printPrice": 10,
+      "printPrice": 15,
       "printStock": 3,
       "aspectRatio": 1.1489,
       "widths": [
