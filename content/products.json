@@ -72,10 +72,10 @@
       "id": "prod_Ukun3xtmOYXNmp",
       "title": "Bridge over troubled water",
       "category": "Prints",
-      "price": 10,
+      "price": 15,
       "image": "assets/images/bridge.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/3cIfZhbYS7EGcu19uWe7m0g",
+      "stripeLink": "https://buy.stripe.com/cNicN54wqf78gKh4aCe7m0m",
       "sold": false,
       "workId": "Bridge",
       "stockRemaining": 3
@@ -128,7 +128,7 @@
       "id": "prod_UFI9fgMIjRjC7B",
       "title": "Horse with No Name",
       "category": "Prints",
-      "price": 10,
+      "price": 15,
       "image": "assets/images/horse.jpeg",
       "description": "5X7 Print",
       "stripeLink": "",
@@ -184,10 +184,10 @@
       "id": "prod_Ukun8wtW9t8VhI",
       "title": "Moon over Utopia",
       "category": "Prints",
-      "price": 10,
+      "price": 15,
       "image": "assets/images/moon.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/9B64gzd2Wgbc0Lj5eGe7m0b",
+      "stripeLink": "https://buy.stripe.com/7sY9AT0ga9MO0LjbD4e7m0i",
       "sold": false,
       "workId": "moon",
       "stockRemaining": 10
@@ -196,10 +196,10 @@
       "id": "prod_Ukunz9aM1lxhWM",
       "title": "Mossy Hall",
       "category": "Prints",
-      "price": 15,
+      "price": 20,
       "image": "assets/images/mossy_hall.jpg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/fZu9AT2oi7EG2TrePge7m0d",
+      "stripeLink": "https://buy.stripe.com/3cI3cv8MGe34alT4aCe7m0j",
       "sold": false,
       "workId": "moss-hall",
       "stockRemaining": 10
@@ -274,10 +274,10 @@
       "id": "prod_Ukunbi6SVDMVVw",
       "title": "River Cow",
       "category": "Prints",
-      "price": 10,
+      "price": 15,
       "image": "assets/images/cow.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/14A14n5AucZ0fGdgXoe7m0f",
+      "stripeLink": "https://buy.stripe.com/fZucN5gf81gicu19uWe7m0l",
       "sold": false,
       "workId": "cow",
       "stockRemaining": 10
@@ -330,10 +330,10 @@
       "id": "prod_UNEmQzFQgj7r0H",
       "title": "Three little birds",
       "category": "Prints",
-      "price": 10,
+      "price": 15,
       "image": "assets/images/birb.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/8x23cv1kegbcfGd8qSe7m0e",
+      "stripeLink": "https://buy.stripe.com/dRm4gzd2Wf782Tr0Yqe7m0k",
       "sold": false,
       "workId": "birb",
       "stockRemaining": 2
@@ -382,7 +382,7 @@
       "stripeLink": "https://buy.stripe.com/3cI28rbYS6AC8dL4aCe7m0a",
       "sold": false,
       "workId": "jimothy-takes-seattle",
-      "stockRemaining": 290
+      "stockRemaining": 289
     },
     {
       "id": "prod_UxcfLhLPT7QIfZ",
@@ -396,5 +396,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-07-27T19:29:22.241Z"
+  "_lastSync": "2026-07-27T23:31:13.413Z"
 }
