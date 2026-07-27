@@ -306,8 +306,10 @@ function renderWorks() {
       <button class="btn primary big-add" data-action="add-work">+ Add a new work</button>
       <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram in the same step — image sizes are generated automatically after publishing.</p>
     </div>
-    ${works.map((w, i) => `
-      <details class="list-item" data-open-key="works:${escapeAttr(w.id)}" ${state.openRows.has(`works:${w.id}`) ? 'open' : ''}>
+    ${works.map((w, i) => {
+      const open = state.openRows.has(`works:${w.id}`);
+      return `
+      <details class="list-item" data-open-key="works:${escapeAttr(w.id)}" data-work-index="${i}" ${open ? 'open' : ''}>
         <summary class="list-item-header">
           <span class="summary-main">
             <span class="summary-caret">▶</span>
@@ -320,9 +322,9 @@ function renderWorks() {
             <button data-action="del-work" data-i="${i}" class="danger">Delete</button>
           </span>
         </summary>
-        ${workFields(i)}
-      </details>
-    `).join('')}
+        <div class="work-fields"${open ? ' data-rendered="1"' : ''}>${open ? workFields(i) : ''}</div>
+      </details>`;
+    }).join('')}
   `;
 }
 
@@ -351,14 +353,11 @@ function workFields(i) {
     </div>
     <h4>Original</h4>
     ${select(f, `${p}.originalStatus`, 'Original status', STATUS_OPTS)}
-    <h4>Print</h4>
+    <h4>Prints (optional)</h4>
+    ${input(f, `${p}.printPrice`, 'Print price ($)', { type: 'number', hint: 'Selling prints of this piece? Enter a price. Leave blank if you’re not.' })}
     <div class="field-row">
-      ${input(f, `${p}.printPrice`, 'Print price ($ — 0 or blank = sold out)', { type: 'number' })}
-      ${input(f, `${p}.printStock`, 'Print stock (blank = unlimited)', { type: 'number' })}
-    </div>
-    <div class="field-row">
-      ${input(f, `${p}.printDescription`, 'Print description', { placeholder: 'Print' })}
-      ${input(f, `${p}.printOrder`, 'Print sort order (lower = first)', { type: 'number' })}
+      ${input(f, `${p}.printStock`, 'Limited edition size', { type: 'number', hint: 'Blank = unlimited' })}
+      ${input(f, `${p}.printDescription`, 'Print note', { placeholder: 'e.g. Giclée print' })}
     </div>
     <h4>Extra detail images (shown on this work’s own page)</h4>
     ${(getByPath(state.files[f], `${p}.detail_images`) || []).map((_, j) => `
@@ -380,7 +379,7 @@ function showAddWorkModal() {
         <button class="modal-close" id="aw-x" aria-label="Close">&times;</button>
         <h2>Add a new work</h2>
         <div id="aw-image">${'' /* filled below */}</div>
-        <div class="field"><label class="field-label">Title</label><input type="text" id="aw-title" spellcheck="true"></div>
+        <div class="field"><label class="field-label">Title <span class="req">*</span></label><input type="text" id="aw-title" spellcheck="true"></div>
         <div class="field-row">
           <div class="field"><label class="field-label">Date</label><input type="date" id="aw-date" value="${today}"></div>
           <div class="field"><label class="field-label">Category</label>
@@ -392,17 +391,20 @@ function showAddWorkModal() {
           <div class="field"><label class="field-label">Size</label><input type="text" id="aw-size" placeholder="16in x 20in"></div>
         </div>
         <div class="field"><label class="field-label">Description</label><textarea id="aw-description" rows="3" spellcheck="true"></textarea></div>
-        <div class="field-row">
-          <div class="field"><label class="field-label">Original status</label>
-            <select id="aw-status">${STATUS_OPTS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select>
+        <div class="field"><label class="field-label">Original status</label>
+          <select id="aw-status">${STATUS_OPTS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select>
+        </div>
+        <h4>Prints (optional)</h4>
+        <div class="field"><label class="field-label">Print price ($)</label><input type="number" id="aw-printprice">
+          <div class="field-hint">Selling prints of this piece? Enter a price. Leave blank if you’re not offering prints.</div>
+        </div>
+        <details class="calc-rates"><summary>More print options</summary>
+          <div class="field-row" style="margin-top:.6rem">
+            <div class="field"><label class="field-label">Limited edition size</label><input type="number" id="aw-printstock"><div class="field-hint">Blank = unlimited</div></div>
+            <div class="field"><label class="field-label">Print note</label><input type="text" id="aw-printdesc" placeholder="e.g. Giclée print" spellcheck="true"></div>
           </div>
-          <div class="field"><label class="field-label">Print price ($, blank = none)</label><input type="number" id="aw-printprice"></div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label class="field-label">Print stock / edition size (blank = unlimited)</label><input type="number" id="aw-printstock"></div>
-          <div class="field"><label class="field-label">Print note (optional)</label><input type="text" id="aw-printdesc" placeholder="e.g. Made to order — ships in ~2 weeks" spellcheck="true"></div>
-        </div>
-        <div>
+        </details>
+        <div style="margin-top:.6rem">
           <label class="field-checkbox"><input type="checkbox" id="aw-featured"> Featured on home</label>
           <label class="field-checkbox"><input type="checkbox" id="aw-hero"> Hero slideshow</label>
         </div>
@@ -1093,9 +1095,17 @@ document.addEventListener('click', (e) => {
 // doesn't collapse the row you're editing. (toggle doesn't bubble → capture.)
 document.addEventListener('toggle', (e) => {
   const d = e.target;
-  if (d.tagName === 'DETAILS' && d.dataset.openKey) {
-    if (d.open) state.openRows.add(d.dataset.openKey);
-    else state.openRows.delete(d.dataset.openKey);
+  if (d.tagName !== 'DETAILS' || !d.dataset.openKey) return;
+  if (d.open) state.openRows.add(d.dataset.openKey);
+  else state.openRows.delete(d.dataset.openKey);
+  // Lazy-render a work's edit fields the first time it's expanded (keeps the
+  // Works list light — 36 collapsed rows instead of 36 full forms).
+  if (d.open && d.dataset.workIndex !== undefined) {
+    const box = d.querySelector('.work-fields');
+    if (box && !box.dataset.rendered) {
+      box.innerHTML = workFields(Number(d.dataset.workIndex));
+      box.dataset.rendered = '1';
+    }
   }
 }, true);
 

@@ -3,6 +3,20 @@
   "_instructions": "Set printPrice on a work, or add an item to shop-items.json. This file syncs automatically.",
   "products": [
     {
+      "_TEMP": "Local preview of the Jimothy tote (source of truth is shop-items.json). Uses the painting as a stand-in image because assets/images/tote.jpeg isn't in the repo yet. On push the Stripe sync regenerates this file with the real tote.jpeg image + a real checkout link.",
+      "id": "jimothy-tote",
+      "title": "Jimothy Takes Seattle Tote Bag",
+      "category": "Crafts",
+      "price": 50,
+      "image": "assets/images/img_5099.jpeg",
+      "widths": [400, 800, 1200, 1600, 3668],
+      "aspectRatio": 1.0008,
+      "description": "Take Jimothy with you to explore the world",
+      "stripeLink": "",
+      "sold": false,
+      "workId": "jimothy-takes-seattle"
+    },
+    {
       "id": "print:25 portrait",
       "title": "25th portrait",
       "category": "Prints",

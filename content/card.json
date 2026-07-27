@@ -10,8 +10,10 @@
   "photo": "/assets/images/kayla.jpeg",
   "logo": "/assets/images/color-theory.jpeg",
 
-  "_linksHelp": "Each link needs a \"label\" (the text people see) and a \"url\". Add \"external\": true for links that leave your site so they open in a new tab.",
+  "_linksHelp": "Each link needs a \"label\" (the text people see) and a \"url\". Add \"external\": true for links that leave your site so they open in a new tab. Add \"sublabel\": \"...\" for a small second line. Add \"highlight\": true to make it a big, warm, eye-catching card with a pulsing 'live' dot — great for a limited-time thing like an auction. Delete the card when it's over.",
   "links": [
+    { "_TEMP": "AUCTION — delete this whole line block when the auction ends.", "label": "Jimothy painting auction — live now!", "sublabel": "Bid on the original on eBay", "url": "https://www.ebay.com/itm/147463800483", "external": true, "highlight": true },
+    { "label": "Shop Jimothy — totes & prints", "sublabel": "See the painting and grab a print or tote", "url": "/work-detail.html?id=jimothy-takes-seattle" },
     { "label": "Explore my work", "url": "/work.html" },
     { "label": "Shop originals & prints", "url": "/shop.html" },
     { "label": "Instagram — @kayla_carabes", "url": "https://instagram.com/kayla_carabes", "external": true },

@@ -139,6 +139,7 @@ input[type=file]::file-selector-button {
 input[type=file]::file-selector-button:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
 .field-checkbox { display: inline-flex; align-items: center; gap: .45rem; margin: .2rem 1rem .2rem 0; font-size: .9rem; cursor: pointer; }
 .field-hint { font-size: .78rem; color: var(--muted); margin-top: .25rem; }
+.req { color: var(--danger); font-weight: 700; }
 
 /* ── List items (array editors) ── */
 .list-item { border: 1px solid var(--border); border-radius: 8px; padding: .9rem; margin-bottom: .8rem; background: #fcfcfd; }

@@ -55,8 +55,12 @@ async function initNewsletter() {
 
         document.body.appendChild(popup);
 
-        // Show popup after 3 seconds
-        setTimeout(() => popup.classList.add('active'), 3000);
+        // Show popup after 3 seconds — unless the home page's featured-product
+        // popup is showing, so the two don't compete for attention.
+        setTimeout(() => {
+            if (document.body.classList.contains('has-overlay-spotlight')) return;
+            popup.classList.add('active');
+        }, 3000);
 
         // Close button
         popup.querySelector('.newsletter-popup-close').addEventListener('click', () => {
@@ -299,6 +303,9 @@ function syncPersonJsonLd(settings) {
     // Treat www/non-www and http/https as the same profile so we don't duplicate.
     const norm = (u) => String(u).replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase();
     document.querySelectorAll('script[type="application/ld+json"]').forEach(tag => {
+        // Skip the large generated ItemList/Product blocks — only the hand-written
+        // graph has a Person node, so a cheap string check avoids parsing big JSON.
+        if (tag.textContent.indexOf('"Person"') === -1) return;
         let data;
         try { data = JSON.parse(tag.textContent); } catch { return; }
         const nodes = data['@graph'] || [data];
@@ -892,9 +899,10 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     // Get medium from linked work
     const medium = linkedWork?.medium || '';
 
-    // Show "View artwork" link if product is linked to a work
+    // Link to the artwork a product relates to. Prints/originals say "View artwork";
+    // merch (e.g. a tote) says "Features: <painting>".
     const viewArtworkHtml = linkedWork
-        ? `<a href="work-detail.html?id=${product.workId}" class="product-card-link">View artwork</a>`
+        ? `<a href="work-detail.html?id=${product.workId}" class="product-card-link">${(product.category === 'Prints' || isOriginal(product)) ? 'View artwork' : 'Features: ' + linkedWork.title}</a>`
         : '';
 
     const cardImageMarkup = pictureMarkup({
@@ -1391,12 +1399,36 @@ async function initCardPage() {
     list.innerHTML = '';
     links.forEach(link => {
         const a = document.createElement('a');
-        a.className = 'card-link';
+        a.className = 'card-link' + (link.highlight ? ' card-link--highlight' : '');
         a.href = link.url;
-        a.textContent = link.label;
         if (link.external) {
             a.target = '_blank';
             a.rel = 'noopener';
+        }
+        // A highlight or a sublabel gets the two-line layout (with a "live" dot on
+        // highlights); a plain link stays a single text line.
+        if (link.highlight || link.sublabel) {
+            if (link.highlight) {
+                const dot = document.createElement('span');
+                dot.className = 'card-link-dot';
+                dot.setAttribute('aria-hidden', 'true');
+                a.appendChild(dot);
+            }
+            const text = document.createElement('span');
+            text.className = 'card-link-text';
+            const main = document.createElement('span');
+            main.className = 'card-link-label';
+            main.textContent = link.label;
+            text.appendChild(main);
+            if (link.sublabel) {
+                const sub = document.createElement('span');
+                sub.className = 'card-link-sub';
+                sub.textContent = link.sublabel;
+                text.appendChild(sub);
+            }
+            a.appendChild(text);
+        } else {
+            a.textContent = link.label;
         }
         list.appendChild(a);
     });
@@ -1477,11 +1509,160 @@ function openCardNewsletterModal(nl) {
     });
 }
 
+// Featured spotlight. Shop page: a single in-flow card for the first featured
+// product. Home page: a full-screen popup that can advertise several things at
+// once — featured shop products (e.g. totes) plus custom promos (e.g. an
+// auction) from site-settings `spotlight.items`. All content is JSON-driven.
+
+function spotlightProductItem(p, works) {
+    const linked = p.workId ? (works || []).find(w => w.id === p.workId) : null;
+    return {
+        title: p.title,
+        tag: p.tag || '✨ Just dropped',
+        description: p.description || '',
+        image: p.image, widths: p.widths, aspectRatio: p.aspectRatio,
+        url: p.stripeLink || 'shop.html',
+        cta: p.stripeLink ? `Buy now${p.price > 0 ? ` — $${p.price}` : ''}` : 'Shop now',
+        features: linked ? { id: p.workId, title: linked.title } : null,
+    };
+}
+
+function spotlightCustomItem(it) {
+    return {
+        title: it.title || '',
+        tag: it.tag || '✨ New',
+        description: it.description || '',
+        image: it.image, widths: it.widths, aspectRatio: it.aspectRatio,
+        url: it.url || '#',
+        cta: it.cta || 'Learn more',
+        features: null,
+    };
+}
+
+function spotlightBtn(item, extra = '') {
+    const attrs = /^https?:\/\//.test(item.url) ? ' target="_blank" rel="noopener"' : '';
+    return `<a class="spotlight-btn${extra}" href="${item.url}"${attrs}>${item.cta}</a>`;
+}
+
+// Large single card — shop in-flow card and the 1-item popup.
+function spotlightBigCard(item, { close }) {
+    const media = pictureMarkup({
+        image: item.image, widths: item.widths, aspectRatio: item.aspectRatio,
+        alt: item.title, sizes: '(max-width: 768px) 100vw, 480px',
+    });
+    return `
+        <div class="spotlight-inner">
+            ${close ? '<button class="spotlight-close" aria-label="Close">&times;</button>' : ''}
+            <div class="spotlight-media">${media}</div>
+            <div class="spotlight-body">
+                <span class="spotlight-tag">${item.tag}</span>
+                <h2 class="spotlight-title">${item.title}</h2>
+                ${item.description ? `<p class="spotlight-desc">${item.description}</p>` : ''}
+                ${item.features ? `<p class="spotlight-features">Features <a href="work-detail.html?id=${item.features.id}">${item.features.title}</a></p>` : ''}
+                ${spotlightBtn(item)}
+            </div>
+        </div>`;
+}
+
+// One combined card: a single hero image on the left, with every promo listed
+// as a divided row on the right (print / tote / auction). Used when the home
+// popup advertises more than one thing.
+function spotlightComboCard(items, sp) {
+    const media = pictureMarkup({
+        image: sp.image || items[0].image,
+        widths: sp.image ? sp.widths : items[0].widths,
+        aspectRatio: sp.image ? sp.aspectRatio : items[0].aspectRatio,
+        alt: sp.heading || items[0].title,
+        sizes: '(max-width: 768px) 100vw, 400px',
+    });
+    const offers = items.map(item => {
+        const attrs = /^https?:\/\//.test(item.url) ? ' target="_blank" rel="noopener"' : '';
+        return `
+            <div class="spotlight-offer">
+                <div class="spotlight-offer-text">
+                    <span class="spotlight-offer-tag">${item.tag}</span>
+                    <span class="spotlight-offer-title">${item.title}</span>
+                    ${item.description ? `<span class="spotlight-offer-desc">${item.description}</span>` : ''}
+                </div>
+                <a class="spotlight-btn spotlight-btn--sm" href="${item.url}"${attrs}>${item.cta}</a>
+            </div>`;
+    }).join('');
+    return `
+        <div class="spotlight-inner spotlight-combo">
+            <button class="spotlight-close" aria-label="Close">&times;</button>
+            <div class="spotlight-combo-media">${media}</div>
+            <div class="spotlight-combo-body">
+                <div class="spotlight-combo-head">
+                    <h2 class="spotlight-combo-title">${sp.heading || 'Just dropped'}</h2>
+                    ${sp.subheading ? `<p class="spotlight-combo-sub">${sp.subheading}</p>` : ''}
+                </div>
+                <div class="spotlight-combo-offers">${offers}</div>
+            </div>
+        </div>`;
+}
+
+async function initSpotlight() {
+    const el = document.getElementById('featured-spotlight');
+    if (!el) return;
+    const isOverlay = el.classList.contains('spotlight--overlay');
+    const products = await loadProducts();
+    const featured = (products || []).filter(p => p.featured);
+
+    // Shop page: single in-flow card for the first featured product.
+    if (!isOverlay) {
+        if (!featured.length) { el.hidden = true; return; }
+        const works = await loadWorks();
+        el.innerHTML = spotlightBigCard(spotlightProductItem(featured[0], works), { close: false });
+        el.hidden = false;
+        return;
+    }
+
+    // Home popup: featured products (totes) + custom promos (auction) from JSON.
+    const settings = await getSiteSettings();
+    const sp = settings.spotlight || {};
+    if (sp.enabled === false) { el.hidden = true; return; }
+    const works = await loadWorks();
+    const items = [
+        ...featured.map(p => spotlightProductItem(p, works)),
+        ...(sp.items || []).map(spotlightCustomItem),
+    ].filter(it => it.title);
+    if (!items.length) { el.hidden = true; return; }
+
+    if (items.length === 1) {
+        el.innerHTML = spotlightBigCard(items[0], { close: true });
+    } else {
+        el.innerHTML = spotlightComboCard(items, sp);
+    }
+    el.hidden = false;
+
+    // Don't reopen once dismissed within the same browsing session.
+    if (sessionStorage.getItem('spotlight_dismissed')) return;
+    // Suppress the site-wide newsletter popup here so two popups don't compete.
+    document.body.classList.add('has-overlay-spotlight');
+
+    const close = () => {
+        el.classList.remove('is-open');
+        document.body.classList.remove('spotlight-open');
+        sessionStorage.setItem('spotlight_dismissed', '1');
+        document.removeEventListener('keydown', onKey);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    el.querySelector('.spotlight-close').addEventListener('click', close);
+    el.addEventListener('click', (e) => { if (e.target === el) close(); });
+    document.addEventListener('keydown', onKey);
+    // Fade in shortly after load and lock the background from scrolling.
+    setTimeout(() => {
+        el.classList.add('is-open');
+        document.body.classList.add('spotlight-open');
+    }, 1500);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadSiteSettings();
     initAbout();
     initCardPage();
     initCardNewsletter();
+    initSpotlight();
     initHeroSlideshow();
     populateFeaturedWorks();
     populateAllWorks();

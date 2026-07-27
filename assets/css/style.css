@@ -1346,6 +1346,7 @@ img {
     }
 }
 
+
 /* ===========================================
    ORIGINAL AVAILABLE STATUS + INQUIRY MODAL
    =========================================== */
@@ -1736,6 +1737,66 @@ img {
     opacity: 0.85;
 }
 
+/* Exciting, temporary highlight card (e.g. a live auction). Warm gradient,
+   two-line layout, and a pulsing "live" dot to draw the eye. */
+.card-link--highlight {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-align: left;
+    color: #fff;
+    border: none;
+    background: linear-gradient(120deg, #d1573f 0%, #e08a3c 100%);
+    box-shadow: 0 6px 18px rgba(209, 87, 63, 0.28);
+}
+
+.card-link--highlight:hover {
+    transform: translateY(-2px);
+    opacity: 1;
+    box-shadow: 0 10px 26px rgba(209, 87, 63, 0.38);
+}
+
+.card-link-dot {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    animation: card-pulse 1.6s ease-out infinite;
+}
+
+@keyframes card-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+    70%  { box-shadow: 0 0 0 9px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-link-dot { animation: none; }
+}
+
+.card-link-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.card-link-label {
+    font-weight: 600;
+}
+
+.card-link-sub {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    letter-spacing: 0.03em;
+}
+
+/* On a non-highlight link, a sublabel is just a muted second line. */
+.card-link:not(.card-link--highlight) .card-link-sub {
+    color: var(--color-text-light);
+}
+
 .card-newsletter-open {
     margin-top: 0.75rem;
     cursor: pointer;
@@ -1821,4 +1882,292 @@ img {
     margin-top: var(--spacing-lg);
     font-size: 0.8rem;
     color: var(--color-text-light);
+}
+
+/* ===========================================
+   FEATURED PRODUCT SPOTLIGHT (home + shop)
+   =========================================== */
+.spotlight {
+    max-width: var(--container-width);
+    margin: var(--spacing-lg) auto;
+    padding: 0 var(--spacing-md);
+}
+
+.spotlight-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    align-items: center;
+    background: linear-gradient(135deg, #ffffff 0%, #f7f1e9 100%);
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    padding: var(--spacing-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+}
+
+.spotlight-media picture,
+.spotlight-media img {
+    width: 100%;
+    border-radius: 12px;
+    display: block;
+}
+
+.spotlight-tag {
+    display: inline-block;
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #b0632b;
+    background: #fdeede;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 0.9rem;
+}
+
+.spotlight-title {
+    font-family: var(--font-logo);
+    font-weight: 600;
+    font-size: 2.5rem;
+    line-height: 1.08;
+    margin-bottom: 0.6rem;
+}
+
+.spotlight-desc {
+    color: var(--color-text-light);
+    margin-bottom: 0.8rem;
+    max-width: 42ch;
+}
+
+.spotlight-features {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    margin-bottom: 1.3rem;
+}
+
+.spotlight-features a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.spotlight-btn {
+    display: inline-block;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    padding: 0.9rem 1.9rem;
+    border-radius: 999px;
+    font-size: 1rem;
+    letter-spacing: 0.03em;
+    transition: transform 0.15s ease, opacity 0.2s ease;
+}
+
+.spotlight-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .spotlight-inner {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+    }
+    .spotlight-title { font-size: 1.9rem; }
+}
+
+/* ---- Home: featured card shown as a full-screen popup that fades in ---- */
+/* Full-cover dimmed backdrop. Starts invisible; JS adds .is-open after a delay. */
+.spotlight--overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Sits just below the nav. No scroll — the popup is fixed and self-contained. */
+    padding: calc(var(--nav-height) + var(--spacing-sm)) var(--spacing-md) var(--spacing-sm);
+    /* No dimmed backdrop — the card floats on its own (its shadow gives depth).
+       The full-cover area still catches an outside-click to close. */
+    background: transparent;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    /* keep it interactive-free until open; hold visibility through the fade-out */
+    transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+}
+
+.spotlight--overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.6s ease;
+}
+
+/* Lock the page behind the popup so the dimmed backdrop stays put. */
+body.spotlight-open {
+    overflow: hidden;
+}
+
+.spotlight--overlay .spotlight-inner {
+    position: relative;
+    width: 100%;
+    max-width: 760px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    transform: translateY(14px) scale(0.985);
+    transition: transform 0.5s ease;
+}
+
+/* Combined card: hero image | divided rows of promos. */
+.spotlight--overlay .spotlight-combo {
+    max-width: 1120px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+    /* stretch (not center) so the media cell fills the card height */
+    align-items: stretch;
+}
+
+.spotlight--overlay.is-open .spotlight-inner {
+    transform: none;
+}
+
+.spotlight-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.75rem;
+    z-index: 2;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.spotlight-close:hover {
+    background: #fff;
+    transform: scale(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spotlight--overlay,
+    .spotlight--overlay.is-open { transition: opacity 0.3s ease; }
+    .spotlight--overlay .spotlight-inner { transform: none; transition: none; }
+}
+
+/* ---- Combined popup card: hero image + divided promo rows ---- */
+/* The media is a stretched grid cell; the image fits inside it via absolute inset.
+   `contain` shows the whole image (never crops); the cream band fills any gap. */
+.spotlight-combo-media {
+    position: relative;
+    overflow: hidden;
+    background: #f4eee4;
+}
+
+.spotlight-combo-media picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+
+.spotlight-combo-media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+}
+
+.spotlight-combo-body {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md) var(--spacing-md) calc(var(--spacing-md) - 0.5rem);
+}
+
+.spotlight-combo-head {
+    padding-right: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.spotlight-combo-title {
+    font-family: var(--font-logo);
+    font-weight: 700;
+    font-size: 2.6rem;
+    line-height: 1.02;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+}
+
+.spotlight-combo-sub {
+    margin-top: 0.55rem;
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+}
+
+.spotlight-combo-offers {
+    display: flex;
+    flex-direction: column;
+}
+
+.spotlight-offer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--color-border);
+}
+
+.spotlight-offer-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.spotlight-offer-tag {
+    font-size: 0.62rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #b0632b;
+}
+
+.spotlight-offer-title {
+    font-family: var(--font-logo);
+    font-weight: 600;
+    font-size: 1.2rem;
+    line-height: 1.1;
+}
+
+.spotlight-offer-desc {
+    font-size: 0.82rem;
+    color: var(--color-text-light);
+}
+
+.spotlight-btn--sm {
+    flex-shrink: 0;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.88rem;
+}
+
+/* Stack the combined card on phones: image on top, rows below. */
+@media (max-width: 768px) {
+    .spotlight--overlay .spotlight-combo {
+        grid-template-columns: 1fr;
+    }
+    .spotlight-combo-media {
+        height: 220px;
+    }
 }

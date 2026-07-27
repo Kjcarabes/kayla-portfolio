@@ -12,6 +12,17 @@
       "description": "Set of 5 vinyl stickers",
       "stock": 0,
       "order": 0
+    },
+    {
+      "_note": "Save your tote photo to assets/images/tote.jpeg. Stock left out = unlimited (you had entered 0, which would mean SOLD OUT — add \"stock\": N back if you want a limited run).",
+      "id": "jimothy-tote",
+      "title": "Jimothy Takes Seattle Tote Bag",
+      "category": "Crafts",
+      "price": 50,
+      "image": "assets/images/tote.jpeg",
+      "description": "Take Jimothy with you to explore the world",
+      "order": 1,
+      "workId": "jimothy-takes-seattle"
     }
   ]
 }

@@ -27,6 +27,38 @@
     "showAfterDays": 7
   },
 
+  "spotlight": {
+    "_help": "The home-page popup — one card with a main image and the promos listed below divided into it. \"image\" is the big picture; each item is a row (title, tag, url, cta). Delete an item when it's over, or set enabled:false to turn the whole popup off.",
+    "enabled": true,
+    "heading": "Jimothy Takes Seattle",
+    "subheading": "Bid on the original, or take home a print or tote.",
+    "image": "assets/images/IMG_4497.jpeg",
+    "items": [
+      {
+        "title": "Jimothy print",
+        "tag": "Print",
+        "description": "Signed print of Jimothy Takes Seattle.",
+        "url": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
+        "cta": "Buy print — $20"
+      },
+      {
+        "title": "Jimothy tote",
+        "tag": "Tote",
+        "description": "Take Jimothy with you to explore the world.",
+        "url": "shop.html",
+        "cta": "Shop the tote — $50"
+      },
+      {
+        "_TEMP": "AUCTION — delete this whole item when the auction ends.",
+        "title": "Original up for auction",
+        "tag": "Live auction",
+        "description": "Bid on the original oil painting, happening now on eBay.",
+        "url": "https://www.ebay.com/itm/147463800483",
+        "cta": "Bid on eBay"
+      }
+    ]
+  },
+
   "_socialLinksHelp": "To add a new social link, copy the format above. Examples:",
   "_example1": "{ \"name\": \"Etsy\", \"url\": \"https://etsy.com/shop/yourshop\" }",
   "_example2": "{ \"name\": \"TikTok\", \"url\": \"https://tiktok.com/@username\" }",

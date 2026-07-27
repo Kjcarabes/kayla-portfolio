@@ -296,6 +296,7 @@ function buildEntry(spec, { id, sold, price, stripeLink, stockRemaining }) {
     _order: spec.order,
   };
   if (spec.workId) entry.workId = spec.workId;
+  if (spec.featured) entry.featured = true;
   // Remaining units (edition cap minus completed Stripe checkouts). Omitted when
   // stock is unlimited. Refreshes at sync cadence, not per-pageview.
   if (stockRemaining != null) entry.stockRemaining = stockRemaining;
@@ -382,6 +383,8 @@ function craftSpec(item) {
   return {
     title: item.title,
     category,
+    workId: item.workId || null,       // optional: link the item to a painting
+    featured: !!item.featured,         // optional: show it in the site spotlight
     description: item.description || '',
     image: item.image || 'assets/images/placeholder.jpg',
     images: stripeImageUrls(item.image || 'assets/images/placeholder.jpg', item.widths),
