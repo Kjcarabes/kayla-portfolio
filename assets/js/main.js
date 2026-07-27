@@ -896,8 +896,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
     const description = product.sold ? '' : (product.description || '');
     const linkedWork = product.workId ? works.find(w => w.id === product.workId) : null;
 
-    // Get medium from linked work
-    const medium = linkedWork?.medium || '';
+    // Medium comes from the linked artwork — but only for prints/originals.
+    // A craft (e.g. a tote) shouldn't inherit the painting's "Oil on canvas".
+    const medium = product.category === 'Crafts' ? '' : (linkedWork?.medium || '');
 
     // Link to the artwork a product relates to. Prints/originals say "View artwork";
     // merch (e.g. a tote) says "Features: <painting>".

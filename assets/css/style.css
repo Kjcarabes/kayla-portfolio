@@ -2164,10 +2164,26 @@ body.spotlight-open {
 
 /* Stack the combined card on phones: image on top, rows below. */
 @media (max-width: 768px) {
+    /* The stacked card is tall — let it scroll from the top instead of clipping. */
+    .spotlight--overlay {
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: calc(var(--nav-height) + var(--spacing-sm)) var(--spacing-sm) var(--spacing-md);
+    }
     .spotlight--overlay .spotlight-combo {
         grid-template-columns: 1fr;
     }
+    /* Square banner shows the whole image (it's a square painting). */
     .spotlight-combo-media {
-        height: 220px;
+        aspect-ratio: 1 / 1;
+    }
+    /* Each offer stacks: text block, then a full-width button. */
+    .spotlight-offer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.7rem;
+    }
+    .spotlight-btn--sm {
+        text-align: center;
     }
 }

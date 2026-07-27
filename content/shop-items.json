@@ -20,7 +20,7 @@
       "category": "Crafts",
       "price": 50,
       "image": "assets/images/tote.jpeg",
-      "description": "Take Jimothy with you to explore the world",
+      "description": "Take Jimothy with you.",
       "order": 1,
       "workId": "jimothy-takes-seattle"
     }
