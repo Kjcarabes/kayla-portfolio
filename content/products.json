@@ -3,20 +3,6 @@
   "_instructions": "Set printPrice on a work, or add an item to shop-items.json. This file syncs automatically.",
   "products": [
     {
-      "_TEMP": "Local preview of the Jimothy tote (source of truth is shop-items.json). Uses the painting as a stand-in image because assets/images/tote.jpeg isn't in the repo yet. On push the Stripe sync regenerates this file with the real tote.jpeg image + a real checkout link.",
-      "id": "jimothy-tote",
-      "title": "Jimothy Takes Seattle Tote Bag",
-      "category": "Crafts",
-      "price": 50,
-      "image": "assets/images/img_5099.jpeg",
-      "widths": [400, 800, 1200, 1600, 3668],
-      "aspectRatio": 1.0008,
-      "description": "Take Jimothy with you to explore the world",
-      "stripeLink": "",
-      "sold": false,
-      "workId": "jimothy-takes-seattle"
-    },
-    {
       "id": "print:25 portrait",
       "title": "25th portrait",
       "category": "Prints",
@@ -396,8 +382,19 @@
       "stripeLink": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
       "sold": false,
       "workId": "jimothy-takes-seattle",
-      "stockRemaining": 299
+      "stockRemaining": 297
+    },
+    {
+      "id": "prod_UxcfLhLPT7QIfZ",
+      "title": "Jimothy Takes Seattle Tote Bag",
+      "category": "Crafts",
+      "price": 50,
+      "image": "assets/images/tote.jpeg",
+      "description": "Take Jimothy with you to explore the world",
+      "stripeLink": "https://buy.stripe.com/8x200j7ICaQSfGdgXoe7m09",
+      "sold": false,
+      "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-07-27T03:18:03.602Z"
+  "_lastSync": "2026-07-27T05:49:35.343Z"
 }
