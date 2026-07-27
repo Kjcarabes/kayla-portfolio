@@ -2162,28 +2162,45 @@ body.spotlight-open {
     font-size: 0.88rem;
 }
 
-/* Stack the combined card on phones: image on top, rows below. */
+/* Phones: image on top, then the rows. Kept compact + fixed (no scroll) so all
+   three offers and the ✕ are visible at once. */
 @media (max-width: 768px) {
-    /* The stacked card is tall — let it scroll from the top instead of clipping. */
     .spotlight--overlay {
-        align-items: flex-start;
-        overflow-y: auto;
-        padding: calc(var(--nav-height) + var(--spacing-sm)) var(--spacing-sm) var(--spacing-md);
+        align-items: center;
+        overflow: hidden;
+        padding: calc(var(--nav-height) + var(--spacing-sm)) var(--spacing-sm) var(--spacing-sm);
     }
     .spotlight--overlay .spotlight-combo {
         grid-template-columns: 1fr;
     }
-    /* Square banner shows the whole image (it's a square painting). */
+    /* Compact banner; bias toward the top of the painting (the raccoon). */
     .spotlight-combo-media {
-        aspect-ratio: 1 / 1;
+        height: 150px;
     }
-    /* Each offer stacks: text block, then a full-width button. */
+    .spotlight-combo-media img {
+        object-position: center 22%;
+    }
+    .spotlight-combo-body { padding: 0.9rem 1.1rem 1rem; }
+    .spotlight-combo-head { margin-bottom: 0.15rem; }
+    .spotlight-combo-title { font-size: 1.7rem; }
+    .spotlight-combo-sub { display: none; }
+    /* One tight row per offer: tag + title on the left, button on the right.
+       Descriptions are dropped on mobile so all three fit without scrolling. */
     .spotlight-offer {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.7rem;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0;
     }
+    .spotlight-offer-desc { display: none; }
+    .spotlight-offer-title { font-size: 1.05rem; }
     .spotlight-btn--sm {
-        text-align: center;
+        padding: 0.55rem 1rem;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+    /* Make sure the close button reads clearly over the image banner. */
+    .spotlight-close {
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
 }
