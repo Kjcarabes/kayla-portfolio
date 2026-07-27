@@ -75,7 +75,7 @@
       "price": 10,
       "image": "assets/images/bridge.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/3cI3cv1ke7EG1PngXoe7m07",
+      "stripeLink": "https://buy.stripe.com/3cIfZhbYS7EGcu19uWe7m0g",
       "sold": false,
       "workId": "Bridge",
       "stockRemaining": 3
@@ -187,7 +187,7 @@
       "price": 10,
       "image": "assets/images/moon.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/bJe28raUO3oqalT36ye7m04",
+      "stripeLink": "https://buy.stripe.com/9B64gzd2Wgbc0Lj5eGe7m0b",
       "sold": false,
       "workId": "moon",
       "stockRemaining": 10
@@ -199,7 +199,7 @@
       "price": 15,
       "image": "assets/images/mossy_hall.jpg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/5kQcN57IC7EG2TrbD4e7m05",
+      "stripeLink": "https://buy.stripe.com/fZu9AT2oi7EG2TrePge7m0d",
       "sold": false,
       "workId": "moss-hall",
       "stockRemaining": 10
@@ -277,7 +277,7 @@
       "price": 10,
       "image": "assets/images/cow.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/cNiaEXe706AC2Tr0Yqe7m06",
+      "stripeLink": "https://buy.stripe.com/14A14n5AucZ0fGdgXoe7m0f",
       "sold": false,
       "workId": "cow",
       "stockRemaining": 10
@@ -333,7 +333,7 @@
       "price": 10,
       "image": "assets/images/birb.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/cNi9AT8MG4sueC9az0e7m01",
+      "stripeLink": "https://buy.stripe.com/8x23cv1kegbcfGd8qSe7m0e",
       "sold": false,
       "workId": "birb",
       "stockRemaining": 2
@@ -367,7 +367,7 @@
       "price": 20,
       "image": "assets/images/xochi/xochi.jpeg",
       "description": "11X6 Print",
-      "stripeLink": "https://buy.stripe.com/eVqfZhaUO2kmcu1ePge7m02",
+      "stripeLink": "https://buy.stripe.com/8x214n8MG6AC3Xvaz0e7m0c",
       "sold": false,
       "workId": "xochi",
       "stockRemaining": 10
@@ -379,7 +379,7 @@
       "price": 20,
       "image": "assets/images/img_5099.jpeg",
       "description": "Print",
-      "stripeLink": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
+      "stripeLink": "https://buy.stripe.com/3cI28rbYS6AC8dL4aCe7m0a",
       "sold": false,
       "workId": "jimothy-takes-seattle",
       "stockRemaining": 297
@@ -391,10 +391,10 @@
       "price": 50,
       "image": "assets/images/tote.jpeg",
       "description": "Take Jimothy with you to explore the world",
-      "stripeLink": "https://buy.stripe.com/8x200j7ICaQSfGdgXoe7m09",
+      "stripeLink": "https://buy.stripe.com/bJe3cv7ICaQS2Tr8qSe7m0h",
       "sold": false,
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-07-27T06:06:49.684Z"
+  "_lastSync": "2026-07-27T06:36:31.215Z"
 }
