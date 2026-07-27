@@ -28,7 +28,7 @@
   },
 
   "spotlight": {
-    "_help": "The home-page popup — one card with a main image and the promos listed below divided into it. \"image\" is the big picture; each item is a row (title, tag, url, cta). Delete an item when it's over, or set enabled:false to turn the whole popup off.",
+    "_help": "The home-page popup — one card with a main image and the promos listed below divided into it. \"image\" is the big picture; each item is a row (title, tag, cta + either a \"url\" OR a \"workId\"). Use \"workId\" (+ \"category\": Prints/Crafts) to auto-link to that product's live checkout so it never goes stale; use \"url\" for outside links like an auction. Delete an item when it's over, or set enabled:false to turn the whole popup off.",
     "enabled": true,
     "heading": "Jimothy Takes Seattle",
     "subheading": "Bid on the original, or take home a print or tote.",
@@ -38,14 +38,16 @@
         "title": "Jimothy print",
         "tag": "Print",
         "description": "Signed print of Jimothy Takes Seattle.",
-        "url": "https://buy.stripe.com/3cIbJ1bYSaQS8dL8qSe7m08",
+        "workId": "jimothy-takes-seattle",
+        "category": "Prints",
         "cta": "Buy print — $20"
       },
       {
         "title": "Jimothy tote",
         "tag": "Tote",
         "description": "Take Jimothy with you.",
-        "url": "https://buy.stripe.com/8x200j7ICaQSfGdgXoe7m09",
+        "workId": "jimothy-takes-seattle",
+        "category": "Crafts",
         "cta": "Buy tote — $50"
       },
       {

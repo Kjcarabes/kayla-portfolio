@@ -1527,13 +1527,22 @@ function spotlightProductItem(p, works) {
     };
 }
 
-function spotlightCustomItem(it) {
+function spotlightCustomItem(it, products) {
+    // A custom item can hard-link (it.url) or reference a shop product by workId
+    // (+ optional category) so its checkout link always tracks the live one in
+    // products.json — no stale hardcoded Stripe URLs after a re-sync.
+    let url = it.url || '#';
+    if (it.workId) {
+        const prod = (products || []).find(p =>
+            p.workId === it.workId && (!it.category || p.category === it.category));
+        url = (prod && prod.stripeLink && !prod.sold) ? prod.stripeLink : 'shop.html';
+    }
     return {
         title: it.title || '',
         tag: it.tag || '✨ New',
         description: it.description || '',
         image: it.image, widths: it.widths, aspectRatio: it.aspectRatio,
-        url: it.url || '#',
+        url,
         cta: it.cta || 'Learn more',
         features: null,
     };
@@ -1624,7 +1633,7 @@ async function initSpotlight() {
     const works = await loadWorks();
     const items = [
         ...featured.map(p => spotlightProductItem(p, works)),
-        ...(sp.items || []).map(spotlightCustomItem),
+        ...(sp.items || []).map(it => spotlightCustomItem(it, products)),
     ].filter(it => it.title);
     if (!items.length) { el.hidden = true; return; }
 

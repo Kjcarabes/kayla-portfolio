@@ -250,9 +250,23 @@ async function countCompletedSessions(linkId, cap) {
   return count;
 }
 
+// Does an existing link already carry the shipping config we want now? If not
+// (e.g. a link made manually or before shipping was set up, or referencing an
+// outdated rate), we must NOT reuse it — otherwise it'd keep its stale/missing
+// shipping forever. A mismatch falls through to create a fresh link below.
+function linkShippingMatches(link, shippingRateIds, countries) {
+  if (countries.length && !link.shipping_address_collection) return false;
+  if (shippingRateIds.length) {
+    const have = (link.shipping_options || []).map(o => o.shipping_rate).sort();
+    const want = [...shippingRateIds].sort();
+    if (have.length !== want.length || have.some((id, i) => id !== want[i])) return false;
+  }
+  return true;
+}
+
 // Ensure one active link at `cents` (with shipping + optional stock cap). Returns URL.
 async function ensureActiveLink({ product, cents, stock, label, metadata, links, shippingRateIds, countries }) {
-  const match = links.find(l => l.amount === cents);
+  const match = links.find(l => l.amount === cents && linkShippingMatches(l.link, shippingRateIds, countries));
   if (match) {
     const updates = {};
     if (!match.link.active) updates.active = true;
