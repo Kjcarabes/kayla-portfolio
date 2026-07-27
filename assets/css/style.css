@@ -2066,8 +2066,8 @@ body.spotlight-open {
 }
 
 /* ---- Combined popup card: hero image + divided promo rows ---- */
-/* The media is a stretched grid cell; the image fits inside it via absolute inset.
-   `contain` shows the whole image (never crops); the cream band fills any gap. */
+/* Image fills the left cell (absolute inset). Full-bleed; may crop — the exact
+   fit is a known TODO to revisit. */
 .spotlight-combo-media {
     position: relative;
     overflow: hidden;
