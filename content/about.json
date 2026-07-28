@@ -1,20 +1,66 @@
 {
   "_comment": "✏️ Your About page — bio + exhibition list. Edit here or in the admin 'About' tab.",
-  "bio": "Kayla Julianna Carabes (b. 2002 Houston, TX) is a multidisciplinary artist working across painting and performance, with a focus on natural environments as sites of memory, transformation, and storytelling. Her practice draws on intergenerational knowledge and ecological research to explore how land holds and communicates lived experience. Kayla is currently earning a BFA in Painting from Rhode Island School of Design in Providence, RI. She currently lives and works in Seattle, WA.",
+  "bio": "Kayla Julianna Carabes (b. 2002 Houston, TX) is a multidisciplinary artist working across painting and design with a focus on natural environments as sites of memory, transformation, and storytelling. Kayla earned her BFA in Painting from Rhode Island School of Design in Providence, RI and currently resides and works in Seattle Washington. ",
   "exhibitions": [
-    { "title": "Limp and Hard to Manage", "details": "Memorial Hall Gallery | April 2026" },
-    { "title": "SOMOS Spring Issue", "details": "Brown University Latinx Literary Magazine | Spring 2026" },
-    { "title": "Cover of 'The INDY'", "details": "College Hill Independent Newspaper | March 2026" },
-    { "title": "'Holding The Ground' Senior Showcase", "details": "Woods Gerry Gallery | March 2026" },
-    { "title": "Invierno Insólito", "details": "Luzy Studios, CDMX | January 2026" },
-    { "title": "Painting Triennial", "details": "Woods Gerry Gallery | November 2025" },
-    { "title": "Inception", "details": "134 Collaborative | October 2025" },
-    { "title": "Junior Painting Show", "details": "Memorial Hall Gallery | September 2025" },
-    { "title": "SOMOS Fall Issue", "details": "Brown University Latinx Literary Magazine | Fall 2025" },
-    { "title": "SOMOS Spring Issue", "details": "Brown University Latinx Literary Magazine | Spring 2024" },
-    { "title": "Intimate Oppositions Exhibition", "details": "Memorial Hall Gallery | May 2024" },
-    { "title": "Logging The Enchanted Forest", "details": "Gelman Gallery | February 2025" },
-    { "title": "Sophomore Painting Show", "details": "Memorial Hall Gallery | September 2023" },
-    { "title": "Nativo II", "details": "Hardy and Nance Studios | August 2023" }
+    {
+      "title": "Jimothy Seattle City Hall Exhibtion (1st place award)",
+      "details": "Seattle City Hall | Summer 2026"
+    },
+    {
+      "title": "Limp and Hard to Manage",
+      "details": "Memorial Hall Gallery | April 2026"
+    },
+    {
+      "title": "SOMOS Spring Issue",
+      "details": "Brown University Latinx Literary Magazine | Spring 2026"
+    },
+    {
+      "title": "Cover of 'The INDY'",
+      "details": "College Hill Independent Newspaper | March 2026"
+    },
+    {
+      "title": "'Holding The Ground' Senior Showcase",
+      "details": "Woods Gerry Gallery | March 2026"
+    },
+    {
+      "title": "Invierno Insólito",
+      "details": "Luzy Studios, CDMX | January 2026"
+    },
+    {
+      "title": "Painting Triennial",
+      "details": "Woods Gerry Gallery | November 2025"
+    },
+    {
+      "title": "Inception",
+      "details": "134 Collaborative | October 2025"
+    },
+    {
+      "title": "Junior Painting Show",
+      "details": "Memorial Hall Gallery | September 2025"
+    },
+    {
+      "title": "SOMOS Fall Issue",
+      "details": "Brown University Latinx Literary Magazine | Fall 2025"
+    },
+    {
+      "title": "SOMOS Spring Issue",
+      "details": "Brown University Latinx Literary Magazine | Spring 2024"
+    },
+    {
+      "title": "Intimate Oppositions Exhibition",
+      "details": "Memorial Hall Gallery | May 2024"
+    },
+    {
+      "title": "Logging The Enchanted Forest",
+      "details": "Gelman Gallery | February 2025"
+    },
+    {
+      "title": "Sophomore Painting Show",
+      "details": "Memorial Hall Gallery | September 2023"
+    },
+    {
+      "title": "Nativo II",
+      "details": "Hardy and Nance Studios | August 2023"
+    }
   ]
 }
