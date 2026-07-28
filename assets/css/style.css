@@ -523,16 +523,21 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
 }
 
 .work-detail-image {
-    height: 75vh;
+    --wd-media-max: 75vh;
+    /* Fit the image (no fixed height) so a short landscape shot doesn't leave a
+       big gap before the thumbnails; just cap how tall it can get. */
+    max-height: var(--wd-media-max);
     display: flex;
     align-items: flex-start;
     /* Left-align so the image's start lines up with the thumbnail row below. */
     justify-content: flex-start;
 }
 
-/* A video gets a black pillarbox so a portrait clip reads as a full player
-   (bars on the sides) instead of floating narrow on the page. */
+/* A video keeps a fixed black pillarbox so a portrait clip reads as a full
+   player (bars on the sides) instead of floating narrow on the page. */
 .work-detail-image.is-video {
+    height: var(--wd-media-max);
+    align-items: center;
     justify-content: center;
     background: #000;
     border-radius: 6px;
@@ -542,7 +547,7 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
 .work-detail-image img,
 .work-detail-image video {
     max-width: 100%;
-    max-height: 100%;
+    max-height: var(--wd-media-max);
     width: auto;
     height: auto;
     object-fit: contain;
@@ -692,6 +697,7 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
     line-height: 1.5;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    white-space: nowrap;
     border: none;
     cursor: pointer;
     transition: opacity 0.2s;
@@ -727,7 +733,7 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
     }
 
     .work-detail-image {
-        height: 60vh;
+        --wd-media-max: 60vh;
     }
 
     .work-detail-info h1 {
