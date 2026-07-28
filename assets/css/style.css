@@ -19,6 +19,7 @@
 
     /* Spacing (probably don't need to change) */
     --nav-height: 70px;
+    --banner-h: 40px;
     --container-width: 1400px;
     --spacing-sm: 1rem;
     --spacing-md: 2rem;
@@ -131,6 +132,50 @@ img {
     height: 1.5px;
     background: var(--color-text);
     transition: all 0.3s;
+}
+
+/* ===========================================
+   AUCTION COUNTDOWN BANNER
+   =========================================== */
+.auction-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1001;
+    height: var(--banner-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0 var(--spacing-md);
+    background: linear-gradient(90deg, #d1573f 0%, #e08a3c 100%);
+    color: #fff;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.auction-banner-timer {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.auction-banner-cta {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* When the banner is present, push the nav (and everything) down by its height. */
+body.has-auction-banner { padding-top: var(--banner-h); }
+body.has-auction-banner .nav { top: var(--banner-h); }
+body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
+
+@media (max-width: 600px) {
+    /* Keep it to timer + CTA on small screens so it fits one line. */
+    .auction-banner-text { display: none; }
 }
 
 /* ===========================================
@@ -480,18 +525,32 @@ img {
 .work-detail-image {
     height: 75vh;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    /* Left-align so the image's start lines up with the thumbnail row below. */
+    justify-content: flex-start;
 }
 
-.work-detail-image img {
+/* A video gets a black pillarbox so a portrait clip reads as a full player
+   (bars on the sides) instead of floating narrow on the page. */
+.work-detail-image.is-video {
+    justify-content: center;
+    background: #000;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.work-detail-image img,
+.work-detail-image video {
     max-width: 100%;
     max-height: 100%;
     width: auto;
     height: auto;
     object-fit: contain;
-    cursor: zoom-in;
     display: block;
+}
+
+.work-detail-image img {
+    cursor: zoom-in;
 }
 
 .work-detail-thumbs {
@@ -502,6 +561,7 @@ img {
 }
 
 .work-detail-thumb {
+    position: relative;
     width: 64px;
     height: 64px;
     padding: 0;
@@ -512,11 +572,37 @@ img {
     transition: border-color 0.15s;
 }
 
-.work-detail-thumb img {
+.work-detail-thumb img,
+.work-detail-thumb video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+/* Play badge over a video thumbnail. */
+.work-detail-thumb-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.work-detail-thumb-play::after {
+    content: '▶';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding-left: 1px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 0.6rem;
+    line-height: 1;
 }
 
 .work-detail-thumb:hover {
@@ -549,6 +635,8 @@ img {
     color: var(--color-text-light);
     line-height: 1.8;
     margin-bottom: var(--spacing-md);
+    /* Honor newlines in the description (e.g. a "Note:" on its own line). */
+    white-space: pre-line;
 }
 
 .work-detail-medium {

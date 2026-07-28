@@ -61,6 +61,15 @@
     ]
   },
 
+  "auctionBanner": {
+    "_help": "Slim countdown bar at the top of every page for a live auction. Set \"endsAt\" to the eBay auction end time in ISO-8601 WITH a timezone (e.g. 2026-08-03T19:00:00-07:00 for 7pm Seattle). It disappears automatically once that time passes. Set enabled:false to remove it.",
+    "enabled": true,
+    "text": "Jimothy original — live auction",
+    "cta": "Bid now",
+    "url": "https://www.ebay.com/itm/147463800483",
+    "endsAt": "2026-08-05T21:57:41-07:00"
+  },
+
   "_socialLinksHelp": "To add a new social link, copy the format above. Examples:",
   "_example1": "{ \"name\": \"Etsy\", \"url\": \"https://etsy.com/shop/yourshop\" }",
   "_example2": "{ \"name\": \"TikTok\", \"url\": \"https://tiktok.com/@username\" }",

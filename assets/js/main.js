@@ -116,6 +116,54 @@ async function initNewsletter() {
 }
 
 // ===========================================
+// AUCTION COUNTDOWN BANNER
+// ===========================================
+
+// Slim top-of-site bar counting down to a live eBay auction's end time.
+// Config lives in site-settings.json → auctionBanner. Hides itself once the
+// end time passes, so it's safe to leave in place after the auction.
+async function initAuctionBanner() {
+    const settings = await getSiteSettings();
+    const b = settings.auctionBanner;
+    if (!b || b.enabled === false || !b.endsAt) return;
+    const end = new Date(b.endsAt).getTime();
+    if (isNaN(end) || end - Date.now() <= 0) return;
+
+    const external = /^https?:\/\//.test(b.url || '');
+    const banner = document.createElement('a');
+    banner.className = 'auction-banner';
+    banner.href = b.url || '#';
+    if (external) { banner.target = '_blank'; banner.rel = 'noopener'; }
+    banner.innerHTML = `
+        <span class="auction-banner-text">${b.text || 'Live auction'}</span>
+        <span class="auction-banner-timer" data-auction-timer>—</span>
+        <span class="auction-banner-cta">${b.cta || 'Bid now'} &rarr;</span>
+    `;
+    document.body.prepend(banner);
+    document.body.classList.add('has-auction-banner');
+
+    const timerEl = banner.querySelector('[data-auction-timer]');
+    const tick = () => {
+        const ms = end - Date.now();
+        if (ms <= 0) {
+            clearInterval(iv);
+            banner.remove();
+            document.body.classList.remove('has-auction-banner');
+            return;
+        }
+        const s = Math.floor(ms / 1000);
+        const d = Math.floor(s / 86400);
+        const h = Math.floor((s % 86400) / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        const left = d > 0 ? `${d}d ${h}h ${m}m ${sec}s` : (h > 0 ? `${h}h ${m}m ${sec}s` : `${m}m ${sec}s`);
+        timerEl.textContent = `${left} left`;
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+}
+
+// ===========================================
 // INQUIRY MODAL (originals)
 // ===========================================
 
@@ -798,6 +846,7 @@ function worksAsOriginals(works) {
         description: '', // shop cards don't display work descriptions
         sold: w.originalStatus === 'sold',
         nfs: w.originalStatus === 'nfs',
+        auctionUrl: w.originalAuctionUrl || null,
         workId: w.id,
     }));
 }
@@ -847,6 +896,9 @@ function createProductCard(product, works = [], attachedOriginal = null) {
         } else if (product.sold) {
             statusHtml = '<p class="product-card-status">Original unavailable — Sold!</p>';
             buttonHtml = '<span class="product-card-btn sold">Sold!</span>';
+        } else if (product.auctionUrl) {
+            statusHtml = '<p class="product-card-status">Original — up for auction</p>';
+            buttonHtml = `<a href="${product.auctionUrl}" target="_blank" rel="noopener" class="product-card-btn">Bid on eBay</a>`;
         } else {
             statusHtml = '<p class="product-card-status">Original available</p>';
             buttonHtml = inquireButtonHtml(product);
@@ -1171,8 +1223,13 @@ function applyWorkDetailSeo(work, products = []) {
         socialImg = `${SITE_ORIGIN}/assets/images/optimized/${optMatch[1]}-${w}.webp`;
     }
     const mediumBits = [work.medium, work.size].filter(Boolean).join(', ');
-    const description = (work.description && work.description.trim())
-        ? `${work.description.trim()} — ${work.title} by Kayla Carabes${year ? `, ${year}` : ''}.`
+    // Use just the first line of the description for the meta tag (keeps it concise
+    // and drops any multi-line "Note:" the visible page shows in full).
+    const descLead = (work.description && work.description.trim())
+        ? work.description.trim().split('\n')[0].trim()
+        : '';
+    const description = descLead
+        ? `${descLead} — ${work.title} by Kayla Carabes${year ? `, ${year}` : ''}.`
         : `${work.title}${year ? ` (${year})` : ''}${mediumBits ? `, ${mediumBits}` : ''} — original artwork by Kayla Carabes.`;
     const social = `${work.title} — Kayla Carabes`;
 
@@ -1258,6 +1315,8 @@ async function loadWorkDetail() {
                         actionHtml = '<span class="work-detail-buy-btn sold">Not for sale</span>';
                     } else if (original && product.sold) {
                         actionHtml = '<span class="work-detail-buy-btn sold">Sold</span>';
+                    } else if (original && product.auctionUrl) {
+                        actionHtml = `<a href="${product.auctionUrl}" target="_blank" rel="noopener" class="work-detail-buy-btn">Bid on eBay</a>`;
                     } else if (original) {
                         actionHtml = inquireButtonHtml(product, 'work-detail');
                     } else {
@@ -1267,6 +1326,7 @@ async function loadWorkDetail() {
                     if (original) {
                         if (product.nfs) titleText = 'Original — Not for sale';
                         else if (product.sold) titleText = 'Original — Sold';
+                        else if (product.auctionUrl) titleText = 'Original — up for auction';
                         else titleText = 'Original available';
                     } else {
                         titleText = product.description || product.title;
@@ -1285,16 +1345,24 @@ async function loadWorkDetail() {
         `;
     }
 
-    // Support a `detail_images` array (first image is the main). Falls back to single `image`.
+    // Support a `detail_images` array (first image is the main). Entries can be
+    // images or videos (.mp4/.mov/.webm). Falls back to the single `image`.
     const imagesList = (Array.isArray(work.detail_images) && work.detail_images.length > 0)
         ? work.detail_images
         : [work.image].filter(Boolean);
 
+    const isVideoSrc = (s) => /\.(mp4|m4v|mov|webm|ogg)$/i.test(s || '');
+    const mainMediaMarkup = (src) => isVideoSrc(src)
+        ? `<video src="${escapeAttr(src)}" class="work-detail-media" controls playsinline preload="metadata"></video>`
+        : `<img src="${escapeAttr(src)}" alt="${escapeAttr(work.title)}" class="work-detail-media">`;
+
     const thumbsHtml = imagesList.length > 1 ? `
         <div class="work-detail-thumbs">
             ${imagesList.map((src, i) => `
-                <button type="button" class="work-detail-thumb${i === 0 ? ' active' : ''}" data-src="${escapeAttr(src)}" aria-label="View image ${i + 1}">
-                    <img src="${escapeAttr(src)}" alt="" loading="lazy">
+                <button type="button" class="work-detail-thumb${i === 0 ? ' active' : ''}" data-src="${escapeAttr(src)}" aria-label="View ${isVideoSrc(src) ? 'video' : 'image'} ${i + 1}">
+                    ${isVideoSrc(src)
+                        ? `<video src="${escapeAttr(src)}" muted playsinline preload="metadata"></video><span class="work-detail-thumb-play" aria-hidden="true"></span>`
+                        : `<img src="${escapeAttr(src)}" alt="" loading="lazy">`}
                 </button>
             `).join('')}
         </div>
@@ -1302,8 +1370,8 @@ async function loadWorkDetail() {
 
     container.innerHTML = `
         <div class="work-detail-gallery">
-            <div class="work-detail-image">
-                <img src="${escapeAttr(imagesList[0] || '')}" alt="${work.title}" id="detail-image">
+            <div class="work-detail-image" id="detail-media">
+                ${mainMediaMarkup(imagesList[0] || '')}
             </div>
             ${thumbsHtml}
         </div>
@@ -1316,20 +1384,24 @@ async function loadWorkDetail() {
         </div>
     `;
 
-    const detailImage = document.getElementById('detail-image');
-    if (detailImage) {
-        detailImage.addEventListener('click', () => {
-            openLightbox(detailImage.src, work.title);
-        });
-    }
+    const mediaWrap = document.getElementById('detail-media');
+    // Show a media item: a still image opens the lightbox on click; a video keeps
+    // its own controls and gets the .is-video (black pillarbox) treatment.
+    const showMedia = (src, replace) => {
+        if (!mediaWrap) return;
+        if (replace) mediaWrap.innerHTML = mainMediaMarkup(src);
+        mediaWrap.classList.toggle('is-video', isVideoSrc(src));
+        const img = mediaWrap.querySelector('img');
+        if (img) img.addEventListener('click', () => openLightbox(img.src, work.title));
+    };
+    showMedia(imagesList[0] || '', false);
 
-    // Thumbnail click → swap main image
+    // Thumbnail click → swap the main media (image or video).
     container.querySelectorAll('.work-detail-thumb').forEach(thumb => {
         thumb.addEventListener('click', () => {
             const src = thumb.dataset.src;
-            if (!src || !detailImage) return;
-            detailImage.src = src;
-            detailImage.classList.remove('loaded');
+            if (!src) return;
+            showMedia(src, true);
             container.querySelectorAll('.work-detail-thumb').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
         });
@@ -1669,6 +1741,7 @@ async function initSpotlight() {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSiteSettings();
+    initAuctionBanner();
     initAbout();
     initCardPage();
     initCardNewsletter();
