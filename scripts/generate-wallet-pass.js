@@ -78,8 +78,8 @@ const passJson = {
     backFields: [
       { key: 'website', label: 'Website', value: 'https://www.kaylacarabes.com',
         attributedValue: "<a href='https://www.kaylacarabes.com'>kaylacarabes.com</a>" },
-      { key: 'email', label: 'Email', value: 'kjcarabes@gmail.com',
-        attributedValue: "<a href='mailto:kjcarabes@gmail.com'>kjcarabes@gmail.com</a>" },
+      { key: 'email', label: 'Email', value: 'kaylacarabesart@gmail.com',
+        attributedValue: "<a href='mailto:kaylacarabesart@gmail.com'>kaylacarabesart@gmail.com</a>" },
       { key: 'instagram', label: 'Instagram', value: '@kayla_carabes',
         attributedValue: "<a href='https://instagram.com/kayla_carabes'>@kayla_carabes</a>" },
       { key: 'linkedin', label: 'LinkedIn', value: 'kayla-carabes',

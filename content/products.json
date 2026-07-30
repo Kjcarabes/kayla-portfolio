@@ -378,7 +378,7 @@
       "category": "Prints",
       "price": 20,
       "image": "assets/images/img_5099.jpeg",
-      "description": "Print",
+      "description": "10X10 Print",
       "stripeLink": "https://buy.stripe.com/3cI28rbYS6AC8dL4aCe7m0a",
       "sold": false,
       "workId": "jimothy-takes-seattle",
@@ -390,7 +390,7 @@
       "category": "Crafts",
       "price": 50,
       "image": "assets/images/tote.jpeg",
-      "description": "Take Jimothy with you.",
+      "description": "Tote - Take Jimothy with you.",
       "stripeLink": "https://buy.stripe.com/bJe3cv7ICaQS2Tr8qSe7m0h",
       "sold": false,
       "workId": "jimothy-takes-seattle"

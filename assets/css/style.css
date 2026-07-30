@@ -841,6 +841,12 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
         transform: translateX(0);
     }
 
+    /* Banner pushes the nav down, so the full-screen menu overlay must start
+       below the nav's new bottom edge, not just below --nav-height. */
+    body.has-auction-banner .nav-links {
+        top: calc(var(--nav-height) + var(--banner-h));
+    }
+
     .nav-toggle {
         display: flex;
     }

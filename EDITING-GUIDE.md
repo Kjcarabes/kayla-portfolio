@@ -264,7 +264,7 @@ Your email and social links appear on every page. Edit them in ONE place and the
 
 ```json
 {
-  "email": "kjcarabes@gmail.com",
+  "email": "kaylacarabesart@gmail.com",
 
   "socialLinks": [
     {

@@ -261,7 +261,7 @@ function initInquiryModal() {
             setTimeout(closeInquiryModal, 2500);
         } catch (err) {
             console.error('Inquiry submit failed:', err);
-            showError('Something went wrong. Please try again or email kjcarabes@gmail.com.');
+            showError('Something went wrong. Please try again or email kaylacarabesart@gmail.com.');
             submitBtn.disabled = false;
             submitBtn.textContent = originalLabel;
         }
