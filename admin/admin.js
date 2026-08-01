@@ -731,6 +731,21 @@ function renderOrders() {
         ⚠ Buyer emails are switched off — <code>ORDER_NOTIFY_URL</code> isn't set on the Worker,
         so nobody is being told their order is on the way. See admin-worker/README.md §5.
       </p>
+      <details class="calc-rates" style="margin-bottom:.9rem">
+        <summary>Send myself a test email</summary>
+        <div class="orders-bar" style="margin-top:.5rem">
+          <input type="email" id="test-email-to" placeholder="you@example.com" style="max-width:240px">
+          <select id="test-email-kind" style="max-width:230px">
+            <option value="processing">Buyer — "being made"</option>
+            <option value="tracking">Buyer — "on its way" + tracking</option>
+            <option value="alert-draft">Kayla — new order, draft ready</option>
+            <option value="alert-manual">Kayla — new order, ship by hand</option>
+          </select>
+          <button class="btn" data-action="send-test-email">Send test</button>
+          <span id="test-email-status" class="muted"></span>
+        </div>
+        <div class="field-hint">Sends the real template with made-up details. No order is touched and no customer is emailed.</div>
+      </details>
       <div class="orders-filters" id="orders-filters"></div>
       <div class="orders-bar">
         <button class="btn" data-action="orders-stage" data-base="Prepare draft" disabled>Prepare draft</button>
@@ -760,6 +775,7 @@ async function loadOrders() {
     state.orders = data.orders || [];
     state.orderEdits = {};
     state.orderEmailConfigured = data.emailConfigured !== false;
+    state.otherPayments = data.otherPayments || [];
     renderOrderFilters();
     renderOrdersTable();
   } catch (err) {
@@ -841,7 +857,9 @@ function selectedOrderIds() {
 function orderCan(o, action) {
   switch (action) {
     // Never offer to print something already posted by hand or written off.
-    case 'stage':          return !o.gelatoOrderId && !(o.blockers || []).length && !['shipped', 'cancelled'].includes(o.status);
+    // gelatoReady, not "no blockers": a hand-posted item has no Gelato product and
+    // that's correct, not an error — it just can't be staged.
+    case 'stage':          return !o.gelatoOrderId && o.gelatoReady && !['shipped', 'cancelled'].includes(o.status);
     case 'approve':        return !!o.gelatoOrderId && o.gelatoOrderType === 'draft';
     case 'cancel':         return !!o.gelatoOrderId && !['shipped', 'cancelled'].includes(o.status);
     case 'shipped':        return o.status !== 'shipped' && o.status !== 'cancelled';
@@ -978,6 +996,30 @@ async function ordersAction(action) {
     await loadOrders();
   } catch (err) {
     setOrdersStatus(`Failed: ${err.message}`, 'var(--danger)');
+  }
+}
+
+// Shows the Apps Script's own reply on failure — "didn't return JSON" almost
+// always means the `notify` branch isn't deployed, which is the usual culprit.
+async function sendTestEmail() {
+  const to = $('#test-email-to').value.trim();
+  const kind = $('#test-email-kind').value;
+  const status = $('#test-email-status');
+  status.textContent = 'Sending…';
+  status.style.color = '';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/test-email`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, kind }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    status.textContent = `Sent to ${data.sentTo} ✓`;
+    status.style.color = 'var(--ok)';
+  } catch (err) {
+    status.textContent = err.message;
+    status.style.color = 'var(--danger)';
   }
 }
 
@@ -1167,10 +1209,75 @@ function renderSales() {
 
     <div class="section" id="price-section"><h3>Price list</h3><div class="muted">Loading…</div></div>
     <div class="section" id="sale-section"><h3>Sale record</h3><div class="muted">Loading…</div></div>
+    <div class="section" id="other-pay-section" hidden></div>
   `;
   loadInquiries();
   wireCalculator();
   loadSales();
+  loadOtherPayments();
+}
+
+// Commissions and one-off invoices: Stripe payments that aren't shop items. They
+// have nothing to fulfil, so they're kept out of Orders — but they're still money
+// earned, so they're offered here for the sale record.
+async function loadOtherPayments() {
+  if (state.otherPayments) { renderOtherPayments(); return; }
+  try {
+    const r = await fetch(`${state.workerUrl}/api/orders`, {
+      method: 'POST', headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) return; // Stripe not configured — just don't show the section
+    state.otherPayments = data.otherPayments || [];
+    renderOtherPayments();
+  } catch { /* optional section; stay quiet */ }
+}
+
+function renderOtherPayments() {
+  const sec = $('#other-pay-section');
+  if (!sec || !state.sales) return;
+  const imported = new Set(state.sales.importedPayments || []);
+  const pending = (state.otherPayments || []).filter(p => !imported.has(p.id));
+  sec.hidden = pending.length === 0;
+  if (!pending.length) return;
+
+  sec.innerHTML = `
+    <h3>Commissions &amp; other payments <span class="muted" style="font-weight:400">— not shop items</span></h3>
+    <p class="tab-hint" style="margin:0 0 .7rem">Payment links you made yourself. They're not in Orders because there's
+      nothing to print or post automatically. Add them here to keep your sale record complete — each one only appears once.</p>
+    <div class="inq-scroll"><table class="sales-table"><thead><tr>
+      <th>Date</th><th>What</th><th>Amount</th><th>Buyer</th><th></th>
+    </tr></thead><tbody>
+    ${pending.map(p => `<tr>
+      <td class="list-cell">${new Date(p.created * 1000).toISOString().slice(0, 10)}</td>
+      <td class="list-cell" style="white-space:normal">${escapeHtml(p.description || 'Payment')}</td>
+      <td class="list-cell">${money(p.amount)}</td>
+      <td class="list-cell" style="white-space:normal">${escapeHtml(p.buyerName || '—')}<br><span class="muted">${escapeHtml(p.buyerEmail || '')}</span></td>
+      <td><button class="btn" data-action="import-payment" data-pid="${escapeAttr(p.id)}">Add to sale record</button></td>
+    </tr>`).join('')}
+    </tbody></table></div>
+  `;
+}
+
+function importPayment(id) {
+  const p = (state.otherPayments || []).find(x => x.id === id);
+  if (!p || !state.sales) return;
+  state.sales.saleRecord.push({
+    work: p.description || 'Commission',
+    year: new Date(p.created * 1000).getFullYear(),
+    size: '',
+    sell: p.amount,
+    sellDate: new Date(p.created * 1000).toISOString().slice(0, 10),
+    buyerName: p.buyerName || '',
+    buyerPhone: '',
+    buyerEmail: p.buyerEmail || '',
+    buyerNotes: p.address ? `Stripe payment\n${p.address}` : 'Stripe payment',
+  });
+  // Remember it so the same payment can't be added twice on a later visit.
+  (state.sales.importedPayments ||= []).push(p.id);
+  renderSaleTable();
+  renderOtherPayments();
+  saveSales();
 }
 
 function wireCalculator() {
@@ -1209,9 +1316,11 @@ async function loadSales() {
     if (typeof state.sales.markup !== 'number') state.sales.markup = 135;
     if (!Array.isArray(state.sales.priceList)) state.sales.priceList = [];
     if (!Array.isArray(state.sales.saleRecord)) state.sales.saleRecord = [];
+    if (!Array.isArray(state.sales.importedPayments)) state.sales.importedPayments = [];
     state.salesOriginal = JSON.parse(JSON.stringify(state.sales));
     renderPriceTable();
     renderSaleTable();
+    renderOtherPayments();
     updateTotalBanner();
   } catch (err) {
     const p = $('#price-section');
@@ -1499,6 +1608,7 @@ document.addEventListener('click', (e) => {
     'orders-email-tracking': () => ordersAction('email-tracking'),
     'orders-shipped': () => markOrdersShipped(),
     'orders-filter': () => setOrderFilter(btn.dataset.which),
+    'send-test-email': () => sendTestEmail(),
     'save-orders': () => saveOrders(),
 
     'send-newsletter': () => sendNewsletter(),
@@ -1510,6 +1620,7 @@ document.addEventListener('click', (e) => {
     'add-sale': () => { state.sales.saleRecord.push({ work: '', year: '', size: '', sell: null, sellDate: '', buyerName: '', buyerPhone: '', buyerEmail: '', buyerNotes: '' }); renderSaleTable(); },
     'del-sale': () => { if (confirm('Delete this sale?')) { state.sales.saleRecord.splice(i, 1); renderSaleTable(); } },
     'save-sales': () => saveSales(),
+    'import-payment': () => importPayment(btn.dataset.pid),
     'refresh-analytics': () => loadAnalytics(),
 
     'add-cardlink': () => { cardLinks().push({ label: '', url: '' }); rerender(); },

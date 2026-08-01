@@ -218,6 +218,21 @@ so an unrecognised action falls through to a send to the entire mailing list —
 requiring a separate secret is what guarantees the script has learned `notify`
 before anything is sent. Never add a fallback to the newsletter URL here.
 
+**Two separations the Orders tab depends on — don't collapse them.**
+
+*Blockers vs. readiness.* `fulfilmentBlockers` only complains about Gelato config
+when `item.auto` is on. A hand-posted item having no `gelatoProductUid` is the
+correct state, not a fault, and flagging it trained the eye to ignore warnings.
+Whether staging is possible is a separate flag, `gelatoReady`, which is what gates
+the "Prepare draft" button — so an action is never offered that could only fail.
+
+*Shop orders vs. everything else.* A completed Checkout Session with no
+`workId`/`shopItemId` on its payment link is a commission or one-off invoice Kayla
+made by hand. Those are returned as `otherPayments`, never as `orders`: there is
+nothing to fulfil, so in the fulfilment queue they were permanently stuck in an
+error state. They surface in **Original Sales** with a one-click import into the
+sale record, deduped by session id via `sales.importedPayments`.
+
 Customer addresses live **only** in Stripe and the Worker's private KV — never in
 the repo. `/api/orders` merges Stripe (what/where) + Gelato (progress) + KV (Kayla's
 manual status/tracking/notes) at read time; nothing about a buyer is committed.

@@ -332,11 +332,15 @@ tab, and are still approved from there — she just has to look rather than be t
 > secret is your confirmation that the script below is deployed. Never point it at
 > an Apps Script that lacks the `notify` branch.
 
-Add these two pieces to the Apps Script from step 4 so the Worker can send Kayla a
+Add these pieces to the Apps Script from step 4 so the Worker can send Kayla a
 single-recipient email. In `doPost`, just above `return sendNewsletter(payload);`:
 
 ```js
     if (payload.action === 'notify') return notifyOne(payload);
+    // Anything else with an action is a mistake, NOT a newsletter. Without this
+    // line an unrecognised action falls through and mails every subscriber.
+    // (The real newsletter send carries no `action`, so it still works.)
+    if (payload.action) return json({ ok: false, error: 'unknown action: ' + payload.action });
 ```
 
 and anywhere below, a new function:
