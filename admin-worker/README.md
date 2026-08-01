@@ -347,35 +347,41 @@ and anywhere below, a new function:
 
 ```js
 // Single-recipient email: order alerts to Kayla, shipping notices to buyers.
-// Set NOTIFY_FROM to a "Send mail as" alias on this Google account to control the
-// From address; leave it '' to send from the account that owns this script.
-var NOTIFY_FROM = 'kaylacarabesart@gmail.com';
-
+// MailApp on purpose — it needs no scope beyond the one this script already has,
+// and no alias setup. Sends from the account that owns this Sheet, displayed as
+// FROM_NAME. See "About the From address" below before reaching for GmailApp.
 function notifyOne(p) {
-  var opts = { name: FROM_NAME };
-  if (NOTIFY_FROM) opts.from = NOTIFY_FROM;
-  GmailApp.sendEmail(p.to, p.subject, p.body, opts);
+  MailApp.sendEmail({ to: p.to, subject: p.subject, body: p.body, name: FROM_NAME });
   return json({ ok: true });
 }
 ```
 
 **About the From address.** Apps Script sends as the Google account that owns the
-signups Sheet — which is *not* kaylacarabesart@gmail.com. Three options, in order
-of preference:
+signups Sheet — which is *not* kaylacarabesart@gmail.com. Recipients see
+`Kayla Carabes <owner@gmail.com>`: the same thing newsletter subscribers already
+see, so it's consistent, and `MailApp` above needs nothing set up.
 
-1. **Add a send-as alias (recommended).** In the owning account: Gmail → Settings →
-   **Accounts and Import → Send mail as → Add another email address** →
-   `kaylacarabesart@gmail.com` → Google mails a code to that inbox → confirm. Then
-   `NOTIFY_FROM` works. Verify with `Logger.log(GmailApp.getAliases())` — `from`
-   silently falls back to the owner's address if it isn't a registered alias.
-2. **Do nothing.** Set `NOTIFY_FROM = ''`. Mail comes from the owning account
-   showing `Kayla Carabes <owner@gmail.com>` — exactly what newsletter subscribers
-   already see today, so it's consistent.
-3. **Don't transfer the Sheet.** Re-deploying under another account issues a NEW
-   `/exec` URL, and that URL is the live newsletter signup endpoint in
-   `content/site-settings.json` as well as `NEWSLETTER_SEND_URL` /
-   `ORDER_NOTIFY_URL`. Signups break until all three are updated. Not worth it just
-   to change a From address.
+If you want the address itself to read `kaylacarabesart@gmail.com`, it takes two
+steps and **both are required** — doing only the second throws
+`Exception: Invalid argument: from` and Apps Script returns an HTML error page:
+
+1. In the **owning** account: Gmail → Settings → **Accounts and Import → Send mail
+   as → Add another email address** → `kaylacarabesart@gmail.com` → Google mails a
+   code to that inbox → confirm. Check it took by running
+   `Logger.log(GmailApp.getAliases())` in the editor; the address must be listed.
+2. Only then swap `MailApp` for `GmailApp`:
+   ```js
+   GmailApp.sendEmail(p.to, p.subject, p.body, { name: FROM_NAME, from: 'kaylacarabesart@gmail.com' });
+   ```
+   `GmailApp` also needs a **wider OAuth scope** than `MailApp`. After switching,
+   run any function once from the editor to trigger the new consent prompt, accept
+   it, *then* re-deploy a new version — otherwise the web app keeps failing with
+   the old scopes.
+
+**Don't transfer the Sheet** to solve this. Re-deploying under another account
+issues a NEW `/exec` URL, and that URL is the live newsletter signup endpoint in
+`content/site-settings.json` as well as `NEWSLETTER_SEND_URL` / `ORDER_NOTIFY_URL`.
+Signups break until all three are updated — a lot of risk for a From address.
 
 Buyers see `Kayla Carabes <that address>`. **Gelato is never mentioned and never
 emails your customers** — the only external link in the email is the carrier's
