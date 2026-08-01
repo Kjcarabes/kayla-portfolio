@@ -310,7 +310,12 @@ works for parcels Kayla posts herself too: type the tracking number into the row
 In `/admin` → **Works** (or **Shop**) → open the item → **Print-on-demand (Gelato)**:
 
 - **Auto-prepare a Gelato order when this sells** — off by default.
-- **Gelato product ID** — the `productUid`. Find it with `npm run gelato -- --catalog`.
+- **Gelato product ID** — the `productUid`. Orders can only be placed against a
+  productUid; a *template* (what you build in Gelato's product editor) can't be
+  ordered directly. Each template variant carries a productUid, so paste the
+  template ID into the **Look up** box under the field and pick the size you sell.
+  `npm run gelato -- --template <id>` does the same from the terminal, and
+  `--catalog` browses Gelato's stock catalogue if you have no template.
 - **Print file** — optional for prints (defaults to the artwork photo); **required**
   for crafts, since a photo of a tote is not the tote's artwork.
 

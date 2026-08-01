@@ -430,14 +430,51 @@ function gelatoFields(file, prefix, kind) {
           : 'Off: nothing is sent to Gelato. You get an email with the buyer’s address and post it yourself.'}
       </div>
       <div class="field-row">
-        ${input(file, `${prefix}.gelatoProductUid`, 'Gelato product ID', {
+        ${input(file, `${prefix}.gelatoProductUid`, 'Gelato ID', {
           spellcheck: false,
-          placeholder: 'e.g. framed_poster_product_…',
-          hint: 'From your Gelato dashboard, or run: npm run gelato -- --catalog',
+          placeholder: 'Template ID or product ID',
+          hint: 'Paste either — a template ID from Gelato, or a product ID. Only this one box is saved.',
         })}
         ${input(file, `${prefix}.gelatoPrintFile`, 'Print file (optional)', { spellcheck: false, hint: fileHint })}
       </div>
+      <details class="calc-rates">
+        <summary>Template has more than one size? Pick which one you sell</summary>
+        <div class="tmpl-lookup" style="margin-top:.5rem">
+          <input type="text" spellcheck="false" placeholder="Paste the template ID" data-tmpl-input="${escapeAttr(prefix)}">
+          <button class="btn" data-action="lookup-template" data-prefix="${escapeAttr(prefix)}" data-file="${escapeAttr(file)}">Look up</button>
+        </div>
+        <div class="field-hint" data-tmpl-result="${escapeAttr(prefix)}">This is just a helper — nothing here is saved. Clicking a size fills the box above.</div>
+      </details>
     </div>`;
+}
+
+// Resolve a Gelato template ID to the productUid(s) of its variants. Templates
+// can't be ordered directly — the order API only takes a productUid — so this
+// saves hunting for it in Gelato's dashboard.
+async function lookupTemplate(file, prefix) {
+  const input = $(`input[data-tmpl-input="${CSS.escape(prefix)}"]`);
+  const box = $(`[data-tmpl-result="${CSS.escape(prefix)}"]`);
+  const id = input?.value.trim();
+  if (!id) { box.textContent = 'Paste a template ID first.'; return; }
+
+  box.textContent = 'Looking up…';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/gelato-template`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId: id }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    if (!data.variants?.length) { box.textContent = 'No product IDs found in that template.'; return; }
+
+    box.innerHTML = `${data.title ? `<strong>${escapeHtml(data.title)}</strong> — ` : ''}pick the one you sell:` +
+      data.variants.map(v => `<button class="btn tmpl-pick" data-action="pick-product-uid"
+          data-key="${escapeAttr(`${prefix}.gelatoProductUid`)}" data-prefix="${escapeAttr(prefix)}"
+          data-uid="${escapeAttr(v.productUid)}">${v.title ? `${escapeHtml(v.title)} — ` : ''}${escapeHtml(v.productUid)}</button>`).join('');
+  } catch (err) {
+    box.innerHTML = `<span class="error-text">${escapeHtml(err.message)}</span>`;
+  }
 }
 
 // ---- Add-work modal (with optional Instagram post) ----
@@ -1323,6 +1360,14 @@ document.addEventListener('click', (e) => {
 
     'add-social': () => { socials().push({ name: '', url: '' }); rerender(); },
     'del-social': () => { state.files[FILE.settings].socialLinks.splice(i, 1); rerender(); },
+
+    'lookup-template': () => lookupTemplate(btn.dataset.file, btn.dataset.prefix),
+    'pick-product-uid': () => {
+      const target = $(`input[data-key="${btn.dataset.key}"]`);
+      if (target) { target.value = btn.dataset.uid; target.dispatchEvent(new Event('input', { bubbles: true })); }
+      const box = $(`[data-tmpl-result="${CSS.escape(btn.dataset.prefix)}"]`);
+      if (box) box.innerHTML = `<span style="color:var(--ok)">✓ Set to ${escapeHtml(btn.dataset.uid)}</span>`;
+    },
 
     'refresh-orders': () => loadOrders(),
     'orders-stage': () => ordersAction('stage'),

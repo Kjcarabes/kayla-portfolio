@@ -228,6 +228,10 @@ details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
 .sales-table tr.order-draft td { background: #fffbeb; }
 .sales-table tr.order-draft:hover td { background: #fff5d6; }
 .gelato-box { border: 1px solid var(--border); border-radius: 8px; padding: .8rem .9rem; background: #fbfcfe; }
+.tmpl-lookup { display: flex; gap: .5rem; align-items: center; }
+.tmpl-lookup input { flex: 1; }
+.tmpl-lookup button { flex-shrink: 0; }
+.tmpl-pick { display: block; width: 100%; text-align: left; margin-top: .3rem; font-size: .78rem; word-break: break-all; }
 
 /* Analytics */
 .stat-row { display: flex; gap: 1rem; margin-bottom: 1rem; }

@@ -79,6 +79,7 @@ const opts = {
   drafts: has('--drafts'),
   approve: valueOf('--approve'),
   catalog: has('--catalog') ? (valueOf('--catalog') || '') : null,
+  template: valueOf('--template'),
   shipping: valueOf('--shipping'),
   only: valueOf('--only'),
   since: valueOf('--since'),
@@ -356,7 +357,31 @@ function alreadyDone(row) {
   return row.existing.stripe || row.existing.ledger || row.existing.gelato;
 }
 
-function gelatoPayload(row, asDraft) {
+// One id per item, whichever kind Kayla had to hand. A template id (UUID) is
+// resolved to the productUid orders are actually placed against; anything else is
+// assumed to already be one. Several variants = genuinely ambiguous, so it errors
+// rather than guessing which size sold. Mirrors resolveProductUid in the Worker.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function resolveProductUid(value) {
+  const id = String(value || '').trim();
+  if (!UUID_RE.test(id)) return id;
+
+  const t = await gelato('GET', `https://ecommerce.gelatoapis.com/v1/templates/${encodeURIComponent(id)}`);
+  const uids = [];
+  (function walk(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (typeof node.productUid === 'string' && !uids.includes(node.productUid)) uids.push(node.productUid);
+    Object.values(node).forEach(walk);
+  })(t);
+
+  if (uids.length === 1) return uids[0];
+  if (!uids.length) throw new Error(`template ${id} has no product ID — is it finished in Gelato?`);
+  throw new Error(`template ${id} has ${uids.length} sizes — run --template ${id} and paste the exact one`);
+}
+
+function gelatoPayload(row, asDraft, productUid) {
   return {
     orderType: asDraft ? 'draft' : 'order',
     orderReferenceId: row.session.id,
@@ -364,7 +389,7 @@ function gelatoPayload(row, asDraft) {
     currency: settings.currency,
     items: [{
       itemReferenceId: `${row.item.key}:${row.session.id}`,
-      productUid: row.item.gelatoProductUid,
+      productUid,
       files: [{ type: 'default', url: printFileUrl(row.item) }],
       quantity: row.quantity,
     }],
@@ -445,6 +470,39 @@ async function runCatalog(query) {
     console.log('');
   }
   console.log(C.dim('Paste the productUid you want into the work\'s "Gelato product ID" box in /admin.\n'));
+}
+
+// A Gelato *template* (what you build in their product editor) can't be ordered
+// directly — the order API only takes a productUid. Each template variant carries
+// one, so this reads them out for pasting into the admin. The response shape isn't
+// documented stably, so walk it for anything that looks like a variant rather than
+// depending on one exact path.
+async function runTemplate(templateId) {
+  const t = await gelato('GET', `https://ecommerce.gelatoapis.com/v1/templates/${encodeURIComponent(templateId)}`);
+  console.log(`\n${C.bold(t.title || t.name || templateId)}\n`);
+
+  const found = [];
+  (function walk(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (typeof node.productUid === 'string') {
+      found.push({ title: node.title || node.name || node.variantUid || '', productUid: node.productUid });
+    }
+    Object.values(node).forEach(walk);
+  })(t);
+
+  if (!found.length) {
+    console.log(C.yellow('No productUid found in that template. Raw response:\n'));
+    console.log(JSON.stringify(t, null, 2).slice(0, 4000));
+    return;
+  }
+  const seen = new Set();
+  for (const v of found) {
+    if (seen.has(v.productUid)) continue;
+    seen.add(v.productUid);
+    console.log(`  ${v.title ? C.bold(v.title) + '\n  ' : ''}${C.cyan(v.productUid)}\n`);
+  }
+  console.log(C.dim('Paste the productUid for the size you sell into that work\'s "Gelato product ID" box.\n'));
 }
 
 async function runShipping(country) {
@@ -542,7 +600,7 @@ async function runOrders() {
 
   console.log(C.bold(`These ${capped.length} would be sent to Gelato as ${opts.draftMode ? 'DRAFTS (held for review, nothing prints)' : C.red('REAL ORDERS — these print immediately')}:\n`));
   for (const row of capped) {
-    const payload = gelatoPayload(row, opts.draftMode);
+    const payload = gelatoPayload(row, opts.draftMode, await resolveProductUid(row.item.gelatoProductUid));
     console.log(`  ${C.bold(row.item.title)} ×${row.quantity} → ${row.address.firstName} ${row.address.lastName}, ${row.address.city} ${row.address.country}`);
     console.log(C.dim(`     productUid : ${payload.items[0].productUid}`));
     console.log(C.dim(`     print file : ${payload.items[0].files[0].url}`));
@@ -574,7 +632,8 @@ async function runOrders() {
         continue;
       }
 
-      const order = await gelato('POST', GELATO_ORDERS, gelatoPayload(row, opts.draftMode));
+      const productUid = await resolveProductUid(row.item.gelatoProductUid);
+      const order = await gelato('POST', GELATO_ORDERS, gelatoPayload(row, opts.draftMode, productUid));
       console.log(`${C.green('✓')} ${label} → Gelato ${order.id}`);
       placed++;
 
@@ -618,6 +677,7 @@ async function runOrders() {
 // --- main --------------------------------------------------------------------
 
 (async () => {
+  if (opts.template) return runTemplate(opts.template);
   if (opts.catalog !== null) return runCatalog(opts.catalog);
   if (opts.shipping) return runShipping(opts.shipping);
   if (opts.approve) return runApprove();
