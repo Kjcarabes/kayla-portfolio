@@ -223,6 +223,24 @@ details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
 .calc-result strong { font-size: 1.5rem; }
 @media (max-width: 560px) { .calc-grid { grid-template-columns: 1fr 1fr; } }
 
+/* Orders — pipeline filters. Deliberately pills, not buttons: they change what you
+   are looking at, while the squared buttons below act on what you've ticked. Two
+   rows of identical-looking buttons read as one confusing bank of actions. */
+.orders-filters { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .9rem; }
+.order-filter {
+  cursor: pointer; font: inherit; font-size: .85rem;
+  border: 1px solid var(--border); background: #fff; color: var(--muted);
+  padding: .35rem .8rem; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: .4rem;
+}
+.order-filter:hover { background: #f0f2f5; color: var(--ink); }
+.order-filter.active { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.order-filter-count {
+  font-size: .75rem; font-variant-numeric: tabular-nums;
+  background: #eef1f5; color: var(--muted); border-radius: 999px; padding: 0 .4rem; min-width: 1.4em; text-align: center;
+}
+.order-filter.active .order-filter-count { background: rgba(255,255,255,.22); color: #fff; }
+
 /* Orders — action bar + a tint on rows waiting for a go/no-go */
 .orders-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .sales-table tr.order-draft td { background: #fffbeb; }

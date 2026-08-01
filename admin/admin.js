@@ -24,6 +24,7 @@ const state = {
   salesOriginal: null,
   orders: null,        // live Stripe orders + Gelato state (never stored in the repo)
   orderEdits: {},      // sessionId -> { status, tracking, notes } pending save
+  orderFilter: 'all',  // which pipeline stage the Orders table is showing
   activeTab: 'works',
 };
 
@@ -721,29 +722,24 @@ function renderOrders() {
     <div class="section">
       <h3>Orders <span class="muted" style="font-weight:400">— everything bought through the shop</span></h3>
       <p class="tab-hint" style="margin:0 0 .8rem">
-        Tick some rows, then use a button below — each one lights up only when it applies to what you've ticked.
-        <br><strong>Printed by Gelato:</strong> Not started → <em>Prepare draft</em> → check it → <em>Send to print</em>.
+        <strong>Gelato prints:</strong> Not started → <em>Prepare draft</em> → check it → <em>Send to print</em>.
         A draft costs nothing; only <em>Send to print</em> does.
-        <br><strong>Posting it yourself:</strong> pop it in the post, then <em>Mark shipped</em> (add a tracking
-        number first if you have one, then <em>Email tracking</em> to let the buyer know).
-        <br>Typing in Status, Tracking or Notes turns the row yellow until you press <em>Save my changes</em>.
+        <strong>Posting it yourself:</strong> <em>Mark shipped</em>, then <em>Email tracking</em>.
+        Edited rows turn yellow until you press <em>Save my changes</em>.
       </p>
+      <p id="orders-email-warning" class="error-text" hidden>
+        ⚠ Buyer emails are switched off — <code>ORDER_NOTIFY_URL</code> isn't set on the Worker,
+        so nobody is being told their order is on the way. See admin-worker/README.md §5.
+      </p>
+      <div class="orders-filters" id="orders-filters"></div>
       <div class="orders-bar">
-        <span class="muted">Select:</span>
-        <button class="btn" data-action="orders-select" data-which="stage">Not started</button>
-        <button class="btn" data-action="orders-select" data-which="approve">Drafts</button>
-        <button class="btn" data-action="orders-select" data-which="manual">To post myself</button>
-        <button class="btn" data-action="orders-select" data-which="none">Clear</button>
-        <span class="topbar-spacer"></span>
-        <button class="btn" data-action="refresh-orders">Refresh</button>
-      </div>
-      <div class="orders-bar" style="margin-top:.5rem">
         <button class="btn" data-action="orders-stage" data-base="Prepare draft" disabled>Prepare draft</button>
         <button class="btn primary" data-action="orders-approve" data-base="Send to print" disabled>Send to print</button>
         <button class="btn" data-action="orders-shipped" data-base="Mark shipped" disabled>Mark shipped</button>
         <button class="btn" data-action="orders-email-tracking" data-base="Email tracking" disabled>Email tracking</button>
         <button class="btn danger" data-action="orders-cancel" data-base="Cancel draft" disabled>Cancel draft</button>
         <span class="topbar-spacer"></span>
+        <button class="btn" data-action="refresh-orders">Refresh</button>
         <button class="btn primary" data-action="save-orders" data-base="Save my changes" disabled>Save my changes</button>
         <span id="orders-status" class="muted"></span>
       </div>
@@ -763,6 +759,8 @@ async function loadOrders() {
     if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
     state.orders = data.orders || [];
     state.orderEdits = {};
+    state.orderEmailConfigured = data.emailConfigured !== false;
+    renderOrderFilters();
     renderOrdersTable();
   } catch (err) {
     if (table) table.innerHTML = `<p class="error-text">Couldn’t load orders: ${escapeHtml(err.message)}</p>`;
@@ -776,10 +774,11 @@ function orderField(id, field, value, type = 'text') {
 function renderOrdersTable() {
   const el = $('#orders-table');
   if (!el) return;
-  const orders = state.orders || [];
+  const orders = visibleOrders();
   if (!orders.length) {
-    el.innerHTML = '<p class="muted">No orders yet.</p>';
+    el.innerHTML = `<p class="muted">${(state.orders || []).length ? 'Nothing at this stage.' : 'No orders yet.'}</p>`;
     updateOrdersBanner();
+    updateOrderButtons();
     return;
   }
   el.innerHTML = `
@@ -876,17 +875,47 @@ function updateOrderButtons() {
   }
 }
 
-// Quick-select: tick every row a given action applies to, so "all the not-started
-// ones" is one click and already excludes anything finished or blocked.
-function selectOrders(which) {
-  const byId = new Map((state.orders || []).map(o => [o.id, o]));
-  for (const c of $$('.order-check')) {
-    const o = byId.get(c.value);
-    c.checked = which === 'none' ? false : !!(o && orderCan(o, which));
-  }
-  const all = $('#orders-check-all');
-  if (all) all.checked = false;
-  updateOrderButtons();
+// Stages of the pipeline, as filters. Narrowing the table to one stage is what
+// makes a batch workable: pick "Not started", tick the header box, prepare every
+// draft — no hunting for which rows are which.
+const ORDER_FILTERS = [
+  { key: 'all', label: 'All', match: () => true },
+  { key: 'new', label: 'Not started', match: o => !o.gelatoOrderId && o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
+  { key: 'draft', label: 'Drafts', match: o => o.gelatoOrderType === 'draft' && o.status !== 'cancelled' },
+  { key: 'printing', label: 'Printing', match: o => !!o.gelatoOrderId && o.gelatoOrderType !== 'draft' && !['shipped', 'cancelled'].includes(o.status) },
+  { key: 'manual', label: 'To post myself', match: o => !o.gelatoOrderId && !o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
+  { key: 'shipped', label: 'Shipped', match: o => o.status === 'shipped' },
+  { key: 'cancelled', label: 'Cancelled', match: o => o.status === 'cancelled' },
+];
+
+function visibleOrders() {
+  const f = ORDER_FILTERS.find(x => x.key === (state.orderFilter || 'all')) || ORDER_FILTERS[0];
+  return (state.orders || []).filter(f.match);
+}
+
+function renderOrderFilters() {
+  const warn = $('#orders-email-warning');
+  if (warn) warn.hidden = state.orderEmailConfigured !== false;
+  const el = $('#orders-filters');
+  if (!el) return;
+  const active = state.orderFilter || 'all';
+  const orders = state.orders || [];
+  el.innerHTML = ORDER_FILTERS.map(f => {
+    const n = orders.filter(f.match).length;
+    // Empty stages are noise — hide them unless they're 'All' or currently active.
+    if (!n && f.key !== 'all' && f.key !== active) return '';
+    return `<button class="order-filter${f.key === active ? ' active' : ''}" data-action="orders-filter" data-which="${f.key}">
+        ${escapeHtml(f.label)} <span class="order-filter-count">${n}</span>
+      </button>`;
+  }).join('');
+}
+
+// Selections are cleared when the filter changes: acting on a row you can no
+// longer see is exactly the kind of surprise this tab must not have.
+function setOrderFilter(key) {
+  state.orderFilter = key;
+  renderOrderFilters();
+  renderOrdersTable();
 }
 
 // Manual shipments: set the status locally and save in one go, so Kayla never has
@@ -1469,7 +1498,7 @@ document.addEventListener('click', (e) => {
     'orders-cancel': () => ordersAction('cancel'),
     'orders-email-tracking': () => ordersAction('email-tracking'),
     'orders-shipped': () => markOrdersShipped(),
-    'orders-select': () => selectOrders(btn.dataset.which),
+    'orders-filter': () => setOrderFilter(btn.dataset.which),
     'save-orders': () => saveOrders(),
 
     'send-newsletter': () => sendNewsletter(),

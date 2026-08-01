@@ -272,14 +272,21 @@ draft**. A draft costs nothing and prints nothing — it's just the order sittin
 filled in and ready. You'll see it in Orders as **"Draft — awaiting your OK"** and the
 row is tinted yellow.
 
-When you're happy with it:
+The pills along the top — **All · Not started · Drafts · Printing · To post myself ·
+Shipped · Cancelled** — show you one stage at a time, with a count on each. That's
+what makes a batch easy:
 
-1. Tick the box next to the orders you want.
-2. Press **Send to print**.
-3. Confirm — it names each piece and buyer so you can double-check before it goes.
+1. Click **Not started**, tick the box in the table header to select them all, press
+   **Prepare draft**.
+2. Check them over in Gelato.
+3. Click **Drafts**, tick the header box again, press **Send to print**.
+4. Confirm — it names each piece and buyer so you can double-check before it goes.
 
-That press is the only thing that spends money. Before it, you can press **Cancel
-draft** and nothing was ever made.
+Step 3 is the only thing that spends money. Before it, **Cancel draft** undoes
+everything and nothing was ever made.
+
+The buttons only light up when they can actually do something to what you've ticked,
+and each shows how many rows it will affect — so *Send to print (4)* means four.
 
 ### Items you post yourself
 
