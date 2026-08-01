@@ -21,7 +21,7 @@
       "originalStatus": "available",
       "originalAuctionUrl": "https://www.ebay.com/itm/147463800483",
       "printPrice": 20,
-      "printStock": 300,
+      "printStock": null,
       "aspectRatio": 1.0008,
       "widths": [
         400,
@@ -32,7 +32,9 @@
       ],
       "printDescription": "10X10 Print",
       "medium": "Oil on Canvas",
-      "printOrder": 1
+      "printOrder": 1,
+      "gelatoAuto": true,
+      "gelatoProductUid": "0f3ef25b-1a78-4f43-b143-111725e79b24"
     },
     {
       "id": "moon",
