@@ -280,17 +280,25 @@ receipt**.
 Gelato is white-label and emails nobody, so without this the buyer hears nothing
 between the Stripe receipt and a parcel arriving.
 
-1. Invent a long random token and store it:
+1. Invent a long random token (`openssl rand -hex 32`) and store it:
    ```
    npx wrangler secret put GELATO_WEBHOOK_TOKEN
    ```
-2. Gelato dashboard → **Developers → Webhooks** → add:
-   `https://kayla-admin.bb69z8ddnz.workers.dev/gelato-webhook?token=THE_SAME_TOKEN`
+2. Gelato dashboard → **Developers → Webhooks** → add the endpoint:
+   - **URL** `https://kayla-admin.bb69z8ddnz.workers.dev/gelato-webhook`
+   - **Method** `POST`
+   - **Authorization** — tick it and supply the same token. Whatever field shape
+     Gelato offers, the Worker accepts it: `Bearer <token>`, HTTP Basic with the
+     token as either the username or the password, or a bare token with no scheme.
+   - If you'd rather not use the Authorization box, append `?token=<token>` to the
+     URL instead — that works too.
 3. Subscribe to **`order_status_updated`**.
 
-Gelato doesn't sign its webhooks, so that token in the URL *is* the authentication —
-treat it like a password. On a `shipped` status the Worker emails the buyer their
-tracking number (once — it records `trackingEmailedAt`), and updates the Orders row.
+Gelato doesn't sign its webhooks, so this shared token *is* the authentication —
+treat it like a password. Without it, anyone who guessed the URL could POST a fake
+"shipped" event and make the Worker email your customers. On a `shipped` status the
+Worker emails the buyer their tracking number (once — it records
+`trackingEmailedAt`) and updates the Orders row.
 
 If a webhook is ever missed, tracking is also picked up whenever the Orders tab
 refreshes, and **Email tracking to buyer** in that tab sends it by hand. That button
