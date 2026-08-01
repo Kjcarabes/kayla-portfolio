@@ -227,6 +227,10 @@ details.list-item[open] > summary .summary-caret { transform: rotate(90deg); }
 .orders-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .sales-table tr.order-draft td { background: #fffbeb; }
 .sales-table tr.order-draft:hover td { background: #fff5d6; }
+/* Unsaved hand-edits — the row stays marked until "Save my changes" */
+.sales-table tr.order-edited td { background: #fff8e1; box-shadow: inset 0 0 0 9999px rgba(255, 193, 7, .07); }
+.sales-table tr.order-edited td:first-child { border-left: 3px solid #f0ad00; }
+.orders-bar .btn:disabled { opacity: .45; cursor: default; }
 .gelato-box { border: 1px solid var(--border); border-radius: 8px; padding: .8rem .9rem; background: #fbfcfe; }
 .tmpl-lookup { display: flex; gap: .5rem; align-items: center; }
 .tmpl-lookup input { flex: 1; }

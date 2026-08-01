@@ -285,6 +285,7 @@ document.addEventListener('input', (e) => {
     const edit = (state.orderEdits[t.dataset.order] ||= { status: row?.status, tracking: row?.tracking || '', notes: row?.notes || '' });
     edit[t.dataset.orderField] = t.value;
     if (t.dataset.orderField === 'status') updateOrdersBanner();
+    updateOrderButtons();
     return;
   }
   if (t.dataset.sales && state.sales) {
@@ -305,6 +306,7 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', async (e) => {
   const t = e.target;
+  if (t.classList?.contains('order-check')) { updateOrderButtons(); return; }
   if (!t.dataset.imgFile) return;
   const file = t.files?.[0];
   if (!file) return;
@@ -437,13 +439,13 @@ function gelatoFields(file, prefix, kind) {
         })}
         ${input(file, `${prefix}.gelatoPrintFile`, 'Print file (optional)', { spellcheck: false, hint: fileHint })}
       </div>
-      <details class="calc-rates">
-        <summary>Template has more than one size? Pick which one you sell</summary>
+      <details class="calc-rates"${getByPath(state.files[file], `${prefix}.gelatoProductUid`) ? '' : ' open'}>
+        <summary>Get the ID from a Gelato template</summary>
         <div class="tmpl-lookup" style="margin-top:.5rem">
           <input type="text" spellcheck="false" placeholder="Paste the template ID" data-tmpl-input="${escapeAttr(prefix)}">
           <button class="btn" data-action="lookup-template" data-prefix="${escapeAttr(prefix)}" data-file="${escapeAttr(file)}">Look up</button>
         </div>
-        <div class="field-hint" data-tmpl-result="${escapeAttr(prefix)}">This is just a helper — nothing here is saved. Clicking a size fills the box above.</div>
+        <div class="field-hint" data-tmpl-result="${escapeAttr(prefix)}">Pick the size you sell and it fills the box above. Nothing typed here is saved.</div>
       </details>
     </div>`;
 }
@@ -719,18 +721,30 @@ function renderOrders() {
     <div class="section">
       <h3>Orders <span class="muted" style="font-weight:400">— everything bought through the shop</span></h3>
       <p class="tab-hint" style="margin:0 0 .8rem">
-        Prints set to auto arrive here as a <strong>draft</strong>: Gelato is holding it, nothing has printed and
-        nothing has been charged. Tick the ones you're happy with and press <strong>Send to print</strong>.
-        Anything you post yourself, just mark as shipped.
+        Tick some rows, then use a button below — each one lights up only when it applies to what you've ticked.
+        <br><strong>Printed by Gelato:</strong> Not started → <em>Prepare draft</em> → check it → <em>Send to print</em>.
+        A draft costs nothing; only <em>Send to print</em> does.
+        <br><strong>Posting it yourself:</strong> pop it in the post, then <em>Mark shipped</em> (add a tracking
+        number first if you have one, then <em>Email tracking</em> to let the buyer know).
+        <br>Typing in Status, Tracking or Notes turns the row yellow until you press <em>Save my changes</em>.
       </p>
       <div class="orders-bar">
-        <button class="btn" data-action="refresh-orders">Refresh</button>
-        <button class="btn" data-action="orders-stage">Prepare draft</button>
-        <button class="btn primary" data-action="orders-approve">Send to print</button>
-        <button class="btn" data-action="orders-email-tracking">Email tracking to buyer</button>
-        <button class="btn danger" data-action="orders-cancel">Cancel draft</button>
+        <span class="muted">Select:</span>
+        <button class="btn" data-action="orders-select" data-which="stage">Not started</button>
+        <button class="btn" data-action="orders-select" data-which="approve">Drafts</button>
+        <button class="btn" data-action="orders-select" data-which="manual">To post myself</button>
+        <button class="btn" data-action="orders-select" data-which="none">Clear</button>
         <span class="topbar-spacer"></span>
-        <button class="btn primary" data-action="save-orders">Save my changes</button>
+        <button class="btn" data-action="refresh-orders">Refresh</button>
+      </div>
+      <div class="orders-bar" style="margin-top:.5rem">
+        <button class="btn" data-action="orders-stage" data-base="Prepare draft" disabled>Prepare draft</button>
+        <button class="btn primary" data-action="orders-approve" data-base="Send to print" disabled>Send to print</button>
+        <button class="btn" data-action="orders-shipped" data-base="Mark shipped" disabled>Mark shipped</button>
+        <button class="btn" data-action="orders-email-tracking" data-base="Email tracking" disabled>Email tracking</button>
+        <button class="btn danger" data-action="orders-cancel" data-base="Cancel draft" disabled>Cancel draft</button>
+        <span class="topbar-spacer"></span>
+        <button class="btn primary" data-action="save-orders" data-base="Save my changes" disabled>Save my changes</button>
         <span id="orders-status" class="muted"></span>
       </div>
       <div id="orders-table" style="margin-top:.9rem">Loading…</div>
@@ -776,7 +790,11 @@ function renderOrdersTable() {
     </tr></thead><tbody>
     ${orders.map(o => {
       const blocked = (o.blockers || []).length > 0;
-      return `<tr class="${o.status === 'draft' ? 'order-draft' : ''}">
+      const cls = [
+        o.status === 'draft' ? 'order-draft' : '',
+        state.orderEdits?.[o.id] ? 'order-edited' : '',
+      ].filter(Boolean).join(' ');
+      return `<tr class="${cls}">
         <td><input type="checkbox" class="order-check" value="${escapeAttr(o.id)}"></td>
         <td class="list-cell">${new Date(o.created * 1000).toISOString().slice(0, 10)}</td>
         <td class="list-cell" style="white-space:normal">${escapeHtml(o.itemTitle)}${o.autoConfigured ? '' : ' <span class="muted">(manual)</span>'}</td>
@@ -799,8 +817,12 @@ function renderOrdersTable() {
     </tbody></table></div>
   `;
   const all = $('#orders-check-all');
-  if (all) all.addEventListener('change', () => $$('.order-check').forEach(c => { c.checked = all.checked; }));
+  if (all) all.addEventListener('change', () => {
+    $$('.order-check').forEach(c => { c.checked = all.checked; });
+    updateOrderButtons();
+  });
   updateOrdersBanner();
+  updateOrderButtons();
 }
 
 function updateOrdersBanner() {
@@ -814,6 +836,74 @@ function selectedOrderIds() {
   return $$('.order-check').filter(c => c.checked).map(c => c.value);
 }
 
+// Which actions make sense for a given row. Every button is driven off this, so
+// what's clickable always matches what would actually happen — no button that
+// silently no-ops, and no guessing which stage an order is at.
+function orderCan(o, action) {
+  switch (action) {
+    // Never offer to print something already posted by hand or written off.
+    case 'stage':          return !o.gelatoOrderId && !(o.blockers || []).length && !['shipped', 'cancelled'].includes(o.status);
+    case 'approve':        return !!o.gelatoOrderId && o.gelatoOrderType === 'draft';
+    case 'cancel':         return !!o.gelatoOrderId && !['shipped', 'cancelled'].includes(o.status);
+    case 'shipped':        return o.status !== 'shipped' && o.status !== 'cancelled';
+    case 'email-tracking': return !!o.buyerEmail;
+    // "To post myself": nothing staged and no Gelato product configured for it.
+    case 'manual':         return !o.gelatoOrderId && !o.autoConfigured;
+    default: return false;
+  }
+}
+
+const ORDER_ACTION_BTNS = ['stage', 'approve', 'shipped', 'email-tracking', 'cancel'];
+
+// Enable each button only for a selection it can act on, and show how many rows
+// that is — so a mixed selection says "Send to print (2)" rather than quietly
+// skipping the other three.
+function updateOrderButtons() {
+  const ids = new Set(selectedOrderIds());
+  const picked = (state.orders || []).filter(o => ids.has(o.id));
+  for (const action of ORDER_ACTION_BTNS) {
+    const btn = $(`[data-action="orders-${action}"]`);
+    if (!btn) continue;
+    const n = picked.filter(o => orderCan(o, action)).length;
+    btn.disabled = n === 0;
+    btn.textContent = n ? `${btn.dataset.base} (${n})` : btn.dataset.base;
+  }
+  const save = $('[data-action="save-orders"]');
+  if (save) {
+    const n = Object.keys(state.orderEdits || {}).length;
+    save.disabled = n === 0;
+    save.textContent = n ? `${save.dataset.base} (${n})` : save.dataset.base;
+  }
+}
+
+// Quick-select: tick every row a given action applies to, so "all the not-started
+// ones" is one click and already excludes anything finished or blocked.
+function selectOrders(which) {
+  const byId = new Map((state.orders || []).map(o => [o.id, o]));
+  for (const c of $$('.order-check')) {
+    const o = byId.get(c.value);
+    c.checked = which === 'none' ? false : !!(o && orderCan(o, which));
+  }
+  const all = $('#orders-check-all');
+  if (all) all.checked = false;
+  updateOrderButtons();
+}
+
+// Manual shipments: set the status locally and save in one go, so Kayla never has
+// to know that the dropdown and the Save button are two separate steps.
+async function markOrdersShipped() {
+  const ids = selectedOrderIds();
+  const picked = (state.orders || []).filter(o => ids.includes(o.id) && orderCan(o, 'shipped'));
+  if (!picked.length) return;
+  for (const o of picked) {
+    o.status = 'shipped';
+    state.orderEdits[o.id] = { status: 'shipped', tracking: o.tracking || '', notes: o.notes || '' };
+  }
+  renderOrdersTable();
+  await saveOrders();
+  await loadOrders();
+}
+
 function setOrdersStatus(msg, color) {
   const e = $('#orders-status');
   if (e) { e.textContent = msg; e.style.color = color || ''; }
@@ -822,10 +912,14 @@ function setOrdersStatus(msg, color) {
 // The only path that can spend money. It names the pieces and the amount in the
 // confirm, because "OK" on a vague prompt is how the wrong thing gets printed.
 async function ordersAction(action) {
-  const ids = selectedOrderIds();
-  if (!ids.length) { setOrdersStatus('Tick the orders you want first.', 'var(--danger)'); return; }
+  const selected = selectedOrderIds();
+  if (!selected.length) { setOrdersStatus('Tick the orders you want first.', 'var(--danger)'); return; }
 
-  const picked = (state.orders || []).filter(o => ids.includes(o.id));
+  // Act only on rows this action applies to — the button's count already told her
+  // how many that is, so a mixed selection does the obvious thing.
+  const picked = (state.orders || []).filter(o => selected.includes(o.id) && orderCan(o, action));
+  if (!picked.length) { setOrdersStatus('None of the ticked orders can do that.', 'var(--danger)'); return; }
+  const ids = picked.map(o => o.id);
   if (action === 'approve') {
     const lines = picked.map(o => `• ${o.itemTitle} → ${o.buyerName || o.buyerEmail || 'buyer'}`).join('\n');
     if (!confirm(`Send these ${ids.length} order(s) to print?\n\n${lines}\n\nThis places the real Gelato order and charges your Gelato account. It can't be undone once printing starts.`)) return;
@@ -1374,6 +1468,8 @@ document.addEventListener('click', (e) => {
     'orders-approve': () => ordersAction('approve'),
     'orders-cancel': () => ordersAction('cancel'),
     'orders-email-tracking': () => ordersAction('email-tracking'),
+    'orders-shipped': () => markOrdersShipped(),
+    'orders-select': () => selectOrders(btn.dataset.which),
     'save-orders': () => saveOrders(),
 
     'send-newsletter': () => sendNewsletter(),
