@@ -430,7 +430,7 @@ function gelatoFields(file, prefix, kind) {
       <div class="field-hint" style="margin:.15rem 0 .7rem">
         ${on
           ? 'On: a <strong>draft</strong> is queued in your Orders tab the moment it sells. Nothing prints and nothing is charged until you press “Send to print”.'
-          : 'Off: nothing is sent to Gelato. You get an email with the buyer’s address and post it yourself.'}
+          : 'Off: nothing is sent to Gelato. You get an email with the buyer’s address and ship it yourself.'}
       </div>
       <div class="field-row">
         ${input(file, `${prefix}.gelatoProductUid`, 'Gelato ID', {
@@ -706,12 +706,14 @@ function renderShop() {
 // trigger it. Any field is hand-editable so Kayla always has the last word.
 
 const ORDER_STATUS_OPTS = ['new', 'draft', 'printing', 'shipped', 'manual', 'cancelled'];
+// Kept short on purpose: a native <select> can't wrap, so a long option just gets
+// clipped. The tab hint carries the explanation instead.
 const ORDER_STATUS_LABEL = {
   new: 'Not started',
-  draft: 'Draft — awaiting your OK',
-  printing: 'Sent to print',
+  draft: 'Draft — needs OK',
+  printing: 'Printing',
   shipped: 'Shipped',
-  manual: 'You ship this one',
+  manual: 'Awaiting manual shipment',
   cancelled: 'Cancelled',
 };
 
@@ -724,8 +726,10 @@ function renderOrders() {
       <p class="tab-hint" style="margin:0 0 .8rem">
         <strong>Gelato prints:</strong> Not started → <em>Prepare draft</em> → check it → <em>Send to print</em>.
         A draft costs nothing; only <em>Send to print</em> does.
-        <strong>Posting it yourself:</strong> <em>Mark shipped</em>, then <em>Email tracking</em>.
-        Edited rows turn yellow until you press <em>Save my changes</em>.
+        <strong>Shipping it yourself:</strong> once it's on its way, press <em>Tell buyer it shipped</em> — it asks
+        for a tracking number, emails them, and marks the order shipped.
+        <br>The <strong>Status</strong> column is a dropdown you can change at any time; edited rows turn yellow
+        until you press <em>Save my changes</em>.
       </p>
       <p id="orders-email-warning" class="error-text" hidden>
         ⚠ Buyer emails are switched off — <code>ORDER_NOTIFY_URL</code> isn't set on the Worker,
@@ -750,8 +754,7 @@ function renderOrders() {
       <div class="orders-bar">
         <button class="btn" data-action="orders-stage" data-base="Prepare draft" disabled>Prepare draft</button>
         <button class="btn primary" data-action="orders-approve" data-base="Send to print" disabled>Send to print</button>
-        <button class="btn" data-action="orders-shipped" data-base="Mark shipped" disabled>Mark shipped</button>
-        <button class="btn" data-action="orders-email-tracking" data-base="Email tracking" disabled>Email tracking</button>
+        <button class="btn" data-action="orders-email-tracking" data-base="Tell buyer it shipped" disabled>Tell buyer it shipped</button>
         <button class="btn danger" data-action="orders-cancel" data-base="Cancel draft" disabled>Cancel draft</button>
         <span class="topbar-spacer"></span>
         <button class="btn" data-action="refresh-orders">Refresh</button>
@@ -862,15 +865,14 @@ function orderCan(o, action) {
     case 'stage':          return !o.gelatoOrderId && o.gelatoReady && !['shipped', 'cancelled'].includes(o.status);
     case 'approve':        return !!o.gelatoOrderId && o.gelatoOrderType === 'draft';
     case 'cancel':         return !!o.gelatoOrderId && !['shipped', 'cancelled'].includes(o.status);
-    case 'shipped':        return o.status !== 'shipped' && o.status !== 'cancelled';
-    case 'email-tracking': return !!o.buyerEmail;
-    // "To post myself": nothing staged and no Gelato product configured for it.
+    case 'email-tracking': return !!o.buyerEmail && o.status !== 'cancelled';
+    // "Awaiting manual shipment": nothing staged, no Gelato product configured.
     case 'manual':         return !o.gelatoOrderId && !o.autoConfigured;
     default: return false;
   }
 }
 
-const ORDER_ACTION_BTNS = ['stage', 'approve', 'shipped', 'email-tracking', 'cancel'];
+const ORDER_ACTION_BTNS = ['stage', 'approve', 'email-tracking', 'cancel'];
 
 // Enable each button only for a selection it can act on, and show how many rows
 // that is — so a mixed selection says "Send to print (2)" rather than quietly
@@ -901,7 +903,7 @@ const ORDER_FILTERS = [
   { key: 'new', label: 'Not started', match: o => !o.gelatoOrderId && o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
   { key: 'draft', label: 'Drafts', match: o => o.gelatoOrderType === 'draft' && o.status !== 'cancelled' },
   { key: 'printing', label: 'Printing', match: o => !!o.gelatoOrderId && o.gelatoOrderType !== 'draft' && !['shipped', 'cancelled'].includes(o.status) },
-  { key: 'manual', label: 'To post myself', match: o => !o.gelatoOrderId && !o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
+  { key: 'manual', label: 'Awaiting manual shipment', match: o => !o.gelatoOrderId && !o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
   { key: 'shipped', label: 'Shipped', match: o => o.status === 'shipped' },
   { key: 'cancelled', label: 'Cancelled', match: o => o.status === 'cancelled' },
 ];
@@ -918,11 +920,11 @@ function renderOrderFilters() {
   if (!el) return;
   const active = state.orderFilter || 'all';
   const orders = state.orders || [];
+  // Every stage is always shown, empty or not: the row of pills doubles as the map
+  // of the pipeline, and one that rearranges itself as orders move is disorienting.
   el.innerHTML = ORDER_FILTERS.map(f => {
     const n = orders.filter(f.match).length;
-    // Empty stages are noise — hide them unless they're 'All' or currently active.
-    if (!n && f.key !== 'all' && f.key !== active) return '';
-    return `<button class="order-filter${f.key === active ? ' active' : ''}" data-action="orders-filter" data-which="${f.key}">
+    return `<button class="order-filter${f.key === active ? ' active' : ''}${n ? '' : ' empty'}" data-action="orders-filter" data-which="${f.key}">
         ${escapeHtml(f.label)} <span class="order-filter-count">${n}</span>
       </button>`;
   }).join('');
@@ -936,20 +938,6 @@ function setOrderFilter(key) {
   renderOrdersTable();
 }
 
-// Manual shipments: set the status locally and save in one go, so Kayla never has
-// to know that the dropdown and the Save button are two separate steps.
-async function markOrdersShipped() {
-  const ids = selectedOrderIds();
-  const picked = (state.orders || []).filter(o => ids.includes(o.id) && orderCan(o, 'shipped'));
-  if (!picked.length) return;
-  for (const o of picked) {
-    o.status = 'shipped';
-    state.orderEdits[o.id] = { status: 'shipped', tracking: o.tracking || '', notes: o.notes || '' };
-  }
-  renderOrdersTable();
-  await saveOrders();
-  await loadOrders();
-}
 
 function setOrdersStatus(msg, color) {
   const e = $('#orders-status');
@@ -967,24 +955,38 @@ async function ordersAction(action) {
   const picked = (state.orders || []).filter(o => selected.includes(o.id) && orderCan(o, action));
   if (!picked.length) { setOrdersStatus('None of the ticked orders can do that.', 'var(--danger)'); return; }
   const ids = picked.map(o => o.id);
+  let tracking = null;
   if (action === 'approve') {
     const lines = picked.map(o => `• ${o.itemTitle} → ${o.buyerName || o.buyerEmail || 'buyer'}`).join('\n');
     if (!confirm(`Send these ${ids.length} order(s) to print?\n\n${lines}\n\nThis places the real Gelato order and charges your Gelato account. It can't be undone once printing starts.`)) return;
   } else if (action === 'cancel') {
     if (!confirm(`Cancel ${ids.length} order(s) at Gelato?`)) return;
   } else if (action === 'email-tracking') {
+    // One row at a time gets a tracking prompt — a hand-shipped parcel's number is
+    // only known at this moment, and one number can't be right for several parcels.
+    if (picked.length === 1) {
+      const o = picked[0];
+      const entered = prompt(
+        `Tracking number for "${o.itemTitle}" → ${o.buyerName || o.buyerEmail}\n\nLeave blank to send without one.`,
+        o.tracking || '');
+      if (entered === null) return;
+      tracking = entered.trim();
+      o.tracking = tracking;
+      state.orderEdits[o.id] = { status: o.status, tracking, notes: o.notes || '' };
+      renderOrdersTable();
+    }
     const already = picked.filter(o => o.trackingEmailedAt).length;
-    const lines = picked.map(o => `• ${o.buyerEmail || o.buyerName || o.id} — tracking: ${o.tracking || '(none yet!)'}`).join('\n');
-    if (!confirm(`Email ${ids.length} buyer(s) that their order has shipped?\n\n${lines}\n${already ? `\n${already} of these have already been emailed once.` : ''}`)) return;
+    const lines = picked.map(o => `• ${o.buyerEmail || o.buyerName || o.id} — tracking: ${o.tracking || '(none)'}`).join('\n');
+    if (!confirm(`Email ${ids.length} buyer(s) to say their order has shipped?\n\n${lines}\n${already ? `\n${already} of these have been emailed once already.` : ''}`)) return;
   }
 
-  const verb = { stage: 'Preparing drafts', approve: 'Sending to print', cancel: 'Cancelling', 'email-tracking': 'Emailing buyers' }[action];
+  const verb = { stage: 'Preparing drafts', approve: 'Sending to print', cancel: 'Cancelling', 'email-tracking': 'Emailing buyer' }[action];
   setOrdersStatus(`${verb}…`);
   try {
     const r = await fetch(`${state.workerUrl}/api/orders-action`, {
       method: 'POST',
       headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, sessionIds: ids }),
+      body: JSON.stringify({ action, sessionIds: ids, tracking }),
     });
     const data = await r.json();
     if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
@@ -1606,7 +1608,6 @@ document.addEventListener('click', (e) => {
     'orders-approve': () => ordersAction('approve'),
     'orders-cancel': () => ordersAction('cancel'),
     'orders-email-tracking': () => ordersAction('email-tracking'),
-    'orders-shipped': () => markOrdersShipped(),
     'orders-filter': () => setOrderFilter(btn.dataset.which),
     'send-test-email': () => sendTestEmail(),
     'save-orders': () => saveOrders(),

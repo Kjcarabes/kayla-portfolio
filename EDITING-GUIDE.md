@@ -291,8 +291,7 @@ and each shows how many rows it will affect — so *Send to print (4)* means fou
 ### Items you post yourself
 
 If a piece doesn't have Gelato turned on, nothing goes to Gelato at all. You get an
-email with the buyer's address, you pop it in the post, then set that row's status to
-**Shipped** and press **Save my changes**.
+email with the buyer's address and you ship it yourself.
 
 ### Letting the buyer know it's on the way
 
@@ -300,12 +299,18 @@ For Gelato orders this happens **by itself** — the moment Gelato ships, the bu
 an email from you with their tracking number. You'll see "buyer emailed" under the
 tracking column.
 
-For parcels you post yourself: type the tracking number into that row, press **Save my
-changes**, then tick the row and press **Email tracking to buyer**. It shows you exactly
-who's about to be emailed before it sends.
+For parcels you ship yourself: tick the row and press **Tell buyer it shipped**. It asks
+you for a tracking number (leave it blank if there isn't one), shows you exactly who's
+about to be emailed, then sends it and marks the order **Shipped** for you.
 
 The email comes from *you*, in your words — the print company never contacts your
 customers.
+
+### Changing a status by hand
+
+The **Status** column is a dropdown — click it and pick anything you like, for any row.
+It's yours to override whenever the automatic status isn't quite right. Changed rows
+turn yellow until you press **Save my changes**.
 
 ### The columns
 
