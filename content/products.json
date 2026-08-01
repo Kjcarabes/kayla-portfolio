@@ -382,7 +382,7 @@
       "stripeLink": "https://buy.stripe.com/3cI28rbYS6AC8dL4aCe7m0a",
       "sold": false,
       "workId": "jimothy-takes-seattle",
-      "stockRemaining": 285
+      "stockRemaining": 284
     },
     {
       "id": "prod_UxcfLhLPT7QIfZ",
@@ -396,5 +396,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-07-31T19:27:53.193Z"
+  "_lastSync": "2026-08-01T02:53:39.712Z"
 }
