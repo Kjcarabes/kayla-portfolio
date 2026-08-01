@@ -379,10 +379,9 @@
       "price": 20,
       "image": "assets/images/img_5099.jpeg",
       "description": "10X10 Print",
-      "stripeLink": "https://buy.stripe.com/3cI28rbYS6AC8dL4aCe7m0a",
+      "stripeLink": "https://buy.stripe.com/fZu00j5Au8IKbpX5eGe7m0n",
       "sold": false,
-      "workId": "jimothy-takes-seattle",
-      "stockRemaining": 281
+      "workId": "jimothy-takes-seattle"
     },
     {
       "id": "prod_UxcfLhLPT7QIfZ",
@@ -396,5 +395,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-08-01T08:23:38.511Z"
+  "_lastSync": "2026-08-01T08:35:34.927Z"
 }
