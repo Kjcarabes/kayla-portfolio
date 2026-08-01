@@ -7,7 +7,8 @@
     "optimize-images": "node scripts/optimize-images.js",
     "sync-products": "node scripts/sync-stripe-products.js",
     "generate-seo": "node scripts/generate-seo.js",
-    "generate-pass": "node scripts/generate-wallet-pass.js"
+    "generate-pass": "node scripts/generate-wallet-pass.js",
+    "gelato": "node scripts/gelato-orders.js"
   },
   "dependencies": {
     "sharp": "^0.33.5",

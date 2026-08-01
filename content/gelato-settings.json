@@ -1,0 +1,14 @@
+{
+  "_comment": "✏️ Gelato print-on-demand settings. Per-item settings (which Gelato product, auto-fulfil on/off) live on each work in works.json / each item in shop-items.json.",
+  "_instructions": "You rarely need to touch this. shipmentMethodUid blank = let Gelato pick the cheapest option that reaches the buyer.",
+
+  "currency": "USD",
+  "shipmentMethodUid": "",
+
+  "_safety_comment": "Guards on AUTOMATIC fulfilment only. If a burst of orders arrives, or one looks unusual, the order is created as a Gelato DRAFT (nothing prints) and you get an email to review it. Approve drafts with: npm run gelato -- --drafts   then   npm run gelato -- --approve all --live",
+  "autoBurstLimitPerHour": 5,
+  "maxQuantityPerOrder": 3,
+  "allowedCountries": ["US", "CA", "GB", "AU", "NZ", "IE", "DE", "FR", "NL", "BE", "ES", "IT", "SE", "NO", "DK", "FI", "AT", "CH", "PT", "PL", "CZ"],
+
+  "notifyEmail": "kaylacarabesart@gmail.com"
+}

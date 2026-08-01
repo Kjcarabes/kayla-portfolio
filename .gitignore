@@ -19,3 +19,6 @@ certs/
 .pass-build/
 
 .env
+
+# Gelato fulfilment audit log — records real customer orders, never commit it
+.gelato-ledger.json

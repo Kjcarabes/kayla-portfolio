@@ -22,6 +22,8 @@ const state = {
   openRows: new Set(), // which rows are expanded (survives re-render), keyed "tab:id"
   sales: null,         // { markup, priceList[], saleRecord[] } from private KV
   salesOriginal: null,
+  orders: null,        // live Stripe orders + Gelato state (never stored in the repo)
+  orderEdits: {},      // sessionId -> { status, tracking, notes } pending save
   activeTab: 'works',
 };
 
@@ -53,6 +55,11 @@ function cuteMessage() {
 }
 
 // Inline Instagram glyph (CSP-safe — no external image), gradient-tinted.
+// Stand-in preview for a video detail file (an <img> would render as a broken link).
+const VIDEO_ICON = '<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></svg>';
+const VIDEO_EXTS = /\.(mp4|mov|m4v|webm|ogv)$/i;
+const isVideoPath = (p) => VIDEO_EXTS.test(String(p || ''));
+
 const IG_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-3px"><defs><linearGradient id="iggrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".45" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5.5" fill="none" stroke="url(#iggrad)" stroke-width="2"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="url(#iggrad)" stroke-width="2"/><circle cx="17.6" cy="6.4" r="1.4" fill="url(#iggrad)"/></svg>';
 
 // =================== UTIL ===================
@@ -174,11 +181,11 @@ function switchTab(tab) {
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   $$('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
   const panels = $('.panels');
-  if (panels) panels.classList.toggle('wide', tab === 'sales' || tab === 'analytics');
+  if (panels) panels.classList.toggle('wide', tab === 'sales' || tab === 'analytics' || tab === 'orders');
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, about: renderAbout, newsletter: renderNewsletter, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, about: renderAbout, newsletter: renderNewsletter, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -228,13 +235,35 @@ function datalistInput(file, key, label, options, opts = {}) {
     </div>`;
 }
 
+// "Limit stock" caps how many can sell: blank = unlimited, a number = that many,
+// 0 = sold out. 0 is the easy thing to type when you mean "I don't keep any on a
+// shelf" (it's how the Jimothy print and the tote both ended up hidden), so it
+// gets a loud inline warning instead of silently pulling the item from the shop.
+const STOCK_HINT = 'Leave blank for unlimited. Only enter a number to cap the run.';
+const STOCK_WARN = '0 means <strong>sold out</strong> — clear the box for unlimited.';
+function stockField(file, key, label) {
+  const v = getByPath(state.files[file], key);
+  const zero = v !== '' && v != null && Number(v) === 0;
+  return `<div class="field">
+      <label class="field-label">${escapeHtml(label)}</label>
+      <input type="number" min="0" step="1" placeholder="Unlimited" data-stock-warn
+             data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v ?? '')}">
+      <div class="field-hint">${STOCK_HINT} <span class="field-warn"${zero ? '' : ' hidden'}>${STOCK_WARN}</span></div>
+    </div>`;
+}
+
 function imageField(file, key, label) {
   const path = getByPath(state.files[file], key) || '';
   const src = imgPreviewSrc(path);
+  // A detail slot can hold a video (work-detail.html plays them). Browsers can't
+  // render one in an <img>, so show a film glyph rather than a broken-image icon.
+  const preview = !src ? 'No image'
+    : isVideoPath(path) ? `<span class="video-badge" title="Video">${VIDEO_ICON}<span>Video</span></span>`
+    : `<img src="${escapeAttr(src)}" alt="">`;
   return `<div class="field">
       <label class="field-label">${escapeHtml(label)}</label>
       <div class="image-picker">
-        <div class="image-preview">${src ? `<img src="${escapeAttr(src)}" alt="">` : 'No image'}</div>
+        <div class="image-preview">${preview}</div>
         <div class="image-controls">
           <input type="file" accept="image/*" data-img-file="${escapeAttr(file)}" data-img-key="${escapeAttr(key)}">
           <span class="image-path">${escapeHtml(path || '(no image yet)')}</span>
@@ -246,6 +275,18 @@ function imageField(file, key, label) {
 // =================== DELEGATED INPUT ===================
 document.addEventListener('input', (e) => {
   const t = e.target;
+  if (t.hasAttribute?.('data-stock-warn')) {
+    const warn = t.parentElement?.querySelector('.field-warn');
+    if (warn) warn.hidden = !(t.value !== '' && Number(t.value) === 0);
+  }
+  if (t.dataset.order && t.dataset.orderField) {
+    const row = (state.orders || []).find(o => o.id === t.dataset.order);
+    if (row) row[t.dataset.orderField] = t.value;
+    const edit = (state.orderEdits[t.dataset.order] ||= { status: row?.status, tracking: row?.tracking || '', notes: row?.notes || '' });
+    edit[t.dataset.orderField] = t.value;
+    if (t.dataset.orderField === 'status') updateOrdersBanner();
+    return;
+  }
   if (t.dataset.sales && state.sales) {
     const v = t.type === 'number' ? (t.value === '' ? null : Number(t.value)) : t.value;
     setByPath(state.sales, t.dataset.sales, v);
@@ -356,9 +397,10 @@ function workFields(i) {
     <h4>Prints (optional)</h4>
     ${input(f, `${p}.printPrice`, 'Print price ($)', { type: 'number', hint: 'Selling prints of this piece? Enter a price. Leave blank if you’re not.' })}
     <div class="field-row">
-      ${input(f, `${p}.printStock`, 'Limited edition size', { type: 'number', hint: 'Blank = unlimited' })}
+      ${stockField(f, `${p}.printStock`, 'Stock')}
       ${input(f, `${p}.printDescription`, 'Print note', { placeholder: 'e.g. Giclée print' })}
     </div>
+    ${gelatoFields(f, p, 'print')}
     <h4>Extra detail images (shown on this work’s own page)</h4>
     ${(getByPath(state.files[f], `${p}.detail_images`) || []).map((_, j) => `
       <div style="display:flex;gap:.5rem;align-items:flex-start">
@@ -367,6 +409,35 @@ function workFields(i) {
       </div>`).join('')}
     <button class="add-btn" data-action="add-detail-img" data-i="${i}">+ Add detail image</button>
   `;
+}
+
+// Per-item print-on-demand settings. "Auto" only ever prepares a Gelato DRAFT —
+// it never prints anything. Approving the draft in the Orders tab is what costs
+// money, and that's always a deliberate click. Off = Kayla posts it herself and
+// just gets an email with the address.
+function gelatoFields(file, prefix, kind) {
+  const on = !!getByPath(state.files[file], `${prefix}.gelatoAuto`);
+  const fileHint = kind === 'craft'
+    ? 'Required — the artwork Gelato prints onto the item (not the product photo).'
+    : 'Leave blank to print the artwork photo above.';
+  return `
+    <h4>Print-on-demand (Gelato)</h4>
+    <div class="gelato-box">
+      ${checkbox(file, `${prefix}.gelatoAuto`, 'Auto-prepare a Gelato order when this sells')}
+      <div class="field-hint" style="margin:.15rem 0 .7rem">
+        ${on
+          ? 'On: a <strong>draft</strong> is queued in your Orders tab the moment it sells. Nothing prints and nothing is charged until you press “Send to print”.'
+          : 'Off: nothing is sent to Gelato. You get an email with the buyer’s address and post it yourself.'}
+      </div>
+      <div class="field-row">
+        ${input(file, `${prefix}.gelatoProductUid`, 'Gelato product ID', {
+          spellcheck: false,
+          placeholder: 'e.g. framed_poster_product_…',
+          hint: 'From your Gelato dashboard, or run: npm run gelato -- --catalog',
+        })}
+        ${input(file, `${prefix}.gelatoPrintFile`, 'Print file (optional)', { spellcheck: false, hint: fileHint })}
+      </div>
+    </div>`;
 }
 
 // ---- Add-work modal (with optional Instagram post) ----
@@ -400,7 +471,7 @@ function showAddWorkModal() {
         </div>
         <details class="calc-rates"><summary>More print options</summary>
           <div class="field-row" style="margin-top:.6rem">
-            <div class="field"><label class="field-label">Limited edition size</label><input type="number" id="aw-printstock"><div class="field-hint">Blank = unlimited</div></div>
+            <div class="field"><label class="field-label">Stock</label><input type="number" min="0" step="1" placeholder="Unlimited" id="aw-printstock" data-stock-warn><div class="field-hint">${STOCK_HINT} <span class="field-warn" hidden>${STOCK_WARN}</span></div></div>
             <div class="field"><label class="field-label">Print note</label><input type="text" id="aw-printdesc" placeholder="e.g. Giclée print" spellcheck="true"></div>
           </div>
         </details>
@@ -580,12 +651,193 @@ function renderShop() {
         </div>
         ${input(f, `items.${i}.description`, 'Description')}
         <div class="field-row">
-          ${input(f, `items.${i}.stock`, 'Stock (0 = sold out, blank = unlimited)', { type: 'number' })}
+          ${stockField(f, `items.${i}.stock`, 'Stock')}
           ${input(f, `items.${i}.order`, 'Sort order', { type: 'number' })}
         </div>
+        ${gelatoFields(f, `items.${i}`, 'craft')}
       </details>
     `).join('')}
   `;
+}
+
+// =================== PANEL: ORDERS ===================
+// Every paid Stripe checkout, with where it is in the pipeline. Drafts are
+// staged automatically but ONLY printing costs money, and only this tab can
+// trigger it. Any field is hand-editable so Kayla always has the last word.
+
+const ORDER_STATUS_OPTS = ['new', 'draft', 'printing', 'shipped', 'manual', 'cancelled'];
+const ORDER_STATUS_LABEL = {
+  new: 'Not started',
+  draft: 'Draft — awaiting your OK',
+  printing: 'Sent to print',
+  shipped: 'Shipped',
+  manual: 'You ship this one',
+  cancelled: 'Cancelled',
+};
+
+function renderOrders() {
+  const root = $('[data-panel="orders"]');
+  root.innerHTML = `
+    <div class="sales-total-banner" id="orders-total-banner">💰 Total from orders: … 🤑</div>
+    <div class="section">
+      <h3>Orders <span class="muted" style="font-weight:400">— everything bought through the shop</span></h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">
+        Prints set to auto arrive here as a <strong>draft</strong>: Gelato is holding it, nothing has printed and
+        nothing has been charged. Tick the ones you're happy with and press <strong>Send to print</strong>.
+        Anything you post yourself, just mark as shipped.
+      </p>
+      <div class="orders-bar">
+        <button class="btn" data-action="refresh-orders">Refresh</button>
+        <button class="btn" data-action="orders-stage">Prepare draft</button>
+        <button class="btn primary" data-action="orders-approve">Send to print</button>
+        <button class="btn" data-action="orders-email-tracking">Email tracking to buyer</button>
+        <button class="btn danger" data-action="orders-cancel">Cancel draft</button>
+        <span class="topbar-spacer"></span>
+        <button class="btn primary" data-action="save-orders">Save my changes</button>
+        <span id="orders-status" class="muted"></span>
+      </div>
+      <div id="orders-table" style="margin-top:.9rem">Loading…</div>
+    </div>
+  `;
+  loadOrders();
+}
+
+async function loadOrders() {
+  const table = $('#orders-table');
+  try {
+    const r = await fetch(`${state.workerUrl}/api/orders`, {
+      method: 'POST', headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    state.orders = data.orders || [];
+    state.orderEdits = {};
+    renderOrdersTable();
+  } catch (err) {
+    if (table) table.innerHTML = `<p class="error-text">Couldn’t load orders: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function orderField(id, field, value, type = 'text') {
+  return `<input class="cell-input" type="${type}" data-order="${escapeAttr(id)}" data-order-field="${escapeAttr(field)}" value="${escapeAttr(value ?? '')}" spellcheck="${type === 'text'}">`;
+}
+
+function renderOrdersTable() {
+  const el = $('#orders-table');
+  if (!el) return;
+  const orders = state.orders || [];
+  if (!orders.length) {
+    el.innerHTML = '<p class="muted">No orders yet.</p>';
+    updateOrdersBanner();
+    return;
+  }
+  el.innerHTML = `
+    <div class="inq-scroll"><table class="sales-table"><thead><tr>
+      <th><input type="checkbox" id="orders-check-all" title="Select all"></th>
+      <th>Date</th><th>Item</th><th>Paid</th><th>Buyer</th><th>Ship to</th>
+      <th>Status</th><th>Gelato</th><th>Tracking</th><th>Notes</th>
+    </tr></thead><tbody>
+    ${orders.map(o => {
+      const blocked = (o.blockers || []).length > 0;
+      return `<tr class="${o.status === 'draft' ? 'order-draft' : ''}">
+        <td><input type="checkbox" class="order-check" value="${escapeAttr(o.id)}"></td>
+        <td class="list-cell">${new Date(o.created * 1000).toISOString().slice(0, 10)}</td>
+        <td class="list-cell" style="white-space:normal">${escapeHtml(o.itemTitle)}${o.autoConfigured ? '' : ' <span class="muted">(manual)</span>'}</td>
+        <td class="list-cell">$${(o.amount || 0).toFixed(2)}</td>
+        <td class="list-cell" style="white-space:normal">${escapeHtml(o.buyerName || '—')}<br><span class="muted">${escapeHtml(o.buyerEmail || '')}</span></td>
+        <td style="white-space:pre-wrap" class="list-cell">${escapeHtml(o.address || '—')}</td>
+        <td>
+          <select class="cell-input" data-order="${escapeAttr(o.id)}" data-order-field="status">
+            ${ORDER_STATUS_OPTS.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${escapeHtml(ORDER_STATUS_LABEL[s])}</option>`).join('')}
+          </select>
+          ${blocked ? `<div class="field-warn" style="padding:0 .55rem .4rem">⚠ ${escapeHtml(o.blockers.join('; '))}</div>` : ''}
+        </td>
+        <td class="list-cell">${o.gelatoOrderId
+          ? `${escapeHtml(o.gelatoOrderType === 'draft' ? 'draft' : (o.gelatoStatus || 'ordered'))}<br><span class="muted" style="font-size:.75rem">${escapeHtml(o.gelatoOrderId)}</span>`
+          : '<span class="muted">—</span>'}</td>
+        <td>${orderField(o.id, 'tracking', o.tracking)}${o.trackingEmailedAt ? `<div class="field-hint" style="padding:0 .55rem">buyer emailed ${escapeHtml(o.trackingEmailedAt.slice(0, 10))}</div>` : ''}</td>
+        <td class="cell-notes"><textarea class="cell-input cell-textarea" data-order="${escapeAttr(o.id)}" data-order-field="notes" spellcheck="true">${escapeHtml(o.notes || '')}</textarea></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>
+  `;
+  const all = $('#orders-check-all');
+  if (all) all.addEventListener('change', () => $$('.order-check').forEach(c => { c.checked = all.checked; }));
+  updateOrdersBanner();
+}
+
+function updateOrdersBanner() {
+  const el = $('#orders-total-banner');
+  if (!el) return;
+  const total = (state.orders || []).filter(o => o.paid && o.status !== 'cancelled').reduce((n, o) => n + (o.amount || 0), 0);
+  el.textContent = `💰 Total from orders: ${money(total)} 🤑`;
+}
+
+function selectedOrderIds() {
+  return $$('.order-check').filter(c => c.checked).map(c => c.value);
+}
+
+function setOrdersStatus(msg, color) {
+  const e = $('#orders-status');
+  if (e) { e.textContent = msg; e.style.color = color || ''; }
+}
+
+// The only path that can spend money. It names the pieces and the amount in the
+// confirm, because "OK" on a vague prompt is how the wrong thing gets printed.
+async function ordersAction(action) {
+  const ids = selectedOrderIds();
+  if (!ids.length) { setOrdersStatus('Tick the orders you want first.', 'var(--danger)'); return; }
+
+  const picked = (state.orders || []).filter(o => ids.includes(o.id));
+  if (action === 'approve') {
+    const lines = picked.map(o => `• ${o.itemTitle} → ${o.buyerName || o.buyerEmail || 'buyer'}`).join('\n');
+    if (!confirm(`Send these ${ids.length} order(s) to print?\n\n${lines}\n\nThis places the real Gelato order and charges your Gelato account. It can't be undone once printing starts.`)) return;
+  } else if (action === 'cancel') {
+    if (!confirm(`Cancel ${ids.length} order(s) at Gelato?`)) return;
+  } else if (action === 'email-tracking') {
+    const already = picked.filter(o => o.trackingEmailedAt).length;
+    const lines = picked.map(o => `• ${o.buyerEmail || o.buyerName || o.id} — tracking: ${o.tracking || '(none yet!)'}`).join('\n');
+    if (!confirm(`Email ${ids.length} buyer(s) that their order has shipped?\n\n${lines}\n${already ? `\n${already} of these have already been emailed once.` : ''}`)) return;
+  }
+
+  const verb = { stage: 'Preparing drafts', approve: 'Sending to print', cancel: 'Cancelling', 'email-tracking': 'Emailing buyers' }[action];
+  setOrdersStatus(`${verb}…`);
+  try {
+    const r = await fetch(`${state.workerUrl}/api/orders-action`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, sessionIds: ids }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    const failed = (data.results || []).filter(x => !x.ok);
+    setOrdersStatus(
+      failed.length ? `${data.results.length - failed.length} ok, ${failed.length} failed: ${failed.map(f => f.message).join('; ')}` : 'Done ✓',
+      failed.length ? 'var(--danger)' : 'var(--ok)',
+    );
+    await loadOrders();
+  } catch (err) {
+    setOrdersStatus(`Failed: ${err.message}`, 'var(--danger)');
+  }
+}
+
+async function saveOrders() {
+  const edits = state.orderEdits || {};
+  if (!Object.keys(edits).length) { setOrdersStatus('Nothing changed.'); return; }
+  setOrdersStatus('Saving…');
+  try {
+    const r = await fetch(`${state.workerUrl}/api/orders-save`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ edits }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    state.orderEdits = {};
+    setOrdersStatus('Saved ✓', 'var(--ok)');
+  } catch (err) {
+    setOrdersStatus(`Failed: ${err.message}`, 'var(--danger)');
+  }
 }
 
 // =================== PANEL: ABOUT ===================
@@ -1071,6 +1323,13 @@ document.addEventListener('click', (e) => {
 
     'add-social': () => { socials().push({ name: '', url: '' }); rerender(); },
     'del-social': () => { state.files[FILE.settings].socialLinks.splice(i, 1); rerender(); },
+
+    'refresh-orders': () => loadOrders(),
+    'orders-stage': () => ordersAction('stage'),
+    'orders-approve': () => ordersAction('approve'),
+    'orders-cancel': () => ordersAction('cancel'),
+    'orders-email-tracking': () => ordersAction('email-tracking'),
+    'save-orders': () => saveOrders(),
 
     'send-newsletter': () => sendNewsletter(),
     'refresh-subscribers': () => loadSubscribers(),

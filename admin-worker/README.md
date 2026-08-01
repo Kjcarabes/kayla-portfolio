@@ -232,6 +232,164 @@ Limits / notes:
   → recorded in column C and skipped on future sends. Add a mailing address to
   the footer to fully satisfy CAN-SPAM as the list grows, or switch to an ESP.
 
+## 5. Orders + Gelato fulfilment (optional)
+
+Powers the admin **Orders** tab and the automatic staging of print orders.
+
+**Nothing ever prints by itself.** When a print sells, the Worker asks Gelato to
+hold a **draft** — no production, no charge. The draft shows up in the Orders tab
+and only turns into a real print when Kayla presses **Send to print**. Items with
+the Gelato toggle off never touch Gelato at all; she just gets an email with the
+buyer's address.
+
+### Secrets
+
+```
+npx wrangler secret put STRIPE_SECRET_KEY      # same live key the sync Action uses
+npx wrangler secret put GELATO_API_KEY         # Gelato dashboard → Developers → API keys
+npx wrangler secret put STRIPE_WEBHOOK_SECRET  # from step 3 below (starts whsec_)
+```
+
+Order state (Kayla's manual status / tracking / notes) is stored in the existing
+private `SALES` KV namespace under the key `orders`. Bind a dedicated `ORDERS`
+namespace instead if you'd rather keep them apart — the Worker prefers `ORDERS`
+when it exists. **Customer addresses live only in KV and Stripe, never in the
+repo.**
+
+### Stripe webhook
+
+1. Stripe dashboard → **Developers → Webhooks → Add endpoint**.
+2. URL: `https://kayla-admin.bb69z8ddnz.workers.dev/stripe-webhook`
+3. Event: **`checkout.session.completed`** (that one only).
+4. Copy the **Signing secret** into `STRIPE_WEBHOOK_SECRET` above.
+
+The Worker verifies Stripe's HMAC signature and rejects anything older than five
+minutes, so the endpoint can't be spoofed or replayed even though it sits outside
+the admin password gate.
+
+### Stripe customer receipts
+
+Separately, turn on Stripe → **Settings → Customer emails → Successful payments**.
+The payment links carry no email configuration of their own, so with that toggle
+off buyers get *no* email at all — just Stripe's hosted confirmation page. Past
+payments can be receipted retroactively: Payments → open the payment → **Send
+receipt**.
+
+### Gelato webhook (tells the buyer their order shipped)
+
+Gelato is white-label and emails nobody, so without this the buyer hears nothing
+between the Stripe receipt and a parcel arriving.
+
+1. Invent a long random token and store it:
+   ```
+   npx wrangler secret put GELATO_WEBHOOK_TOKEN
+   ```
+2. Gelato dashboard → **Developers → Webhooks** → add:
+   `https://kayla-admin.bb69z8ddnz.workers.dev/gelato-webhook?token=THE_SAME_TOKEN`
+3. Subscribe to **`order_status_updated`**.
+
+Gelato doesn't sign its webhooks, so that token in the URL *is* the authentication —
+treat it like a password. On a `shipped` status the Worker emails the buyer their
+tracking number (once — it records `trackingEmailedAt`), and updates the Orders row.
+
+If a webhook is ever missed, tracking is also picked up whenever the Orders tab
+refreshes, and **Email tracking to buyer** in that tab sends it by hand. That button
+works for parcels Kayla posts herself too: type the tracking number into the row,
+**Save my changes**, then press it.
+
+### Per-item setup
+
+In `/admin` → **Works** (or **Shop**) → open the item → **Print-on-demand (Gelato)**:
+
+- **Auto-prepare a Gelato order when this sells** — off by default.
+- **Gelato product ID** — the `productUid`. Find it with `npm run gelato -- --catalog`.
+- **Print file** — optional for prints (defaults to the artwork photo); **required**
+  for crafts, since a photo of a tote is not the tote's artwork.
+
+### Notification email (optional — skip it and everything else still works)
+
+Everything above runs on Worker secrets alone. Apps Script is only needed for the
+heads-up email to Kayla; without it, orders still stage, still show in the Orders
+tab, and are still approved from there — she just has to look rather than be told.
+
+> ⚠️ **Do the script edit BEFORE setting `ORDER_NOTIFY_URL`.** The Apps Script's
+> `doPost` ends with `return sendNewsletter(payload)`, so any action it doesn't
+> recognise falls through and mails the **entire mailing list**. The Worker
+> therefore refuses to send order emails until `ORDER_NOTIFY_URL` exists — that
+> secret is your confirmation that the script below is deployed. Never point it at
+> an Apps Script that lacks the `notify` branch.
+
+Add these two pieces to the Apps Script from step 4 so the Worker can send Kayla a
+single-recipient email. In `doPost`, just above `return sendNewsletter(payload);`:
+
+```js
+    if (payload.action === 'notify') return notifyOne(payload);
+```
+
+and anywhere below, a new function:
+
+```js
+// Single-recipient email: order alerts to Kayla, shipping notices to buyers.
+// Set NOTIFY_FROM to a "Send mail as" alias on this Google account to control the
+// From address; leave it '' to send from the account that owns this script.
+var NOTIFY_FROM = 'kaylacarabesart@gmail.com';
+
+function notifyOne(p) {
+  var opts = { name: FROM_NAME };
+  if (NOTIFY_FROM) opts.from = NOTIFY_FROM;
+  GmailApp.sendEmail(p.to, p.subject, p.body, opts);
+  return json({ ok: true });
+}
+```
+
+**About the From address.** Apps Script sends as the Google account that owns the
+signups Sheet — which is *not* kaylacarabesart@gmail.com. Three options, in order
+of preference:
+
+1. **Add a send-as alias (recommended).** In the owning account: Gmail → Settings →
+   **Accounts and Import → Send mail as → Add another email address** →
+   `kaylacarabesart@gmail.com` → Google mails a code to that inbox → confirm. Then
+   `NOTIFY_FROM` works. Verify with `Logger.log(GmailApp.getAliases())` — `from`
+   silently falls back to the owner's address if it isn't a registered alias.
+2. **Do nothing.** Set `NOTIFY_FROM = ''`. Mail comes from the owning account
+   showing `Kayla Carabes <owner@gmail.com>` — exactly what newsletter subscribers
+   already see today, so it's consistent.
+3. **Don't transfer the Sheet.** Re-deploying under another account issues a NEW
+   `/exec` URL, and that URL is the live newsletter signup endpoint in
+   `content/site-settings.json` as well as `NEWSLETTER_SEND_URL` /
+   `ORDER_NOTIFY_URL`. Signups break until all three are updated. Not worth it just
+   to change a From address.
+
+Buyers see `Kayla Carabes <that address>`. **Gelato is never mentioned and never
+emails your customers** — the only external link in the email is the carrier's
+tracking URL.
+
+Re-deploy the web app as a **New version** (same URL), then and only then:
+
+```
+npx wrangler secret put ORDER_NOTIFY_URL   # the same /exec URL as NEWSLETTER_SEND_URL
+```
+
+Test it by placing a cheap real order, or by temporarily pointing `ORDER_NOTIFY_URL`
+at the script and hitting `/stripe-webhook` — if the wrong thing goes out, it goes
+out to every subscriber, so verify the `notify` branch is live first.
+
+### Command line
+
+The same fulfilment logic is available locally for backlogs and one-offs — see the
+header comment in `scripts/gelato-orders.js`:
+
+```
+npm run gelato                          # list every paid order + its state (read-only)
+npm run gelato -- --plan                # show the exact Gelato payloads
+npm run gelato -- --live                # stage them as drafts (nothing prints)
+npm run gelato -- --drafts              # list drafts awaiting approval
+npm run gelato -- --approve all --live  # send reviewed drafts to print
+npm run gelato -- --catalog poster      # find productUids
+```
+
+Needs `STRIPE_SECRET_KEY` and `GELATO_API_KEY` in `.env` (gitignored).
+
 ## Local dev
 
 `npx wrangler dev` runs the Worker locally; point the admin sign-in at the

@@ -88,7 +88,7 @@ Open `content/works.json` and add a new entry. Copy this template:
 - `heroFeature: true` = shows in the big hero slideshow at top of homepage
 - `printPrice` = the price of a **print** of this work, in dollars. `0` (or leaving it out) means the print shows as **"Sold out"**. Set it to a real number (e.g. `25`) to start selling — that's the *only* step; the website builds the Stripe checkout for you automatically. (See "Managing Your Shop" below.)
 - `printDescription` = the little label on the print's shop card (e.g. `"5x7 Print"`). Defaults to "Print".
-- `printStock` (optional) = how many prints are in the edition. Stripe counts each sale for you, so the site shows **"Only N left"** and flips to "Sold out" automatically when they're gone — you never have to decrement anything. Leave it out for unlimited; set `0` to mark "Sold out" by hand. (The count refreshes each time the site syncs — within a minute of a push, or every few hours on its own — not the instant a sale happens, since there's no live server.)
+- `printStock` (optional) = the **Stock** box in the admin. Leave it out (or leave the box empty) for **unlimited** — that's almost always what you want for a print, since Gelato prints each one to order. Only put a number here if you *want* a limited run: Stripe counts each sale for you, the site shows **"Only N left"**, and it closes itself when they're gone. ⚠️ **`0` means SOLD OUT, not "I don't have any on a shelf"** — a `0` here hides the print from the shop. (The count refreshes each time the site syncs — within a minute of a push, or every few hours on its own — not the instant a sale happens, since there's no live server.)
 - Put a comma after the previous artwork's `}` before adding yours
 - Categories can be anything you want: Paintings, Drawings, Digital, Photography, etc.
 
@@ -161,9 +161,11 @@ the price, and the **Buy Now** checkout link for you. ✨
 - `printPrice: 25` → the print goes **live** at $25 with a working Buy button.
 - Want to stop selling a print? Set `printPrice` back to `0`. It flips to "Sold out" and the
   checkout link is turned off automatically.
-- **Limited editions:** add `"printStock": 10`. Stripe tracks each sale, the card shows
-  "Only N left", and it auto-closes when sold out — nothing for you to update. Leave it out
-  for unlimited; set `0` to mark "Sold out" by hand.
+- **Limited editions:** add `"printStock": 10` (the **Stock** box in the admin). Stripe tracks
+  each sale, the card shows "Only N left", and it auto-closes when sold out — nothing for you
+  to update. **Leave it blank for unlimited**, which is the normal case for prints. Watch out:
+  `0` means *sold out* and hides the print — if you meant "I don't keep any in a drawer", leave
+  the box empty instead.
 - Don't want a print option for a work at all? Add `"noPrint": true` to that work.
 
 You can change the price anytime — edit the number and push, and the checkout rebuilds to
@@ -198,7 +200,8 @@ and the website builds the Stripe checkout for you. No Stripe dashboard needed!
 
 - `id` = a unique short name (lowercase, dashes)
 - `price` = dollars (`0` or sold-out `stock` shows it as "Sold out")
-- `stock` (optional) = how many you have; checkout closes when they sell out. Leave out for unlimited.
+- `stock` (optional) = the **Stock** box. Leave it out for unlimited; a number caps the run and
+  checkout closes when they sell out. `0` means **sold out** and hides the item.
 - `category` = `Crafts` (or `Prints`)
 - `image` = a file in `assets/images/`
 
@@ -253,6 +256,70 @@ a Stripe craft change without waiting for the 6-hour timer):
 
 Prints automatically use the artwork's own image from `works.json` — you never upload a
 print photo to Stripe. For crafts/merch, the image you upload to Stripe is used.
+
+---
+
+## Orders (who bought what, and getting it shipped)
+
+The **Orders** tab in your admin lists every purchase from the shop: what sold, what
+they paid, and exactly where it goes. The green banner at the top is the total those
+orders have made you.
+
+### Nothing ever prints without you saying so
+
+When a print sells and it's set up with Gelato, the website asks Gelato to **hold a
+draft**. A draft costs nothing and prints nothing — it's just the order sitting there,
+filled in and ready. You'll see it in Orders as **"Draft — awaiting your OK"** and the
+row is tinted yellow.
+
+When you're happy with it:
+
+1. Tick the box next to the orders you want.
+2. Press **Send to print**.
+3. Confirm — it names each piece and buyer so you can double-check before it goes.
+
+That press is the only thing that spends money. Before it, you can press **Cancel
+draft** and nothing was ever made.
+
+### Items you post yourself
+
+If a piece doesn't have Gelato turned on, nothing goes to Gelato at all. You get an
+email with the buyer's address, you pop it in the post, then set that row's status to
+**Shipped** and press **Save my changes**.
+
+### Letting the buyer know it's on the way
+
+For Gelato orders this happens **by itself** — the moment Gelato ships, the buyer gets
+an email from you with their tracking number. You'll see "buyer emailed" under the
+tracking column.
+
+For parcels you post yourself: type the tracking number into that row, press **Save my
+changes**, then tick the row and press **Email tracking to buyer**. It shows you exactly
+who's about to be emailed before it sends.
+
+The email comes from *you*, in your words — the print company never contacts your
+customers.
+
+### The columns
+
+| Column | What it's for |
+|---|---|
+| **Status** | Change it to anything you like — this is yours to control |
+| **Gelato** | What Gelato says: `draft`, then printing, then shipped |
+| **Tracking** | Paste a tracking number here for your own records |
+| **Notes** | Anything you want to remember about this order |
+
+Press **Save my changes** after editing Status, Tracking or Notes. **Refresh** re-checks
+Stripe and Gelato for the latest.
+
+### Turning Gelato on for a print
+
+Open the work in the **Works** tab → **Print-on-demand (Gelato)** → tick
+**Auto-prepare a Gelato order when this sells**, and paste in the Gelato product ID.
+It's **off by default**, so nothing changes for your existing work until you switch it on.
+
+> **Buyer addresses are private.** They live in Stripe and in your admin's private
+> storage only — they're never written into the website's files.
 
 ---
 

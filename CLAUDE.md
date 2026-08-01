@@ -115,6 +115,16 @@ Three buckets:
     available/sold-out from `stock − sold` (not the link's `active` flag) so it won't
     wrongly reactivate a sold-out edition.
   - `printOrder` (int, optional): sort order. `noPrint: true`: no print card at all.
+  - **`printStock` is a cap, not an inventory count.** Blank/omitted = unlimited, which
+    is the normal case for print-on-demand. `0` = sold out. That `0` is a live footgun:
+    both the Jimothy print and the tote were hidden from the shop because a literal `0`
+    was typed into the admin meaning "I don't hold any on a shelf". The admin labels it
+    "Stock", placeholders it `Unlimited`, and shows a red inline warning the moment a
+    `0` is entered. Keep that warning.
+  - Stripe **cannot unset** a payment link's `restrictions`, so a link that once had a
+    cap can never become unlimited. `linkStockMatches` therefore refuses to reuse a
+    capped link when the JSON now says unlimited, forcing a fresh link. Without this,
+    clearing the stock box silently leaves the old cap in force.
   - Default is **on for every work** — a work with no `printPrice` still shows a
     "Sold out" print card. Deliberate (user chose the literal "every new work auto-gets a
     print, sold out until priced"). Opt out with `noPrint`.
@@ -151,6 +161,66 @@ runs only in CI or via the npm script.
 `sync-stripe-products.yml` triggers on push to `content/works.json`,
 `content/shop-items.json`, `content/shop-settings.json`, plus a 6h cron and manual
 dispatch. It commits only `products.json` (never the source JSON) — no trigger loop.
+
+### Order fulfilment: drafts always, printing only on a human click
+
+Gelato is the print-on-demand fulfiller. The governing rule is **nothing prints
+automatically, ever** — the user rejected true auto-fulfilment in favour of an
+auto-*draft* + explicit approval flow, because a wrong print costs real money and
+can't be undone once production starts.
+
+The pipeline:
+
+1. A print sells → Stripe fires `checkout.session.completed` → the admin Worker's
+   `POST /stripe-webhook` stages a Gelato order with `orderType: 'draft'`. Gelato
+   holds it: no production, no charge.
+2. It appears in the admin **Orders** tab as "Draft — awaiting your OK".
+3. Kayla ticks rows and presses **Send to print**, which `PATCH`es the draft to
+   `orderType: 'order'`. This is the *only* code path that spends money.
+
+Per-item opt-in lives on the item itself (`gelatoAuto`, default false, plus
+`gelatoProductUid` and optional `gelatoPrintFile`), on works in `works.json` and on
+items in `shop-items.json` — same "JSON is the source of truth" rule as the shop.
+`gelatoAuto: false` skips Gelato entirely and just emails Kayla the address.
+
+Print-file defaults are asymmetric on purpose: a **print** falls back to the artwork
+photo (that photo *is* the print), a **craft** must set `gelatoPrintFile` explicitly
+(a photo *of* a tote is not the tote's artwork). Don't "fix" the craft fallback.
+
+**Idempotency is deliberately triple-redundant** — a double print is unrecoverable:
+
+- The Stripe **PaymentIntent metadata** `gelato_order_id` is the authority. It lives
+  with the payment, so it survives a fresh clone and is shared by the Worker and the
+  CLI. Stamped immediately after Gelato accepts.
+- Gelato is searched by `orderReferenceId` before creating (advisory — a failed
+  search never blocks, but a hit always does).
+- `.gelato-ledger.json` (gitignored) as a local audit log.
+
+`orderReferenceId` is always the **Stripe checkout session id**. One purchase = one
+reference = one print, forever. Don't change that mapping.
+
+`scripts/gelato-orders.js` (`npm run gelato`) is the CLI equivalent, used for
+backlogs. It is read-only without `--live`, `--live` only creates drafts, and
+`--print-now` is the deliberate escape hatch. It refuses refunded, disputed,
+unpaid, address-less and unconfigured orders rather than skipping them quietly.
+
+**Buyer-facing email is entirely ours.** Gelato is white-label and emails customers
+nothing, and the payment links carry no email config — so buyer comms are exactly
+two things: Stripe's receipt (a dashboard toggle, `Customer emails → Successful
+payments`, which was off until 2026-08-01) and our own shipping notice. The latter
+comes from `POST /gelato-webhook?token=…` on `order_status_updated`; Gelato does not
+sign its webhooks, so that URL token *is* the authentication. It emails once, keyed
+on `trackingEmailedAt` in KV, with a manual resend button as the fallback.
+
+`sendEmail` is gated on `ORDER_NOTIFY_URL`, **not** `NEWSLETTER_SEND_URL`, and must
+stay that way. The Apps Script's `doPost` ends with `return sendNewsletter(payload)`,
+so an unrecognised action falls through to a send to the entire mailing list —
+requiring a separate secret is what guarantees the script has learned `notify`
+before anything is sent. Never add a fallback to the newsletter URL here.
+
+Customer addresses live **only** in Stripe and the Worker's private KV — never in
+the repo. `/api/orders` merges Stripe (what/where) + Gelato (progress) + KV (Kayla's
+manual status/tracking/notes) at read time; nothing about a buyer is committed.
 
 ### Mobile shop sidebar
 

@@ -149,15 +149,25 @@ async function listAllProducts() {
 }
 
 // Resolve every payment link (active + inactive) to its product + amount once.
+//
+// Inactive links are deliberately never deleted — Stripe can't delete them anyway,
+// and each one still owns the completed Checkout Sessions bought through it, which
+// is where sold counts come from. They only accumulate, so this MUST paginate: a
+// single 100-item page would silently start hiding older links and the reconcile
+// would mint duplicates for anything past the cut-off.
 async function resolvePaymentLinks() {
-  const [activeLinks, inactiveLinks] = await Promise.all([
-    stripe.paymentLinks.list({ active: true, limit: 100 }).then(r => r.data),
-    stripe.paymentLinks.list({ active: false, limit: 100 }).then(r => r.data),
-  ]);
-  console.log(`Found ${activeLinks.length} active and ${inactiveLinks.length} inactive payment links`);
+  const links = [];
+  let active = 0;
+  for (const isActive of [true, false]) {
+    for await (const link of stripe.paymentLinks.list({ active: isActive, limit: 100 })) {
+      links.push(link);
+      if (isActive) active++;
+    }
+  }
+  console.log(`Found ${active} active and ${links.length - active} inactive payment links`);
 
   const resolved = [];
-  for (const link of [...activeLinks, ...inactiveLinks]) {
+  for (const link of links) {
     try {
       const lineItems = await stripe.paymentLinks.listLineItems(link.id, { limit: 1 });
       if (lineItems.data.length === 0) continue;
@@ -250,6 +260,19 @@ async function countCompletedSessions(linkId, cap) {
   return count;
 }
 
+// Units sold = completed checkouts across EVERY link this product has ever had,
+// not just the current one. Stripe prices and links are immutable, so a price
+// change (or clearing a stock cap) mints a fresh link — counting only that link
+// would quietly reset a limited edition back to its full size.
+async function countSoldForProduct(links, cap) {
+  let sold = 0;
+  for (const l of links) {
+    sold += await countCompletedSessions(l.link.id, cap != null ? cap - sold : null);
+    if (cap != null && sold >= cap) break;
+  }
+  return sold;
+}
+
 // Does an existing link already carry the shipping config we want now? If not
 // (e.g. a link made manually or before shipping was set up, or referencing an
 // outdated rate), we must NOT reuse it — otherwise it'd keep its stale/missing
@@ -264,9 +287,21 @@ function linkShippingMatches(link, shippingRateIds, countries) {
   return true;
 }
 
+// Stripe can't unset a payment link's `restrictions` once it's been set, so a link
+// that carries a cap can never become unlimited. When the JSON now says unlimited
+// (blank stock) we must reject that link and mint a fresh one — otherwise the old
+// edition cap silently survives and keeps deactivating the link at the old number.
+// A link whose cap merely *changed* is fine: that we can update in place.
+function linkStockMatches(link, stock) {
+  return stock != null ? true : linkStockLimit(link) == null;
+}
+
 // Ensure one active link at `cents` (with shipping + optional stock cap). Returns URL.
 async function ensureActiveLink({ product, cents, stock, label, metadata, links, shippingRateIds, countries }) {
-  const match = links.find(l => l.amount === cents && linkShippingMatches(l.link, shippingRateIds, countries));
+  const match = links.find(l =>
+    l.amount === cents &&
+    linkShippingMatches(l.link, shippingRateIds, countries) &&
+    linkStockMatches(l.link, stock));
   if (match) {
     const updates = {};
     if (!match.link.active) updates.active = true;
@@ -326,9 +361,7 @@ async function reconcilePurchasable(spec, ctx) {
   // Pull live "units sold" from Stripe so inventory tracks itself as sales happen.
   let remaining = null;
   if (spec.priceCents > 0 && spec.stock != null && spec.stock > 0) {
-    const match = links.find(l => l.amount === spec.priceCents);
-    const sold = match ? await countCompletedSessions(match.link.id, spec.stock) : 0;
-    remaining = Math.max(0, spec.stock - sold);
+    remaining = Math.max(0, spec.stock - await countSoldForProduct(links, spec.stock));
   }
 
   const explicitlySoldOut = spec.stock === 0;

@@ -28,3 +28,11 @@ CF_SITE_TAG = "c924106269a54cb584b22aaef454b221"
 #   NEWSLETTER_SEND_SECRET  — (optional) shared secret matching that script
 #   CF_API_TOKEN            — (optional) Cloudflare API token, Account Analytics: Read
 #   CF_ACCOUNT_ID           — (optional) Cloudflare account ID (for the analytics tab)
+#   STRIPE_SECRET_KEY       — (optional) live key, for the Orders tab
+#   GELATO_API_KEY          — (optional) Gelato API key, for print fulfilment
+#   STRIPE_WEBHOOK_SECRET   — (optional) whsec_… for POST /stripe-webhook
+#   GELATO_WEBHOOK_TOKEN    — (optional) shared token in the /gelato-webhook URL; Gelato
+#                             doesn't sign its webhooks, so this token IS the auth
+#   ORDER_NOTIFY_URL        — (optional) Apps Script /exec URL. ONLY set this once the
+#                             script handles action:'notify' — it falls through to a
+#                             full mailing-list send otherwise. See README §5.
