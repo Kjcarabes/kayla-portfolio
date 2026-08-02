@@ -981,23 +981,38 @@ async function ordersAction(action) {
   }
 
   const verb = { stage: 'Preparing drafts', approve: 'Sending to print', cancel: 'Cancelling', 'email-tracking': 'Emailing buyer' }[action];
-  setOrdersStatus(`${verb}…`);
+
+  // A Cloudflare Worker gets a fixed budget of outbound requests per invocation,
+  // and each order costs several. Sending in small chunks means each chunk is its
+  // own invocation with a fresh budget, so a 40-order batch works the same as one.
+  const CHUNK = 6;
+  const results = [];
   try {
-    const r = await fetch(`${state.workerUrl}/api/orders-action`, {
-      method: 'POST',
-      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, sessionIds: ids, tracking }),
-    });
-    const data = await r.json();
-    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
-    const failed = (data.results || []).filter(x => !x.ok);
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      setOrdersStatus(ids.length > CHUNK ? `${verb}… ${i + 1}–${Math.min(i + CHUNK, ids.length)} of ${ids.length}` : `${verb}…`);
+      const r = await fetch(`${state.workerUrl}/api/orders-action`, {
+        method: 'POST',
+        headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, sessionIds: slice, tracking }),
+      });
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+      results.push(...(data.results || []));
+    }
+    const failed = results.filter(x => !x.ok);
+    // Distinct messages only — 12 identical failures told you nothing 12 times.
+    const reasons = [...new Set(failed.map(f => f.message))];
     setOrdersStatus(
-      failed.length ? `${data.results.length - failed.length} ok, ${failed.length} failed: ${failed.map(f => f.message).join('; ')}` : 'Done ✓',
+      failed.length
+        ? `${results.length - failed.length} ok, ${failed.length} failed: ${reasons.join('; ')}`
+        : `Done ✓ (${results.length})`,
       failed.length ? 'var(--danger)' : 'var(--ok)',
     );
     await loadOrders();
   } catch (err) {
-    setOrdersStatus(`Failed: ${err.message}`, 'var(--danger)');
+    setOrdersStatus(`Failed after ${results.length}: ${err.message}`, 'var(--danger)');
+    await loadOrders();
   }
 }
 
