@@ -939,6 +939,53 @@ function setOrderFilter(key) {
 }
 
 
+// A modal, not a status line in the corner: these actions spend money and take
+// several round trips, and the old inline text left the page clickable — you could
+// start a second batch on top of a running one without noticing.
+function openProgressModal(title, total) {
+  const root = $('#modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal progress-modal">
+        <h2>${escapeHtml(title)}</h2>
+        <div class="progress-track"><div class="progress-fill" id="pm-fill" style="width:0%"></div></div>
+        <p class="progress-count" id="pm-count">Starting…</p>
+        <div class="progress-log" id="pm-log"></div>
+        <div class="modal-actions" hidden id="pm-actions">
+          <button class="primary" id="pm-close">Close</button>
+        </div>
+      </div>
+    </div>`;
+
+  let done = 0;
+  return {
+    step(n, label) {
+      done = n;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      $('#pm-fill').style.width = `${pct}%`;
+      $('#pm-count').textContent = label || `${done} of ${total}`;
+    },
+    log(text, ok) {
+      const line = document.createElement('div');
+      line.className = `progress-line${ok === false ? ' bad' : ok === true ? ' good' : ''}`;
+      line.textContent = `${ok === false ? '✖' : ok === true ? '✓' : '•'} ${text}`;
+      const log = $('#pm-log');
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    },
+    // Only now is the modal dismissable — no accidental click-away mid-run.
+    finish(summary, isError, onClose) {
+      $('#pm-fill').style.width = '100%';
+      if (isError) $('#pm-fill').classList.add('bad');
+      $('#pm-count').textContent = summary;
+      $('#pm-count').style.color = isError ? 'var(--danger)' : 'var(--ok)';
+      $('#pm-actions').hidden = false;
+      $('#pm-close').onclick = () => { root.innerHTML = ''; onClose?.(); };
+      $('#pm-close').focus();
+    },
+  };
+}
+
 function setOrdersStatus(msg, color) {
   const e = $('#orders-status');
   if (e) { e.textContent = msg; e.style.color = color || ''; }
@@ -987,10 +1034,14 @@ async function ordersAction(action) {
   // own invocation with a fresh budget, so a 40-order batch works the same as one.
   const CHUNK = 6;
   const results = [];
+  const titleOf = Object.fromEntries(picked.map(o => [o.id, `${o.itemTitle} → ${o.buyerName || o.buyerEmail || '—'}`]));
+  const pm = openProgressModal(`${verb} — ${ids.length} order${ids.length === 1 ? '' : 's'}`, ids.length);
+  setOrdersStatus(`${verb}…`);
+
   try {
     for (let i = 0; i < ids.length; i += CHUNK) {
       const slice = ids.slice(i, i + CHUNK);
-      setOrdersStatus(ids.length > CHUNK ? `${verb}… ${i + 1}–${Math.min(i + CHUNK, ids.length)} of ${ids.length}` : `${verb}…`);
+      pm.step(i, `${verb}… ${i + 1}–${Math.min(i + CHUNK, ids.length)} of ${ids.length}`);
       const r = await fetch(`${state.workerUrl}/api/orders-action`, {
         method: 'POST',
         headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
@@ -998,21 +1049,24 @@ async function ordersAction(action) {
       });
       const data = await r.json();
       if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+      for (const res of (data.results || [])) {
+        pm.log(`${titleOf[res.id] || res.id} — ${res.message}`, res.ok);
+      }
       results.push(...(data.results || []));
+      pm.step(Math.min(i + CHUNK, ids.length));
     }
     const failed = results.filter(x => !x.ok);
     // Distinct messages only — 12 identical failures told you nothing 12 times.
     const reasons = [...new Set(failed.map(f => f.message))];
-    setOrdersStatus(
-      failed.length
-        ? `${results.length - failed.length} ok, ${failed.length} failed: ${reasons.join('; ')}`
-        : `Done ✓ (${results.length})`,
-      failed.length ? 'var(--danger)' : 'var(--ok)',
-    );
-    await loadOrders();
+    const summary = failed.length
+      ? `${results.length - failed.length} done, ${failed.length} failed`
+      : `All ${results.length} done ✓`;
+    pm.finish(summary, failed.length > 0, () => loadOrders());
+    setOrdersStatus(failed.length ? `${summary}: ${reasons.join('; ')}` : summary, failed.length ? 'var(--danger)' : 'var(--ok)');
   } catch (err) {
+    pm.log(err.message, false);
+    pm.finish(`Stopped after ${results.length} of ${ids.length}`, true, () => loadOrders());
     setOrdersStatus(`Failed after ${results.length}: ${err.message}`, 'var(--danger)');
-    await loadOrders();
   }
 }
 

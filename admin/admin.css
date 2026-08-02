@@ -324,6 +324,23 @@ button { font: inherit; }
 .modal-close { position: absolute; top: .5rem; right: .6rem; width: auto; background: none; border: none; font-size: 1.6rem; line-height: 1; color: var(--muted); cursor: pointer; padding: .2rem .4rem; }
 .modal-close:hover { color: var(--ink); }
 .changes-list { font-size: .85rem; background: #f6f7f9; border-radius: 8px; padding: .75rem 1rem 0.75rem 1.75rem; margin: .75rem 0; }
+
+/* Batch progress — no close button until it's finished, so a run can't be
+   click-away'd or started twice on top of itself. */
+.progress-modal { max-width: 560px; }
+.progress-track { height: 8px; border-radius: 999px; background: #eef1f5; overflow: hidden; margin: 1rem 0 .6rem; }
+.progress-fill { height: 100%; background: var(--primary); border-radius: 999px; transition: width .25s ease; }
+.progress-fill.bad { background: var(--danger); }
+.progress-count { margin: 0 0 .8rem; font-size: .9rem; font-weight: 600; }
+.progress-log {
+  max-height: 240px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: .5rem .7rem; font-size: .82rem; background: #fbfcfd;
+}
+.progress-log:empty { display: none; }
+.progress-line { padding: .18rem 0; overflow-wrap: anywhere; }
+.progress-line.good { color: var(--ok); }
+.progress-line.bad { color: var(--danger); }
 .modal-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
 .toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); background: #1a1d21; color: #fff; padding: .75rem 1.1rem; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 60; font-size: .9rem; max-width: 90vw; }
 .toast a { color: #9db4ff; }
