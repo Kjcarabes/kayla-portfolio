@@ -347,14 +347,22 @@ and anywhere below, a new function:
 
 ```js
 // Single-recipient email: order alerts to Kayla, shipping notices to buyers.
-// MailApp on purpose — it needs no scope beyond the one this script already has,
-// and no alias setup. Sends from the account that owns this Sheet, displayed as
-// FROM_NAME. See "About the From address" below before reaching for GmailApp.
+// `p.html` is optional — buyer emails send both a styled HTML body and a plain
+// text fallback; Kayla's own alerts send text only.
 function notifyOne(p) {
-  MailApp.sendEmail({ to: p.to, subject: p.subject, body: p.body, name: FROM_NAME });
+  var opts = { name: FROM_NAME };
+  if (p.html) opts.htmlBody = p.html;
+  GmailApp.sendEmail(p.to, p.subject, p.body, opts);
   return json({ ok: true });
 }
 ```
+
+To send from `kaylacarabesart@gmail.com` instead of the Sheet owner's address, add
+`from: 'kaylacarabesart@gmail.com'` to `opts` — but read "About the From address"
+below first; it needs a verified alias *and* a re-authorisation.
+
+(`MailApp.sendEmail({to, subject, body, htmlBody, name})` works identically and
+needs no extra OAuth scope, if you'd rather avoid `GmailApp`.)
 
 **About the From address.** Apps Script sends as the Google account that owns the
 signups Sheet — which is *not* kaylacarabesart@gmail.com. Recipients see
