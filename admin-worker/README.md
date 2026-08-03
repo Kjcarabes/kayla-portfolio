@@ -1,8 +1,8 @@
 # Admin Worker — setup
 
 Backend for the `/admin` portal. It commits form changes to this repo and can
-auto-post new work to Instagram. Deploy it once; after that Kayla only uses the
-web form at `https://www.kaylacarabes.com/admin/`.
+post work to Instagram and a Facebook page. Deploy it once; after that Kayla only
+uses the web form at `https://www.kaylacarabes.com/admin/`.
 
 ## 1. GitHub token
 
@@ -35,7 +35,7 @@ types her **password** on the sign-in screen.
 
 `GH_OWNER` / `GH_REPO` / `GH_BRANCH` are already set in `wrangler.toml`.
 
-## 3. Instagram auto-post (optional, enable when ready)
+## 3. Instagram posting (optional, enable when ready)
 
 Uses **Instagram API with Instagram login** (Business/Creator account, no
 Facebook Page). `IG_API_BASE` in `wrangler.toml` is already set to
@@ -66,14 +66,103 @@ npx wrangler secret put IG_USER_ID
 npx wrangler secret put IG_ACCESS_TOKEN
 ```
 
-Until these are set, the "Also post to Instagram" checkbox just publishes to the
-site (the post step reports it's not configured — the commit still succeeds).
+Until these are set, the admin shows the Instagram tick box greyed out as "not
+set up yet" and only publishes to the site.
 
 Notes / limits:
 - The token is long-lived (~60 days) and must be refreshed periodically.
 - Instagram only accepts JPEG at aspect ratios between 4:5 and 1.91:1. Very tall
   or very wide paintings will be rejected by Instagram (the commit still lands).
 - It posts the original uploaded photo (no cropping or graphics generation).
+
+## 3b. Facebook page posting (optional)
+
+Separate from Instagram above and independent of it — a page post always goes
+through `graph.facebook.com` with a **page** access token, whichever Instagram
+path is in use. Set up either, both, or neither.
+
+You need two values: `FB_PAGE_ID` and a **page** access token. There are two ways
+to get them — the system-user route (B) is fewer steps and the token never
+expires, so prefer it unless the page isn't in a business portfolio.
+
+**The page ID on its own** (either route): Meta Business Suite → **Settings →
+Pages**, or on the page itself **About → Page transparency**. It's a long number.
+
+### Route A — Graph API Explorer
+
+The Explorer is a **separate tool, not part of the app dashboard**:
+[developers.facebook.com/tools/explorer](https://developers.facebook.com/tools/explorer/).
+The "Generate access tokens" panel inside *Instagram → API setup* is Instagram-only
+and has nothing to do with pages — that's the usual wrong turn.
+
+1. In the Explorer's right-hand panel: **Meta App** → pick your app. Below it is
+   the **User or Page** dropdown → **Get User Access Token** (older layouts show
+   a **Get Token** button with the same menu under it).
+2. Tick `pages_show_list`, `pages_manage_posts`, `pages_read_engagement` in the
+   permissions list → **Generate Access Token** → authorize, and make sure the
+   page is ticked on Meta's consent screen.
+3. If the app has no page permissions to tick at all, it was created as an
+   Instagram-only app. In the app dashboard add the use case **"Manage everything
+   on your Page"** (or create a new **Business**-type app for this), then come
+   back to step 1.
+4. **Make the user token long-lived — do this before reading the page token.**
+   A page token inherits its lifetime from the user token it was read with, and
+   there is no way to extend a page token after the fact:
+   ```
+   curl "https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=APP_ID&client_secret=APP_SECRET&fb_exchange_token=USER_TOKEN"
+   ```
+   - `APP_ID` / `APP_SECRET` — app dashboard → **App settings → Basic**. Use the
+     **Facebook** app secret, not the Instagram one from §3 (the app has both).
+   - `USER_TOKEN` — the one in the Explorer's Access Token box, **not** a page
+     token. Exchanging a page token here is the usual mistake.
+
+   Returns `{"access_token":"…","expires_in":5183944}` — a ~60-day user token.
+5. **Page ID + page token:** run `GET /me/accounts` in the Explorer *with the
+   long-lived token from step 4* pasted into the Access Token field (or
+   `curl "https://graph.facebook.com/v21.0/me/accounts?access_token=LONG_LIVED_USER_TOKEN"`).
+   Each entry has an `id` (`FB_PAGE_ID`) and an `access_token` — that one is
+   `FB_PAGE_TOKEN`, and it doesn't expire.
+
+### Route B — system user (no Explorer, token never expires)
+
+In [business.facebook.com/settings](https://business.facebook.com/settings) (Meta
+Business Suite → Settings → **Business settings**):
+
+1. **Users → System users → Add** — name it anything ("website poster"), role
+   **Employee**.
+2. **Assign assets** → **Pages** → pick the page → **Full control** (or at least
+   "Create content"). Also assign the **app** under Assets → Apps.
+3. **Generate new token** → pick the app → tick `pages_manage_posts`,
+   `pages_read_engagement`, `pages_show_list` → **Generate**. Copy it now; Meta
+   shows it once. That token doesn't expire.
+
+### Either route
+
+Verify at [developers.facebook.com/tools/debug/accesstoken](https://developers.facebook.com/tools/debug/accesstoken)
+— paste the token; it should say **Expires: Never** and list the page permissions.
+
+```
+npx wrangler secret put FB_PAGE_ID
+npx wrangler secret put FB_PAGE_TOKEN
+```
+
+Notes / limits:
+- The app needs to be **Live** (not in Development mode) for the post to appear
+  publicly, and `pages_manage_posts` requires App Review unless you're posting to
+  a page you administer with a token you generated yourself — which is this case.
+- Facebook accepts JPEG and PNG, and doesn't have Instagram's aspect-ratio rule,
+  so tall or wide paintings that Instagram rejects still post fine here.
+- Posting a photo also puts it in the page's Photos album — that's how the Graph
+  API works, there's no "post without album" option.
+
+## 3c. Sharing a work that's already on the site
+
+The **Share** button on any row in the admin's Works tab opens the same tick
+boxes and a caption, and posts the photo immediately (`POST /api/social-post`) —
+no commit, nothing changes on the site. It only works for photos already
+committed; a photo added but not yet published is blocked with a note to publish
+first, because Instagram and Facebook fetch the image from
+`raw.githubusercontent.com` themselves.
 
 ## 4. Newsletter sending (optional)
 

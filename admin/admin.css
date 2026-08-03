@@ -142,6 +142,9 @@ input[type=file]::file-selector-button {
 }
 input[type=file]::file-selector-button:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
 .field-checkbox { display: inline-flex; align-items: center; gap: .45rem; margin: .2rem 1rem .2rem 0; font-size: .9rem; cursor: pointer; }
+/* A social network with no keys on the Worker (or one the photo's format rules
+   out) — visible so it's clear it exists, greyed so it isn't clicked at. */
+.field-checkbox.is-off { opacity: .5; cursor: default; }
 .field-hint { font-size: .78rem; color: var(--muted); margin-top: .25rem; }
 .field-warn { color: var(--danger); font-weight: 600; }
 .field-warn[hidden] { display: none; }

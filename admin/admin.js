@@ -3,7 +3,8 @@
  *
  * Loads content/*.json via the Worker, presents form editors, and saves edits +
  * uploaded images back as one atomic commit. Adding a new work can also post the
- * photo to Instagram in the same action. No build step — plain vanilla JS.
+ * photo to Instagram / the Facebook Page in the same action, and any already-
+ * published work can be shared later from its row. No build step — plain JS.
  */
 
 // The deployed Cloudflare Worker (admin-worker/). Update here if it's redeployed.
@@ -17,7 +18,8 @@ const state = {
   original: {},        // path -> snapshot at load (change detection)
   baseShas: {},        // path -> git blob SHA at load (optimistic-lock guard)
   pendingImages: [],   // { path, base64, contentType, dataUrl }
-  pendingInstagram: null, // { imagePath, caption } set by the add-work flow
+  pendingSocial: null, // { imagePath, caption, targets } set by the add-work flow
+  social: { instagram: false, facebook: false }, // which networks the Worker has keys for
   dirty: new Set(),
   openRows: new Set(), // which rows are expanded (survives re-render), keyed "tab:id"
   sales: null,         // { markup, priceList[], saleRecord[] } from private KV
@@ -62,6 +64,42 @@ const VIDEO_EXTS = /\.(mp4|mov|m4v|webm|ogv)$/i;
 const isVideoPath = (p) => VIDEO_EXTS.test(String(p || ''));
 
 const IG_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-3px"><defs><linearGradient id="iggrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".45" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5.5" fill="none" stroke="url(#iggrad)" stroke-width="2"/><circle cx="12" cy="12" r="4.3" fill="none" stroke="url(#iggrad)" stroke-width="2"/><circle cx="17.6" cy="6.4" r="1.4" fill="url(#iggrad)"/></svg>';
+const FB_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-3px"><circle cx="12" cy="12" r="10" fill="#1877f2"/><path d="M13.3 19.4V13h2.1l.4-2.5h-2.5V8.9c0-.7.2-1.2 1.2-1.2h1.3V5.5c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.2-3.2 3.3v1.8H8.5V13h2.2v6.4z" fill="#fff"/></svg>';
+
+// Where a photo can be shared. `state.social` (from /api/load) says which ones
+// the Worker actually has keys for — an unconfigured network stays visible but
+// disabled, so a post is never offered that could only fail.
+const NETWORKS = [
+  { key: 'instagram', label: 'Instagram', icon: IG_ICON, jpgOnly: true },
+  { key: 'facebook', label: 'Facebook page', icon: FB_ICON, jpgOnly: false },
+];
+const isJpg = (path, contentType) => /\.jpe?g$/i.test(String(path || '')) || contentType === 'image/jpeg';
+
+// `chosen` is the caller's tick state, kept outside the markup so re-rendering
+// (e.g. after picking a file) doesn't wipe what was already ticked.
+function networkChecks(chosen, jpg) {
+  return NETWORKS.map(n => {
+    const off = !state.social[n.key];
+    const blocked = off || (n.jpgOnly && !jpg);
+    const note = off ? 'not set up yet' : (blocked ? 'JPG photos only' : '');
+    return `<label class="field-checkbox${blocked ? ' is-off' : ''}">
+        <input type="checkbox" data-network="${n.key}" ${blocked ? 'disabled' : (chosen[n.key] ? 'checked' : '')}>
+        ${n.icon} ${escapeHtml(n.label)}${note ? ` <span class="muted">(${note})</span>` : ''}
+      </label>`;
+  }).join('');
+}
+// Only enabled+ticked boxes count, so a blocked network can't sneak into a post.
+function readNetworkChecks(scope = document) {
+  const targets = {};
+  $$('input[data-network]', scope).forEach(el => { if (el.checked && !el.disabled) targets[el.dataset.network] = true; });
+  return targets;
+}
+function socialSummary(posted) {
+  return NETWORKS.filter(n => posted && posted[n.key])
+    .map(n => posted[n.key].ok ? `${n.label} ✓` : `${n.label} failed: ${posted[n.key].error}`)
+    .join(' · ');
+}
+const socialFailed = (posted) => Object.values(posted || {}).some(r => r && !r.ok);
 
 // =================== UTIL ===================
 const $ = (s, el = document) => el.querySelector(s);
@@ -158,6 +196,8 @@ async function connect() {
     state.files = JSON.parse(JSON.stringify(data.files));
     state.original = JSON.parse(JSON.stringify(data.files));
     state.baseShas = data.shas || {};
+    // Missing on a Worker that predates Facebook support — assume Instagram-only.
+    state.social = data.social || { instagram: true, facebook: false };
     localStorage.setItem('kadmin_secret', secret);
 
     $('#connect-screen').hidden = true;
@@ -348,7 +388,7 @@ function renderWorks() {
   root.innerHTML = `
     <div class="section">
       <button class="btn primary big-add" data-action="add-work">+ Add a new work</button>
-      <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram in the same step — image sizes are generated automatically after publishing.</p>
+      <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram and your Facebook page in the same step — and <strong>Share</strong> on any row posts an older piece whenever you like. Image sizes are generated automatically after publishing.</p>
     </div>
     ${works.map((w, i) => {
       const open = state.openRows.has(`works:${w.id}`);
@@ -361,6 +401,7 @@ function renderWorks() {
             <span class="list-item-title">${escapeHtml(w.title || w.id || `Work ${i + 1}`)} <span class="muted">· ${escapeHtml(w.originalStatus || '')}</span></span>
           </span>
           <span class="list-item-actions">
+            <button data-action="share-work" data-i="${i}" title="Post this photo to Instagram or Facebook">Share</button>
             <button data-action="move-work-up" data-i="${i}">↑</button>
             <button data-action="move-work-down" data-i="${i}">↓</button>
             <button data-action="del-work" data-i="${i}" class="danger">Delete</button>
@@ -520,9 +561,10 @@ function showAddWorkModal() {
           <label class="field-checkbox"><input type="checkbox" id="aw-hero"> Hero slideshow</label>
         </div>
 
-        <h4>Instagram</h4>
-        <label class="field-checkbox"><input type="checkbox" id="aw-ig" checked> ${IG_ICON} Also post this photo to Instagram <span class="muted">(JPG only)</span></label>
+        <h4>Share</h4>
+        <div id="aw-networks"></div>
         <div class="field"><label class="field-label">Caption</label><textarea id="aw-caption" rows="3" spellcheck="true"></textarea></div>
+        <div class="field-hint">Posts this photo once the work is published. Untick both to only add it to the site.</div>
 
         <p id="aw-error" class="error-text" hidden></p>
         <div class="modal-actions">
@@ -542,13 +584,21 @@ function showAddWorkModal() {
     </div>`;
 
   let picked = null; // { path, base64, contentType, dataUrl }
+  const chosen = { instagram: true, facebook: true };
+  // Repaint on every file pick: Instagram's JPG-only rule can only be judged
+  // once there's a file, and the answer changes if she swaps the photo.
+  const paintNetworks = () => {
+    $('#aw-networks').innerHTML = networkChecks(chosen, picked ? isJpg(picked.path, picked.contentType) : true);
+  };
+  paintNetworks();
+  $('#aw-networks').addEventListener('change', (e) => {
+    if (e.target.dataset.network) chosen[e.target.dataset.network] = e.target.checked;
+  });
+
   const syncCaption = () => {
-    const t = $('#aw-title').value.trim();
-    const m = $('#aw-medium').value.trim();
-    const s = $('#aw-size').value.trim();
     const cap = $('#aw-caption');
     if (!cap.dataset.touched) {
-      cap.value = [t, [m, s].filter(Boolean).join(' · ')].filter(Boolean).join('\n');
+      cap.value = defaultCaption({ title: $('#aw-title').value.trim(), medium: $('#aw-medium').value.trim(), size: $('#aw-size').value.trim() });
     }
   };
   $('#aw-title').addEventListener('input', syncCaption);
@@ -564,6 +614,7 @@ function showAddWorkModal() {
     picked = { path: `assets/images/${clean}`, base64: dataUrl.split(',')[1], contentType: file.type, dataUrl };
     $('#aw-preview').innerHTML = `<img src="${dataUrl}" alt="">`;
     $('#aw-filename').textContent = picked.path;
+    paintNetworks();
   });
 
   $('#aw-cancel').onclick = () => { root.innerHTML = ''; };
@@ -606,16 +657,80 @@ function submitAddWork(picked) {
   state.pendingImages = state.pendingImages.filter(p => p.path !== picked.path);
   state.pendingImages.push(picked);
 
-  const isJpg = /jpe?g$/i.test(picked.path) || picked.contentType === 'image/jpeg';
-  if ($('#aw-ig').checked && isJpg) {
-    state.pendingInstagram = { imagePath: picked.path, caption: $('#aw-caption').value };
-  } else if ($('#aw-ig').checked && !isJpg) {
-    toast('Instagram only accepts JPGs — this will publish to the site but skip Instagram.', 'error');
-  }
+  const targets = readNetworkChecks($('#aw-networks'));
+  state.pendingSocial = Object.keys(targets).length
+    ? { imagePath: picked.path, caption: $('#aw-caption').value, targets }
+    : null;
   recomputeDirty();
 
   const btn = $('#aw-publish');
   doSave(`Add work: ${title}`, btn);
+}
+
+function defaultCaption(w) {
+  return [w.title, [w.medium, w.size].filter(Boolean).join(' · ')].filter(Boolean).join('\n');
+}
+
+// ---- Share modal: post a work that's already on the site ----
+// Straight to Instagram / Facebook, no commit — the photo is already public, so
+// the networks can fetch it as-is.
+function showShareModal(i) {
+  const w = (getByPath(state.files[FILE.works], 'works') || [])[i];
+  if (!w) return;
+  // A photo that's only in this browser session isn't on GitHub yet, so Meta
+  // couldn't fetch it. Say so instead of letting the post fail obscurely.
+  const unpublished = !w.image || state.pendingImages.some(p => p.path === w.image);
+  const chosen = { instagram: true, facebook: true };
+  const root = $('#modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop"><div class="modal">
+      <button class="modal-close" id="sh-x" aria-label="Close">&times;</button>
+      <h2>Share “${escapeHtml(w.title || w.id || 'this work')}”</h2>
+      <div class="image-picker" style="margin:.5rem 0 1rem">
+        <div class="image-preview">${w.image ? `<img src="${escapeAttr(thumbSrc(w.image, w.widths))}" alt="">` : 'No image'}</div>
+        <div class="image-controls"><span class="image-path">${escapeHtml(w.image || '')}</span></div>
+      </div>
+      <div id="sh-networks">${networkChecks(chosen, isJpg(w.image))}</div>
+      <div class="field" style="margin-top:.6rem"><label class="field-label">Caption</label><textarea id="sh-caption" rows="4" spellcheck="true">${escapeHtml(defaultCaption(w))}</textarea></div>
+      <div class="field-hint">Posts right away — nothing is committed to the site.</div>
+      ${unpublished ? '<p class="error-text">This photo isn’t published yet. Hit Publish first, then share it.</p>' : ''}
+      <p id="sh-error" class="error-text" hidden></p>
+      <div class="modal-actions">
+        <button id="sh-cancel">Cancel</button>
+        <button id="sh-post" class="primary"${unpublished ? ' disabled' : ''}>Post now</button>
+      </div>
+    </div></div>`;
+
+  $('#sh-networks').addEventListener('change', (e) => {
+    if (e.target.dataset.network) chosen[e.target.dataset.network] = e.target.checked;
+  });
+  $('#sh-cancel').onclick = () => { root.innerHTML = ''; };
+  $('#sh-x').onclick = () => { root.innerHTML = ''; };
+  $('#sh-post').onclick = () => shareWork(w);
+}
+
+async function shareWork(w) {
+  const err = $('#sh-error');
+  const btn = $('#sh-post');
+  const targets = readNetworkChecks($('#sh-networks'));
+  if (!Object.keys(targets).length) { err.textContent = 'Tick where you’d like it posted.'; err.hidden = false; return; }
+  err.hidden = true;
+  btn.disabled = true; btn.textContent = 'Posting…';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/social-post`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imagePath: w.image, caption: $('#sh-caption').value, targets }),
+    });
+    if (r.status === 404) throw new Error('Sharing needs the newer admin Worker — redeploy it (npx wrangler deploy).');
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    $('#modal-root').innerHTML = '';
+    toast(socialSummary(data.social) || 'Nothing was posted.', socialFailed(data.social) ? 'error' : '');
+  } catch (e) {
+    err.textContent = e.message; err.hidden = false;
+    btn.disabled = false; btn.textContent = 'Post now';
+  }
 }
 
 // =================== PANEL: BLOG ===================
@@ -1640,6 +1755,9 @@ document.addEventListener('click', (e) => {
 
   const handlers = {
     'add-work': () => { showAddWorkModal(); return; },
+    // preventDefault: the button lives inside <summary>, and expanding the row
+    // behind the modal is just noise.
+    'share-work': () => { e.preventDefault(); showShareModal(i); },
     'del-work': () => { if (confirm('Delete this work?')) { works.splice(i, 1); rerender(); } },
     'move-work-up': () => { moveItem(works, i, -1); rerender(); },
     'move-work-down': () => { moveItem(works, i, 1); rerender(); },
@@ -1793,7 +1911,7 @@ async function doSave(message, btn) {
   const files = [...state.dirty].map(path => ({ path, content: JSON.stringify(state.files[path], null, 2) + '\n' }));
   const images = state.pendingImages.map(img => ({ path: img.path, base64: img.base64 }));
   const payload = { message, files, images, baseShas: state.baseShas };
-  if (state.pendingInstagram) payload.instagram = state.pendingInstagram;
+  if (state.pendingSocial) payload.social = state.pendingSocial;
 
   try {
     const r = await fetch(`${state.workerUrl}/api/save`, {
@@ -1807,15 +1925,22 @@ async function doSave(message, btn) {
     state.original = JSON.parse(JSON.stringify(state.files));
     if (data.newShas) state.baseShas = { ...state.baseShas, ...data.newShas };
     state.pendingImages = [];
-    const ig = state.pendingInstagram ? data.instagram : null;
-    state.pendingInstagram = null;
+    const wanted = state.pendingSocial;
+    state.pendingSocial = null;
     recomputeDirty();
     $('#modal-root').innerHTML = '';
     renderActiveTab();
 
     let msg = 'Published.';
-    if (ig) msg += ig.ok ? ' Posted to Instagram ✓' : ` (Instagram failed: ${ig.error})`;
-    toast(`${msg} <a href="${escapeAttr(data.commitUrl)}" target="_blank" rel="noopener">View commit</a>`, ig && !ig.ok ? 'error' : '');
+    let failed = false;
+    if (wanted) {
+      // A Worker deployed before this feature ignores `social` silently — the
+      // commit still landed, so say what didn't happen rather than claiming it did.
+      const posted = data.social || (data.instagram ? { instagram: data.instagram } : null);
+      if (!posted) { msg += ' (Nothing was posted — redeploy the admin Worker.)'; failed = true; }
+      else { msg += ` ${socialSummary(posted)}`; failed = socialFailed(posted); }
+    }
+    toast(`${msg} <a href="${escapeAttr(data.commitUrl)}" target="_blank" rel="noopener">View commit</a>`, failed ? 'error' : '');
   } catch (err) {
     const se = $('#save-error');
     if (se) { se.textContent = `Save failed: ${err.message}`; se.hidden = false; }

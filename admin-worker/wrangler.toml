@@ -16,6 +16,9 @@ GH_BRANCH = "main"
 # Instagram-login path (no Facebook Page). For the Facebook-Page path instead,
 # set this to "https://graph.facebook.com/v21.0".
 IG_API_BASE = "https://graph.instagram.com/v21.0"
+# Facebook Page posting always uses graph.facebook.com (separate from the IG path
+# above — a Page post needs a Page token either way).
+FB_API_BASE = "https://graph.facebook.com/v21.0"
 # Cloudflare Web Analytics site tag (already public in the site's beacon).
 CF_SITE_TAG = "c924106269a54cb584b22aaef454b221"
 
@@ -24,6 +27,9 @@ CF_SITE_TAG = "c924106269a54cb584b22aaef454b221"
 #   ADMIN_PASSWORD          — the password Kayla types to log into /admin
 #   IG_USER_ID              — (optional) Instagram Business account ID, for auto-post
 #   IG_ACCESS_TOKEN         — (optional) long-lived Instagram Graph API token
+#   FB_PAGE_ID              — (optional) Facebook Page ID, for Page posts
+#   FB_PAGE_TOKEN           — (optional) never-expiring Page access token
+#                             (pages_manage_posts). See README §3b.
 #   NEWSLETTER_SEND_URL     — (optional) the newsletter-send Apps Script /exec URL
 #   NEWSLETTER_SEND_SECRET  — (optional) shared secret matching that script
 #   CF_API_TOKEN            — (optional) Cloudflare API token, Account Analytics: Read
