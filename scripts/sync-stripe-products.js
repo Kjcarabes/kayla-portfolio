@@ -376,6 +376,15 @@ async function reconcilePurchasable(spec, ctx) {
       await stripe.products.update(ensured.id, { images: spec.images });
       console.log(`Updated images for "${spec.title}"`);
     }
+    // Same for the copy. The description is what the buyer reads at checkout
+    // ("10X10 Print"), so a printDescription added after the product was first
+    // created has to land in Stripe too — otherwise the site and the checkout
+    // page disagree about what's being sold.
+    const wantDescription = spec.description || '';
+    if (ensured.name !== spec.title || (ensured.description || '') !== wantDescription) {
+      await stripe.products.update(ensured.id, { name: spec.title, description: wantDescription });
+      console.log(`Updated copy for "${spec.title}" — ${wantDescription || '(no description)'}`);
+    }
     const url = await ensureActiveLink({
       product: ensured,
       cents: spec.priceCents,

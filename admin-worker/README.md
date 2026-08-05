@@ -147,6 +147,12 @@ npx wrangler secret put FB_PAGE_TOKEN
 ```
 
 Notes / limits:
+- **"Error validating access token: Session has expired on …"** means the stored
+  page token came from a *short-lived* user token — Explorer tokens die after
+  ~1–2 hours, at the top of the hour. There's no fixing it after the fact: redo
+  route A from a fresh user token (exchange first, *then* read `/me/accounts`),
+  or use route B. Checking the debugger says **Expires: Never** before running
+  `wrangler secret put` catches this every time.
 - The app needs to be **Live** (not in Development mode) for the post to appear
   publicly, and `pages_manage_posts` requires App Review unless you're posting to
   a page you administer with a token you generated yourself — which is this case.
