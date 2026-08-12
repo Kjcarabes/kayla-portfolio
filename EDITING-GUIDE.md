@@ -31,6 +31,7 @@ git pull
 | Change colors/fonts | `assets/css/style.css` |
 | Replace images | `assets/images/` folder (auto-optimized on push!) |
 | Change hero slideshow | `content/works.json` (heroFeature) |
+| Turn the home-page announcement popup or the countdown bar on/off | Admin portal → **Popups** tab (or `spotlight` / `auctionBanner` in `content/site-settings.json`) |
 
 ⚠️ **Don't edit `content/products.json` directly** - it's auto-generated from Stripe and will be overwritten!
 

@@ -28,8 +28,8 @@
   },
 
   "spotlight": {
-    "_help": "The home-page popup — one card with a main image and the promos listed below divided into it. \"image\" is the big picture; each item is a row (title, tag, cta + either a \"url\" OR a \"workId\"). Use \"workId\" (+ \"category\": Prints/Crafts) to auto-link to that product's live checkout so it never goes stale; use \"url\" for outside links like an auction. Delete an item when it's over, or set enabled:false to turn the whole popup off.",
-    "enabled": true,
+    "_help": "The home-page popup — one card with a main image and the promos listed below divided into it. Edit it in the admin portal's Popups tab. \"image\" is the big picture; each item is a row (title, tag, cta + either a \"url\" OR a \"workId\"). Use \"workId\" (+ \"category\": Prints/Crafts) to auto-link to that product's live checkout so it never goes stale; use \"url\" for outside links like an auction. Delete an item when it's over, or set enabled:false to turn the whole popup off — the content below is kept either way, so an old announcement can be brought back.",
+    "enabled": false,
     "heading": "Jimothy Takes Seattle",
     "subheading": "Bid on the original, or take home a print or tote.",
     "image": "assets/images/IMG_4497.jpeg",
@@ -62,8 +62,8 @@
   },
 
   "auctionBanner": {
-    "_help": "Slim countdown bar at the top of every page for a live auction. Set \"endsAt\" to the eBay auction end time in ISO-8601 WITH a timezone (e.g. 2026-08-03T19:00:00-07:00 for 7pm Seattle). It disappears automatically once that time passes. Set enabled:false to remove it.",
-    "enabled": true,
+    "_help": "Slim countdown bar at the top of every page for a live auction. Edit it in the admin portal's Popups tab. Set \"endsAt\" to the end time in ISO-8601 WITH a timezone (e.g. 2026-08-03T19:00:00-07:00 for 7pm Seattle). It disappears automatically once that time passes. Set enabled:false to remove it.",
+    "enabled": false,
     "text": "Jimothy original — live auction",
     "cta": "Bid now",
     "url": "https://www.ebay.com/itm/147463800483",

@@ -226,7 +226,7 @@ function switchTab(tab) {
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, about: renderAbout, newsletter: renderNewsletter, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, about: renderAbout, newsletter: renderNewsletter, popups: renderPopups, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -274,6 +274,44 @@ function datalistInput(file, key, label, options, opts = {}) {
       <input type="text" spellcheck="false" list="${listId}" data-file="${escapeAttr(file)}" data-key="${escapeAttr(key)}" value="${escapeAttr(v)}" ${opts.placeholder ? `placeholder="${escapeAttr(opts.placeholder)}"` : ''}>
       <datalist id="${listId}">${options.map(o => `<option value="${escapeAttr(o)}"></option>`).join('')}</datalist>
     </div>`;
+}
+
+// Date + time for a value stored as ISO-8601 *with* an offset (the countdown
+// bar's end time — main.js needs the zone to count down correctly). The browser
+// control carries no timezone, so what's typed is read as Kayla's local time and
+// stamped with her current offset.
+function localDateTimeValue(iso) {
+  const d = iso ? new Date(iso) : null;
+  if (!d || isNaN(d)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function isoWithOffset(local) {
+  const d = local ? new Date(local) : null;
+  if (!d || isNaN(d)) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  const off = -d.getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`
+    + `${sign}${p(Math.floor(Math.abs(off) / 60))}:${p(Math.abs(off) % 60)}`;
+}
+function datetimeField(file, key, label) {
+  const iso = getByPath(state.files[file], key);
+  return `<div class="field">
+      <label class="field-label">${escapeHtml(label)}</label>
+      <input type="datetime-local" data-dt-file="${escapeAttr(file)}" data-dt-key="${escapeAttr(key)}" value="${escapeAttr(localDateTimeValue(iso))}">
+      <div class="field-hint" data-dt-note>${deadlineNote(iso)}</div>
+    </div>`;
+}
+// Says what the chosen time actually means, because a date in the past silently
+// hides the bar — the one mistake that looks like the feature is broken.
+function deadlineNote(iso) {
+  const t = iso ? new Date(iso).getTime() : NaN;
+  if (isNaN(t)) return 'Pick the date and time it ends.';
+  if (t <= Date.now()) return '<span class="field-warn">That time has already passed — the bar stays hidden.</span>';
+  const hrs = (t - Date.now()) / 3600000;
+  const left = hrs < 48 ? `${Math.max(1, Math.round(hrs))} hour${Math.round(hrs) === 1 ? '' : 's'}` : `${Math.round(hrs / 24)} days`;
+  return `Counts down and disappears on its own — about ${left} from now.`;
 }
 
 // "Limit stock" caps how many can sell: blank = unlimited, a number = that many,
@@ -329,6 +367,15 @@ document.addEventListener('input', (e) => {
     updateOrderButtons();
     return;
   }
+  if (t.dataset.dtKey) {
+    const iso = isoWithOffset(t.value);
+    // Cleared box → drop the key entirely; main.js treats a missing endsAt as "no bar".
+    setByPath(state.files[t.dataset.dtFile], t.dataset.dtKey, iso || undefined);
+    const note = t.parentElement?.querySelector('[data-dt-note]');
+    if (note) note.innerHTML = deadlineNote(iso);
+    recomputeDirty();
+    return;
+  }
   if (t.dataset.sales && state.sales) {
     const v = t.type === 'number' ? (t.value === '' ? null : Number(t.value)) : t.value;
     setByPath(state.sales, t.dataset.sales, v);
@@ -342,12 +389,25 @@ document.addEventListener('input', (e) => {
   else value = t.value;
   if (!state.files[t.dataset.file]) state.files[t.dataset.file] = {};
   setByPath(state.files[t.dataset.file], t.dataset.key, value);
+  const toggleNote = t.type === 'checkbox' && POPUP_TOGGLE_NOTES[t.dataset.key] && $(`[data-toggle-note="${t.dataset.key}"]`);
+  if (toggleNote) toggleNote.textContent = POPUP_TOGGLE_NOTES[t.dataset.key][value ? 1 : 0];
   recomputeDirty();
 });
 
 document.addEventListener('change', async (e) => {
   const t = e.target;
   if (t.classList?.contains('order-check')) { updateOrderButtons(); return; }
+  // Popup promo: switching where the button points swaps which keys the row keeps,
+  // so a leftover `url` can't quietly win over a newly-picked product (or vice versa).
+  if (t.dataset.promoLink !== undefined) {
+    const it = (getByPath(state.files[FILE.settings], 'spotlight.items') || [])[Number(t.dataset.promoLink)];
+    if (it) {
+      if (t.value === 'product') { delete it.url; it.workId ||= ''; }
+      else { delete it.workId; delete it.category; it.url ||= ''; }
+    }
+    rerender();
+    return;
+  }
   if (!t.dataset.imgFile) return;
   const file = t.files?.[0];
   if (!file) return;
@@ -1350,6 +1410,121 @@ async function loadSubscribers() {
   }
 }
 
+// =================== PANEL: POPUPS ===================
+// Home-page announcements: the full-screen popup (site-settings `spotlight`) and
+// the countdown bar (`auctionBanner`). Switching either off leaves its wording,
+// picture and rows in the JSON, so the next announcement starts from the last one
+// instead of being rebuilt — that's the whole point of the on/off switch.
+
+const PROMO_CATEGORY_OPTS = [
+  { value: '', label: 'Whatever’s for sale' },
+  { value: 'Prints', label: 'The print' },
+  { value: 'Crafts', label: 'The craft / merch' },
+];
+
+// What each switch means, in plain words, updated the instant it's ticked — an
+// on/off box whose caption still describes the old state reads as a broken save.
+const POPUP_TOGGLE_NOTES = {
+  'spotlight.enabled': [
+    'Off — nothing pops up. Everything below is kept, so you can switch it back on whenever.',
+    'On — visitors see it on their first look at the home page.',
+  ],
+  'auctionBanner.enabled': [
+    'Off — hidden everywhere. The wording is kept for next time.',
+    'On — it shows on every page until the end time below.',
+  ],
+};
+function popupToggle(file, key, label, on) {
+  return `${checkbox(file, key, label)}
+    <div class="field-hint" data-toggle-note="${escapeAttr(key)}" style="margin:.3rem 0 1.1rem">${POPUP_TOGGLE_NOTES[key][on ? 1 : 0]}</div>`;
+}
+
+function renderPopups() {
+  const root = $('[data-panel="popups"]');
+  const f = FILE.settings;
+  const sp = getByPath(state.files[f], 'spotlight') || {};
+  const items = sp.items || [];
+  const banner = getByPath(state.files[f], 'auctionBanner') || {};
+  const works = getByPath(state.files[FILE.works], 'works') || [];
+
+  root.innerHTML = `
+    <div class="section">
+      <h3>Announcement popup <span class="muted" style="font-weight:400">— home page</span></h3>
+      <p class="tab-hint">Fades in over the home page a moment after it loads, and only once per visit. Each row below is one thing you’re announcing — a print, a tote, a show, an auction.</p>
+      ${popupToggle(f, 'spotlight.enabled', 'Show this popup on the home page', sp.enabled)}
+      ${input(f, 'spotlight.heading', 'Heading', { placeholder: 'Jimothy Takes Seattle' })}
+      ${input(f, 'spotlight.subheading', 'Line under the heading')}
+      ${imageField(f, 'spotlight.image', 'Main picture')}
+      <h4>What you’re announcing</h4>
+      ${items.length ? items.map((it, i) => promoRow(f, it, i, works)).join('')
+        : '<p class="muted" style="margin:.2rem 0 .8rem">Nothing yet — add a row below.</p>'}
+      <button class="add-btn" data-action="add-promo">+ Add something to announce</button>
+    </div>
+
+    <div class="section">
+      <h3>Countdown bar <span class="muted" style="font-weight:400">— slim strip at the top of every page</span></h3>
+      <p class="tab-hint">For something with a deadline, like an auction closing. It counts down and takes itself away the moment the time passes.</p>
+      ${popupToggle(f, 'auctionBanner.enabled', 'Show the bar', banner.enabled)}
+      ${input(f, 'auctionBanner.text', 'Text', { placeholder: 'Jimothy original — live auction' })}
+      <div class="field-row">
+        ${input(f, 'auctionBanner.cta', 'Button text', { placeholder: 'Bid now' })}
+        ${input(f, 'auctionBanner.url', 'Links to', { spellcheck: false, placeholder: 'https://…' })}
+      </div>
+      ${datetimeField(f, 'auctionBanner.endsAt', 'Ends at (your time)')}
+    </div>
+
+    <div class="section">
+      <h3>Mailing-list signup popup</h3>
+      <p class="tab-hint" style="margin:0">That one lives in the <strong>Newsletter</strong> tab, next to the subscriber list. It never shows at the same time as the announcement popup above.</p>
+    </div>
+  `;
+}
+
+function promoRow(f, it, i, works) {
+  const p = `spotlight.items.${i}`;
+  const toProduct = !!it.workId;
+  const workOpts = [{ value: '', label: '— Pick a work —' }, ...works.map(w => ({ value: w.id, label: w.title || w.id }))];
+  // A workId that no longer matches a work would otherwise vanish behind the first
+  // option while the JSON still held it — show it, flagged.
+  if (it.workId && !works.some(w => w.id === it.workId)) workOpts.push({ value: it.workId, label: `${it.workId} (no longer exists)` });
+  return `
+    <details class="list-item" data-open-key="promo:${i}" ${state.openRows.has(`promo:${i}`) ? 'open' : ''}>
+      <summary class="list-item-header">
+        <span class="summary-main">
+          <span class="summary-caret">▶</span>
+          <span class="list-item-title">${escapeHtml(it.title || `Row ${i + 1}`)}${it.tag ? ` <span class="muted">· ${escapeHtml(it.tag)}</span>` : ''}</span>
+        </span>
+        <span class="list-item-actions">
+          <button data-action="move-promo-up" data-i="${i}">↑</button>
+          <button data-action="move-promo-down" data-i="${i}">↓</button>
+          <button data-action="del-promo" data-i="${i}" class="danger">Delete</button>
+        </span>
+      </summary>
+      <div class="field-row">
+        ${input(f, `${p}.title`, 'Title')}
+        ${input(f, `${p}.tag`, 'Little label', { placeholder: 'Print' })}
+      </div>
+      ${input(f, `${p}.description`, 'Line under the title')}
+      <div class="field-row">
+        ${input(f, `${p}.cta`, 'Button text', { placeholder: 'Buy print — $20' })}
+        <div class="field">
+          <label class="field-label">Button goes to</label>
+          <select data-promo-link="${i}">
+            <option value="product" ${toProduct ? 'selected' : ''}>Something in the shop</option>
+            <option value="url" ${toProduct ? '' : 'selected'}>A web address</option>
+          </select>
+        </div>
+      </div>
+      ${toProduct ? `
+        <div class="field-row">
+          ${select(f, `${p}.workId`, 'Which work', workOpts)}
+          ${select(f, `${p}.category`, 'Which version', PROMO_CATEGORY_OPTS)}
+        </div>
+        <div class="field-hint">Points at that item’s live checkout, so the link can’t go stale when prices change.</div>`
+      : input(f, `${p}.url`, 'Web address', { spellcheck: false, placeholder: 'https://…' })}
+    </details>`;
+}
+
 // =================== PANEL: INQUIRIES ===================
 const money = (n) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -1752,6 +1927,7 @@ document.addEventListener('click', (e) => {
   const exhibitions = () => (state.files[FILE.about].exhibitions ||= []);
   const socials = () => (state.files[FILE.settings].socialLinks ||= []);
   const cardLinks = () => (state.files[FILE.card].links ||= []);
+  const promos = () => ((state.files[FILE.settings].spotlight ||= {}).items ||= []);
 
   const handlers = {
     'add-work': () => { showAddWorkModal(); return; },
@@ -1778,6 +1954,11 @@ document.addEventListener('click', (e) => {
     'del-ex': () => { state.files[FILE.about].exhibitions.splice(i, 1); rerender(); },
     'move-ex-up': () => { moveItem(state.files[FILE.about].exhibitions, i, -1); rerender(); },
     'move-ex-down': () => { moveItem(state.files[FILE.about].exhibitions, i, 1); rerender(); },
+
+    'add-promo': () => { promos().push({ title: '', tag: '', description: '', url: '', cta: 'Have a look' }); state.openRows.add(`promo:${promos().length - 1}`); rerender(); },
+    'del-promo': () => { if (confirm('Delete this row from the popup?')) { promos().splice(i, 1); rerender(); } },
+    'move-promo-up': () => { moveItem(promos(), i, -1); rerender(); },
+    'move-promo-down': () => { moveItem(promos(), i, 1); rerender(); },
 
     'add-social': () => { socials().push({ name: '', url: '' }); rerender(); },
     'del-social': () => { state.files[FILE.settings].socialLinks.splice(i, 1); rerender(); },

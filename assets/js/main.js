@@ -1600,7 +1600,7 @@ function spotlightProductItem(p, works) {
     };
 }
 
-function spotlightCustomItem(it, products) {
+function spotlightCustomItem(it, products, sp = {}) {
     // A custom item can hard-link (it.url) or reference a shop product by workId
     // (+ optional category) so its checkout link always tracks the live one in
     // products.json — no stale hardcoded Stripe URLs after a re-sync.
@@ -1610,11 +1610,17 @@ function spotlightCustomItem(it, products) {
             p.workId === it.workId && (!it.category || p.category === it.category));
         url = (prod && prod.stripeLink && !prod.sold) ? prod.stripeLink : 'shop.html';
     }
+    // Promo rows carry no image of their own (the combo card shows one hero image
+    // for the whole popup) — but a lone promo renders as the big card, which does
+    // need one. Fall back to the popup's main image rather than an empty <img>.
+    const ownImage = !!it.image;
     return {
         title: it.title || '',
         tag: it.tag || '✨ New',
         description: it.description || '',
-        image: it.image, widths: it.widths, aspectRatio: it.aspectRatio,
+        image: ownImage ? it.image : sp.image,
+        widths: ownImage ? it.widths : sp.widths,
+        aspectRatio: ownImage ? it.aspectRatio : sp.aspectRatio,
         url,
         cta: it.cta || 'Learn more',
         features: null,
@@ -1706,7 +1712,7 @@ async function initSpotlight() {
     const works = await loadWorks();
     const items = [
         ...featured.map(p => spotlightProductItem(p, works)),
-        ...(sp.items || []).map(it => spotlightCustomItem(it, products)),
+        ...(sp.items || []).map(it => spotlightCustomItem(it, products, sp)),
     ].filter(it => it.title);
     if (!items.length) { el.hidden = true; return; }
 
