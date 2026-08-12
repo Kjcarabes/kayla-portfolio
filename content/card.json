@@ -1,23 +1,40 @@
 {
   "_comment": "✏️ EDIT YOUR CARD PAGE HERE — this controls everything on kaylacarabes.com/card. Change the name, tagline, location, photos, or the banner painting, and add/remove/reorder the link buttons. The 'Save my contact' + 'Add to Apple Wallet' buttons live in card/index.html.",
-
   "name": "Kayla Carabes",
   "tagline": "Painter & Multidisciplinary Artist",
   "location": "Seattle, WA",
-
   "_imagesHelp": "Paths start from your site root. 'featured' is the big banner painting at the top, 'photo' is the round portrait, 'logo' is the small mark in the banner corner.",
   "featured": "/assets/images/optimized/moon-1200.webp",
   "photo": "/assets/images/kayla.jpeg",
   "logo": "/assets/images/color-theory.jpeg",
-
   "_linksHelp": "Each link needs a \"label\" (the text people see) and a \"url\". Add \"external\": true for links that leave your site so they open in a new tab. Add \"sublabel\": \"...\" for a small second line. Add \"highlight\": true to make it a big, warm, eye-catching card with a pulsing 'live' dot — great for a limited-time thing like an auction. Delete the card when it's over.",
   "links": [
-    { "_TEMP": "AUCTION — delete this whole line block when the auction ends.", "label": "Jimothy painting auction — live now!", "sublabel": "Bid on the original on eBay", "url": "https://www.ebay.com/itm/147463800483", "external": true, "highlight": true },
-    { "label": "Shop Jimothy — totes & prints", "sublabel": "See the painting and grab a print or tote", "url": "/work-detail.html?id=jimothy-takes-seattle" },
-    { "label": "Explore my work", "url": "/work.html" },
-    { "label": "Shop originals & prints", "url": "/shop.html" },
-    { "label": "Instagram — @kayla_carabes", "url": "https://instagram.com/kayla_carabes", "external": true },
-    { "label": "LinkedIn", "url": "https://linkedin.com/in/kayla-carabes", "external": true },
-    { "label": "Email me", "url": "mailto:kaylacarabesart@gmail.com" }
+    {
+      "label": "Shop Jimothy — totes & prints",
+      "sublabel": "See the painting and grab a print or tote",
+      "url": "/work-detail.html?id=jimothy-takes-seattle"
+    },
+    {
+      "label": "Explore my work",
+      "url": "/work.html"
+    },
+    {
+      "label": "Shop originals & prints",
+      "url": "/shop.html"
+    },
+    {
+      "label": "Instagram — @kayla_carabes",
+      "url": "https://instagram.com/kayla_carabes",
+      "external": true
+    },
+    {
+      "label": "LinkedIn",
+      "url": "https://linkedin.com/in/kayla-carabes",
+      "external": true
+    },
+    {
+      "label": "Email me",
+      "url": "mailto:kaylacarabesart@gmail.com"
+    }
   ]
 }
