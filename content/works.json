@@ -11,7 +11,15 @@
       "description": "Dolly drinks from any cup she sees. So gets her own kitty cup to paw at in front of the fireplace.",
       "featured": true,
       "heroFeature": true,
-      "originalStatus": "nfs"
+      "originalStatus": "nfs",
+      "aspectRatio": 1.2533,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3855
+      ]
     },
     {
       "id": "jimothy-takes-seattle",

@@ -114,6 +114,17 @@
       "workId": "skull"
     },
     {
+      "id": "print:dolly",
+      "title": "Dolly",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/img_5351.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "dolly"
+    },
+    {
       "id": "print:garden",
       "title": "Grandma's Garden",
       "category": "Prints",
@@ -395,5 +406,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-08-13T02:03:36.205Z"
+  "_lastSync": "2026-08-13T06:06:38.166Z"
 }
