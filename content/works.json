@@ -3,6 +3,17 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, featured, heroFeature",
   "works": [
     {
+      "id": "dolly",
+      "title": "Dolly",
+      "date": "2026-08-13",
+      "category": "Paintings",
+      "image": "assets/images/img_5351.jpg",
+      "description": "Dolly drinks from any cup she sees. So gets her own kitty cup to paw at in front of the fireplace.",
+      "featured": true,
+      "heroFeature": true,
+      "originalStatus": "nfs"
+    },
+    {
       "id": "jimothy-takes-seattle",
       "title": "Jimothy Takes Seattle",
       "date": "2026-07-26",
