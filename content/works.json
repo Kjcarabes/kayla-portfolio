@@ -3,31 +3,6 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, featured, heroFeature",
   "works": [
     {
-      "id": "dolly",
-      "title": "Dolly",
-      "date": "2026-08-13",
-      "category": "Paintings",
-      "image": "assets/images/img_5351.jpg",
-      "description": "Dolly drinks from any cup she sees. So gets her own kitty cup to paw at in front of the fireplace.",
-      "featured": true,
-      "heroFeature": true,
-      "originalStatus": "nfs",
-      "aspectRatio": 1.2533,
-      "widths": [
-        400,
-        800,
-        1200,
-        1600,
-        3855
-      ],
-      "medium": "Oil on Canvas",
-      "size": "8in x 10in",
-      "detail_images": [
-        "assets/images/img_5335.jpg",
-        "assets/images/img_5338.jpg"
-      ]
-    },
-    {
       "id": "jimothy-takes-seattle",
       "title": "Jimothy Takes Seattle",
       "date": "2026-07-26",
@@ -85,27 +60,6 @@
       ]
     },
     {
-      "id": "side of road copy.jpg",
-      "title": "Side of the road",
-      "date": "2026-07-10",
-      "category": "Paintings",
-      "image": "assets/images/side of road copy.jpg",
-      "description": "",
-      "medium": "Oil on canvas",
-      "size": "3ft x 4ft",
-      "featured": true,
-      "heroFeature": true,
-      "originalStatus": "available",
-      "aspectRatio": 1.3564,
-      "widths": [
-        400,
-        800,
-        1200,
-        1600,
-        4632
-      ]
-    },
-    {
       "id": "25 portrait",
       "title": "25th portrait",
       "date": "2026-05-10",
@@ -145,6 +99,52 @@
         1200,
         1600,
         2457
+      ]
+    },
+    {
+      "id": "dolly",
+      "title": "Dolly",
+      "date": "2026-08-13",
+      "category": "Paintings",
+      "image": "assets/images/img_5351.jpg",
+      "description": "Dolly drinks from any cup she sees. So gets her own kitty cup to paw at in front of the fireplace.",
+      "featured": true,
+      "heroFeature": true,
+      "originalStatus": "nfs",
+      "aspectRatio": 1.2533,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3855
+      ],
+      "medium": "Oil on Canvas",
+      "size": "8in x 10in",
+      "detail_images": [
+        "assets/images/img_5335.jpg",
+        "assets/images/img_5338.jpg"
+      ]
+    },
+    {
+      "id": "side of road copy.jpg",
+      "title": "Side of the road",
+      "date": "2026-07-10",
+      "category": "Paintings",
+      "image": "assets/images/side of road copy.jpg",
+      "description": "",
+      "medium": "Oil on canvas",
+      "size": "3ft x 4ft",
+      "featured": true,
+      "heroFeature": true,
+      "originalStatus": "available",
+      "aspectRatio": 1.3564,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4632
       ]
     },
     {
