@@ -492,13 +492,22 @@ function createWorkItem(work) {
     return link;
 }
 
+// The home page lineup: heroFeature works, ordered by heroOrder (set from the
+// admin's showcase strip; unset sorts last, in list order). The hero slideshow
+// and the "Selected Work" grid share this set and order by design — being in
+// the slideshow is what puts a work on the home page.
+function homeShowcaseWorks(works) {
+    return works.filter(w => w.heroFeature)
+        .sort((a, b) => (a.heroOrder ?? 1e9) - (b.heroOrder ?? 1e9));
+}
+
 // Hero slideshow functionality
 async function initHeroSlideshow() {
     const slideshow = document.getElementById('hero-slideshow');
     if (!slideshow) return;
 
     const works = await loadWorks();
-    const heroWorks = works.filter(w => w.heroFeature);
+    const heroWorks = homeShowcaseWorks(works);
 
     if (heroWorks.length === 0) return;
 
@@ -572,10 +581,7 @@ async function populateFeaturedWorks() {
     if (!container) return;
 
     const works = await loadWorks();
-    // `featuredOrder` (set from the admin's "Home showcase" strip) sorts the
-    // grid independently of works.json order; unset sorts last, in list order.
-    const featured = works.filter(w => w.featured)
-        .sort((a, b) => (a.featuredOrder ?? 1e9) - (b.featuredOrder ?? 1e9));
+    const featured = homeShowcaseWorks(works);
 
     container.innerHTML = '';
     featured.forEach(work => {

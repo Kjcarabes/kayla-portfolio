@@ -171,11 +171,11 @@ function workArtworkNode(w, position) {
     return node;
 }
 
-// Same ordering as populateFeaturedWorks in main.js, so crawlers see the grid
-// in the order visitors do.
+// Same set + ordering as homeShowcaseWorks in main.js (heroFeature is the one
+// home-page flag; heroOrder orders it), so crawlers see what visitors do.
 function featuredWorks() {
-    return works.filter((w) => w.featured)
-        .sort((a, b) => (a.featuredOrder ?? 1e9) - (b.featuredOrder ?? 1e9));
+    return works.filter((w) => w.heroFeature)
+        .sort((a, b) => (a.heroOrder ?? 1e9) - (b.heroOrder ?? 1e9));
 }
 
 function homeJsonLd() {

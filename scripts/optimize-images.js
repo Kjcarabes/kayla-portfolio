@@ -143,7 +143,10 @@ async function main() {
 // browser can start fetching the LCP image before main.js runs. Matches the runtime
 // `sizes="100vw"` so DPR picks the right variant.
 async function updateHeroPreload(works) {
-    const hero = works.find(w => w.heroFeature);
+    // Same ordering as homeShowcaseWorks in main.js — the preload must point at
+    // whichever image the runtime actually shows first.
+    const hero = works.filter(w => w.heroFeature)
+        .sort((a, b) => (a.heroOrder ?? 1e9) - (b.heroOrder ?? 1e9))[0];
     if (!hero || !hero.image) return;
 
     const m = hero.image.match(/^(?:\.\/)?assets\/images\/(.+)\.[^.]+$/);

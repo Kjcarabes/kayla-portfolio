@@ -505,26 +505,26 @@ const STATUS_OPTS = [
   { value: 'nfs', label: 'Not for sale' },
 ];
 
-// The home "Selected Work" grid has its own order (`featuredOrder`), separate
-// from the works list — reordering the showcase used to mean hopping a featured
-// work over every non-featured one in between, and it scrambled the Work page
-// order as a side effect.
-function featuredSorted(works) {
-  return works.filter(w => w.featured)
-    .sort((a, b) => (a.featuredOrder ?? 1e9) - (b.featuredOrder ?? 1e9));
+// One home-page lineup: `heroFeature` puts a work in the hero slideshow AND the
+// "Selected Work" grid (there's deliberately no way to be in one but not the
+// other), and `heroOrder` — set only from this strip — orders both. Kept apart
+// from the works list order, which belongs to the Work page.
+function heroSorted(works) {
+  return works.filter(w => w.heroFeature)
+    .sort((a, b) => (a.heroOrder ?? 1e9) - (b.heroOrder ?? 1e9));
 }
-function moveFeatured(works, pos, delta) {
-  const list = featuredSorted(works);
+function moveHero(works, pos, delta) {
+  const list = heroSorted(works);
   const j = pos + delta;
   if (j < 0 || j >= list.length) return;
   [list[pos], list[j]] = [list[j], list[pos]];
-  list.forEach((w, idx) => { w.featuredOrder = idx + 1; });
+  list.forEach((w, idx) => { w.heroOrder = idx + 1; });
 }
 
 function renderWorks() {
   const root = $('[data-panel="works"]');
   const works = getByPath(state.files[FILE.works], 'works') || [];
-  const featured = featuredSorted(works);
+  const featured = heroSorted(works);
   root.innerHTML = `
     <div class="section">
       <button class="btn primary big-add" data-action="add-work">+ Add a new work</button>
@@ -533,15 +533,15 @@ function renderWorks() {
     ${featured.length > 1 ? `
     <div class="section">
       <h3 style="margin:0 0 .3rem">Home page showcase</h3>
-      <p class="tab-hint" style="margin:0 0 .6rem">The order “Selected Work” shows in on the home page. These arrows only change the home page — the list below keeps its own order for the Work page. Tick “Featured” on a work to add it here.</p>
+      <p class="tab-hint" style="margin:0 0 .6rem">The works on the home page — the slideshow plays them in this order, and the “Selected Work” grid follows it too. These arrows only change the home page; the list below keeps its own order for the Work page. Tick “Show on home page” on a work to add it here.</p>
       ${featured.map((w, fi) => `
       <div class="feat-row">
         <span class="muted feat-num">${fi + 1}</span>
         <img class="row-thumb" src="${escapeAttr(thumbSrc(w.image, w.widths))}" alt="" loading="lazy" width="42" height="42">
         <span class="list-item-title">${escapeHtml(w.title || w.id)}</span>
         <span class="list-item-actions">
-          <button data-action="move-feat-up" data-i="${fi}">↑</button>
-          <button data-action="move-feat-down" data-i="${fi}">↓</button>
+          <button data-action="move-hero-up" data-i="${fi}">↑</button>
+          <button data-action="move-hero-down" data-i="${fi}">↓</button>
         </span>
       </div>`).join('')}
     </div>` : ''}
@@ -587,8 +587,7 @@ function workFields(i) {
     </div>
     ${textarea(f, `${p}.description`, 'Description', { rows: 3 })}
     <div>
-      ${checkbox(f, `${p}.featured`, 'Featured (home “Selected Work”)')}
-      ${checkbox(f, `${p}.heroFeature`, 'Hero slideshow')}
+      ${checkbox(f, `${p}.heroFeature`, 'Show on home page (slideshow + “Selected Work”)')}
       ${checkbox(f, `${p}.noPrint`, 'No print offered')}
     </div>
     <h4>Original</h4>
@@ -712,8 +711,7 @@ function showAddWorkModal() {
           </div>
         </details>
         <div style="margin-top:.6rem">
-          <label class="field-checkbox"><input type="checkbox" id="aw-featured"> Featured on home</label>
-          <label class="field-checkbox"><input type="checkbox" id="aw-hero"> Hero slideshow</label>
+          <label class="field-checkbox"><input type="checkbox" id="aw-hero"> Show on home page (slideshow + “Selected Work”)</label>
         </div>
 
         <h4>Share</h4>
@@ -799,7 +797,6 @@ function submitAddWork(picked) {
     description: $('#aw-description').value.trim() || undefined,
     medium: $('#aw-medium').value.trim() || undefined,
     size: $('#aw-size').value.trim() || undefined,
-    featured: $('#aw-featured').checked,
     heroFeature: $('#aw-hero').checked,
     originalStatus: $('#aw-status').value,
   };
@@ -2041,8 +2038,8 @@ document.addEventListener('click', (e) => {
     'del-work': () => { if (confirm('Delete this work?')) { works.splice(i, 1); rerender(); } },
     'move-work-up': () => { moveItem(works, i, -1); rerender(); },
     'move-work-down': () => { moveItem(works, i, 1); rerender(); },
-    'move-feat-up': () => { moveFeatured(works, i, -1); rerender(); },
-    'move-feat-down': () => { moveFeatured(works, i, 1); rerender(); },
+    'move-hero-up': () => { moveHero(works, i, -1); rerender(); },
+    'move-hero-down': () => { moveHero(works, i, 1); rerender(); },
     'add-detail-img': () => { (works[i].detail_images ||= []).push(''); rerender(); },
     'del-detail-img': () => { works[i].detail_images.splice(j, 1); rerender(); },
 

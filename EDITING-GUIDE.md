@@ -74,7 +74,6 @@ Open `content/works.json` and add a new entry. Copy this template:
   "image": "assets/images/your-image-filename.jpg",
   "description": "An artistic statement about your piece.",
   "medium": "Acrylic on canvas, 24x36",
-  "featured": true,
   "heroFeature": true,
   "printPrice": 0,
   "printDescription": "5x7 Print",
@@ -85,8 +84,7 @@ Open `content/works.json` and add a new entry. Copy this template:
 **What each field does:**
 - `description` = artistic statement about the piece (shown on the work detail page only — shop cards use `printDescription`)
 - `medium` = technical details like materials and size (shown everywhere: work detail page, shop cards, etc.)
-- `featured: true` = shows in "Selected Work" grid on homepage
-- `heroFeature: true` = shows in the big hero slideshow at top of homepage
+- `heroFeature: true` = puts the work on the homepage — both the big slideshow at the top **and** the "Selected Work" grid (they always show the same pieces, in the same order). To change the order, use the arrows in the **Home page showcase** strip at the top of the admin's Works tab.
 - `printPrice` = the price of a **print** of this work, in dollars. `0` (or leaving it out) means the print shows as **"Sold out"**. Set it to a real number (e.g. `25`) to start selling — that's the *only* step; the website builds the Stripe checkout for you automatically. (See "Managing Your Shop" below.)
 - `printDescription` = the little label on the print's shop card (e.g. `"5x7 Print"`). Defaults to "Print".
 - `printStock` (optional) = the **Stock** box in the admin. Leave it out (or leave the box empty) for **unlimited** — that's almost always what you want for a print, since Gelato prints each one to order. Only put a number here if you *want* a limited run: Stripe counts each sale for you, the site shows **"Only N left"**, and it closes itself when they're gone. ⚠️ **`0` means SOLD OUT, not "I don't have any on a shelf"** — a `0` here hides the print from the shop. (The count refreshes each time the site syncs — within a minute of a push, or every few hours on its own — not the instant a sale happens, since there's no live server.)
