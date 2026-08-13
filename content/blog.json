@@ -1,23 +1,49 @@
 {
   "posts": [
-     {
+    {
+      "id": "new-post",
+      "title": "People's choice winner at the Seattle Jimothy art competition! ",
+      "date": "2026-07-28",
+      "images": [
+        "assets/images/img_5114.jpg"
+      ],
+      "content": "So honored for the opportunity to have my work in Seattle's City Hall August 6th - September 18th !"
+    },
+    {
+      "id": "new-post",
+      "title": "Graduation ",
+      "date": "2026-05-31",
+      "images": [
+        "assets/images/img_8793.jpg",
+        "assets/images/dsc07678.jpg",
+        "assets/images/img_2758.jpg"
+      ],
+      "content": "I earned my Bachelor's of Fine Arts in Painting at the Rhode Island School of Design!"
+    },
+    {
       "id": "Senior Show",
       "date": "2026-03-12",
-      "images": ["assets/images/groupphoto.JPG",
-       "assets/images/seniorshow.jpg"],
+      "images": [
+        "assets/images/groupphoto.JPG",
+        "assets/images/seniorshow.jpg"
+      ],
       "content": "Really enjoyed my RISD Senior Painting showcase! Felt like a huge accomplishment (:"
     },
     {
       "id": "aerial-view",
       "date": "2025-02-26",
-      "images": ["assets/images/blog 3.webp"],
+      "images": [
+        "assets/images/blog 3.webp"
+      ],
       "content": "I am currently working on painting a view of the land from above. I'm really enjoying how this painting is coming along but am a bit stuck on whether to leave it as it is or go into it with more detail or another figure, perhaps a bird or a rain cloud? I'm really trying to honor this moment of peace I felt looking down at the earth from a plane. I am also really into this song \"Morning Rain\" by Bob Dylan and want to add in some of that poetic imagery into this piece. But I don't want to overcrowd it and want to let the textural more abstract elements breathe. I'm not sure, so for now it's in the studio waiting for a change."
     },
     {
       "id": "drawing-with-light",
       "title": "Drawing with light",
       "date": "2025-02-17",
-      "images": ["assets/images/blog 2.webp"],
+      "images": [
+        "assets/images/blog 2.webp"
+      ],
       "content": "Turned this painting around and put it up to my window. The light pouring in, highlighting every scratch and stroke was so intriguing. I will definitely explore this method of mark-making in the future."
     },
     {
@@ -29,6 +55,5 @@
       ],
       "content": "Slowly chipping away at this forest painting, but am really enjoying the red underlayer."
     }
-   
   ]
 }
