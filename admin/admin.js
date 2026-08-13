@@ -154,6 +154,7 @@ function recomputeDirty() {
     if (!deepEqual(state.files[path], state.original[path])) state.dirty.add(path);
   }
   updateDirtyStatus();
+  scheduleDraftSave();
 }
 function updateDirtyStatus() {
   const count = state.dirty.size + (state.pendingImages.length ? 1 : 0);
@@ -167,9 +168,70 @@ function updateDirtyStatus() {
     const parts = [];
     if (state.dirty.size) parts.push(`${state.dirty.size} file${state.dirty.size === 1 ? '' : 's'}`);
     if (state.pendingImages.length) parts.push(`${state.pendingImages.length} image${state.pendingImages.length === 1 ? '' : 's'}`);
-    status.textContent = `${parts.join(' + ')} changed`;
+    status.innerHTML = `${escapeHtml(parts.join(' + '))} changed · <button type="button" class="linklike" data-action="discard-changes">undo all</button>`;
     status.className = 'dirty-status';
     btn.disabled = false;
+  }
+}
+
+// =================== DRAFT PERSISTENCE ===================
+// Unsaved edits used to vanish on a refresh. Every change is now mirrored
+// (debounced) into IndexedDB — localStorage is too small for pending photo
+// uploads — and brought back after the next sign-in. Publishing, or "undo all"
+// in the status bar, clears the mirror.
+function draftOp(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('kadmin', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('drafts');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const req = fn(db.transaction('drafts', mode).objectStore('drafts'));
+      req.onsuccess = () => { db.close(); resolve(req.result); };
+      req.onerror = () => { db.close(); reject(req.error); };
+    };
+  });
+}
+
+let draftTimer = null;
+function scheduleDraftSave() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => persistDraft().catch(() => {}), 400);
+}
+async function persistDraft() {
+  if (!state.dirty.size && !state.pendingImages.length && !state.pendingSocial) {
+    return draftOp('readwrite', s => s.delete('draft'));
+  }
+  const files = {};
+  for (const path of state.dirty) files[path] = JSON.parse(JSON.stringify(state.files[path]));
+  return draftOp('readwrite', s => s.put({
+    savedAt: Date.now(),
+    files,
+    pendingImages: state.pendingImages,
+    pendingSocial: state.pendingSocial,
+  }, 'draft'));
+}
+function clearDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = null;
+  draftOp('readwrite', s => s.delete('draft')).catch(() => {});
+}
+async function restoreDraft() {
+  const draft = await draftOp('readonly', s => s.get('draft')).catch(() => null);
+  if (!draft) return;
+  for (const [path, content] of Object.entries(draft.files || {})) {
+    if (!(path in state.files)) continue;
+    state.files[path] = JSON.parse(JSON.stringify(content));
+    // Heal machine-managed fields the workflows committed after the draft was taken.
+    adoptMachineFields(path, state.files[path], state.original[path]);
+  }
+  state.pendingImages = Array.isArray(draft.pendingImages) ? draft.pendingImages : [];
+  state.pendingSocial = draft.pendingSocial || null;
+  recomputeDirty();
+  if (state.dirty.size || state.pendingImages.length) {
+    toast('Brought back your unpublished changes — hit Publish to make them live, or “undo all” (next to Publish) to drop them.');
+  } else {
+    clearDraft(); // everything in the draft is already live — done with it
   }
 }
 
@@ -202,6 +264,7 @@ async function connect() {
 
     $('#connect-screen').hidden = true;
     $('#editor').hidden = false;
+    await restoreDraft().catch(() => {});
     renderActiveTab();
     updateDirtyStatus();
   } catch (err) {
@@ -442,14 +505,46 @@ const STATUS_OPTS = [
   { value: 'nfs', label: 'Not for sale' },
 ];
 
+// The home "Selected Work" grid has its own order (`featuredOrder`), separate
+// from the works list — reordering the showcase used to mean hopping a featured
+// work over every non-featured one in between, and it scrambled the Work page
+// order as a side effect.
+function featuredSorted(works) {
+  return works.filter(w => w.featured)
+    .sort((a, b) => (a.featuredOrder ?? 1e9) - (b.featuredOrder ?? 1e9));
+}
+function moveFeatured(works, pos, delta) {
+  const list = featuredSorted(works);
+  const j = pos + delta;
+  if (j < 0 || j >= list.length) return;
+  [list[pos], list[j]] = [list[j], list[pos]];
+  list.forEach((w, idx) => { w.featuredOrder = idx + 1; });
+}
+
 function renderWorks() {
   const root = $('[data-panel="works"]');
   const works = getByPath(state.files[FILE.works], 'works') || [];
+  const featured = featuredSorted(works);
   root.innerHTML = `
     <div class="section">
       <button class="btn primary big-add" data-action="add-work">+ Add a new work</button>
       <p class="tab-hint" style="margin:.7rem 0 0">Click any work below to edit its details. Adding a work can also post it to Instagram and your Facebook page in the same step — and <strong>Share</strong> on any row posts an older piece whenever you like. Image sizes are generated automatically after publishing.</p>
     </div>
+    ${featured.length > 1 ? `
+    <div class="section">
+      <h3 style="margin:0 0 .3rem">Home page showcase</h3>
+      <p class="tab-hint" style="margin:0 0 .6rem">The order “Selected Work” shows in on the home page. These arrows only change the home page — the list below keeps its own order for the Work page. Tick “Featured” on a work to add it here.</p>
+      ${featured.map((w, fi) => `
+      <div class="feat-row">
+        <span class="muted feat-num">${fi + 1}</span>
+        <img class="row-thumb" src="${escapeAttr(thumbSrc(w.image, w.widths))}" alt="" loading="lazy" width="42" height="42">
+        <span class="list-item-title">${escapeHtml(w.title || w.id)}</span>
+        <span class="list-item-actions">
+          <button data-action="move-feat-up" data-i="${fi}">↑</button>
+          <button data-action="move-feat-down" data-i="${fi}">↓</button>
+        </span>
+      </div>`).join('')}
+    </div>` : ''}
     ${works.map((w, i) => {
       const open = state.openRows.has(`works:${w.id}`);
       return `
@@ -1930,6 +2025,15 @@ document.addEventListener('click', (e) => {
   const promos = () => ((state.files[FILE.settings].spotlight ||= {}).items ||= []);
 
   const handlers = {
+    'discard-changes': () => {
+      if (!confirm('Throw away all unpublished changes and go back to what’s live?')) return;
+      state.files = JSON.parse(JSON.stringify(state.original));
+      state.pendingImages = [];
+      state.pendingSocial = null;
+      clearDraft();
+      rerender();
+    },
+
     'add-work': () => { showAddWorkModal(); return; },
     // preventDefault: the button lives inside <summary>, and expanding the row
     // behind the modal is just noise.
@@ -1937,6 +2041,8 @@ document.addEventListener('click', (e) => {
     'del-work': () => { if (confirm('Delete this work?')) { works.splice(i, 1); rerender(); } },
     'move-work-up': () => { moveItem(works, i, -1); rerender(); },
     'move-work-down': () => { moveItem(works, i, 1); rerender(); },
+    'move-feat-up': () => { moveFeatured(works, i, -1); rerender(); },
+    'move-feat-down': () => { moveFeatured(works, i, 1); rerender(); },
     'add-detail-img': () => { (works[i].detail_images ||= []).push(''); rerender(); },
     'del-detail-img': () => { works[i].detail_images.splice(j, 1); rerender(); },
 
@@ -2066,6 +2172,56 @@ function changeSummary() {
   return lines;
 }
 
+// ── Publish-time rebase ──────────────────────────────────────────────────────
+// After every publish the optimize-images Action commits aspectRatio/widths back
+// into works.json, so the blob SHA the admin loaded goes stale and a second
+// publish used to demand a full page reload. Before saving we re-fetch the repo:
+// files with no local edits silently adopt the latest copy, and an edited
+// works.json absorbs the machine-managed fields when that's ALL that changed
+// upstream. A real human/code edit underneath local changes keeps the stale SHA
+// so the Worker still refuses instead of clobbering it.
+const MACHINE_WORK_FIELDS = ['aspectRatio', 'widths'];
+
+function stripMachineFields(path, doc) {
+  if (path !== FILE.works || !doc) return doc;
+  const clone = JSON.parse(JSON.stringify(doc));
+  for (const w of clone.works || []) for (const k of MACHINE_WORK_FIELDS) delete w[k];
+  return clone;
+}
+function adoptMachineFields(path, mine, theirs) {
+  if (path !== FILE.works || !mine || !theirs) return;
+  const latest = new Map((theirs.works || []).map(w => [w.id, w]));
+  for (const w of mine.works || []) {
+    const t = latest.get(w.id);
+    if (!t) continue;
+    for (const k of MACHINE_WORK_FIELDS) {
+      if (t[k] !== undefined) w[k] = JSON.parse(JSON.stringify(t[k]));
+    }
+  }
+}
+async function rebaseOnLatest() {
+  const r = await fetch(`${state.workerUrl}/api/load`, {
+    method: 'POST',
+    headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+  });
+  if (!r.ok) return; // couldn't refresh — the save's own conflict check still guards
+  const data = await r.json();
+  for (const path of Object.keys(data.shas || {})) {
+    if ((data.shas[path] ?? null) === (state.baseShas[path] ?? null)) continue;
+    const fresh = data.files[path];
+    if (!state.dirty.has(path)) {
+      state.files[path] = JSON.parse(JSON.stringify(fresh));
+    } else if (deepEqual(stripMachineFields(path, fresh), stripMachineFields(path, state.original[path]))) {
+      adoptMachineFields(path, state.files[path], fresh);
+    } else {
+      continue; // upstream has real edits under hers — leave the SHA stale, Worker refuses
+    }
+    state.original[path] = JSON.parse(JSON.stringify(fresh));
+    state.baseShas[path] = data.shas[path];
+  }
+  recomputeDirty();
+}
+
 function showSaveModal() {
   const summary = changeSummary();
   const root = $('#modal-root');
@@ -2089,25 +2245,54 @@ function showSaveModal() {
 
 async function doSave(message, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
-  const files = [...state.dirty].map(path => ({ path, content: JSON.stringify(state.files[path], null, 2) + '\n' }));
-  const images = state.pendingImages.map(img => ({ path: img.path, base64: img.base64 }));
-  const payload = { message, files, images, baseShas: state.baseShas };
-  if (state.pendingSocial) payload.social = state.pendingSocial;
 
-  try {
+  const buildPayload = () => {
+    const files = [...state.dirty].map(path => ({ path, content: JSON.stringify(state.files[path], null, 2) + '\n' }));
+    const images = state.pendingImages.map(img => ({ path: img.path, base64: img.base64 }));
+    const payload = { message, files, images, baseShas: state.baseShas };
+    if (state.pendingSocial) payload.social = state.pendingSocial;
+    return payload;
+  };
+  const postSave = async () => {
     const r = await fetch(`${state.workerUrl}/api/save`, {
       method: 'POST',
       headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(buildPayload()),
     });
     const data = await r.json();
-    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    data._status = r.status;
+    return data;
+  };
+
+  try {
+    // Sync up with anything the GitHub Actions committed since (image sizes,
+    // product sync) so publishing twice in a row just works.
+    await rebaseOnLatest().catch(() => {});
+
+    if (!state.dirty.size && !state.pendingImages.length) {
+      // The refresh can reveal these changes are already live (e.g. published
+      // from another tab) — nothing left to commit.
+      $('#modal-root').innerHTML = '';
+      renderActiveTab();
+      toast('Already up to date — nothing left to publish.');
+      return;
+    }
+
+    let data = await postSave();
+    if (data.conflict) {
+      // A workflow commit can still land in the moment between refresh and save —
+      // sync once more and retry before bothering anyone.
+      await rebaseOnLatest().catch(() => {});
+      data = await postSave();
+    }
+    if (!data.ok) throw new Error(data.error || `Server error ${data._status}`);
 
     state.original = JSON.parse(JSON.stringify(state.files));
     if (data.newShas) state.baseShas = { ...state.baseShas, ...data.newShas };
     state.pendingImages = [];
     const wanted = state.pendingSocial;
     state.pendingSocial = null;
+    clearDraft();
     recomputeDirty();
     $('#modal-root').innerHTML = '';
     renderActiveTab();

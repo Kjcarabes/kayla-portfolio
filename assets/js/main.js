@@ -572,7 +572,10 @@ async function populateFeaturedWorks() {
     if (!container) return;
 
     const works = await loadWorks();
-    const featured = works.filter(w => w.featured);
+    // `featuredOrder` (set from the admin's "Home showcase" strip) sorts the
+    // grid independently of works.json order; unset sorts last, in list order.
+    const featured = works.filter(w => w.featured)
+        .sort((a, b) => (a.featuredOrder ?? 1e9) - (b.featuredOrder ?? 1e9));
 
     container.innerHTML = '';
     featured.forEach(work => {
@@ -1345,11 +1348,12 @@ async function loadWorkDetail() {
         `;
     }
 
-    // Support a `detail_images` array (first image is the main). Entries can be
-    // images or videos (.mp4/.mov/.webm). Falls back to the single `image`.
-    const imagesList = (Array.isArray(work.detail_images) && work.detail_images.length > 0)
-        ? work.detail_images
-        : [work.image].filter(Boolean);
+    // Gallery = main `image` first, then `detail_images` (which the admin treats
+    // as *extra* shots and may not repeat the main in). Deduped because older
+    // hand-edited entries do repeat it as the first item. Entries can be images
+    // or videos (.mp4/.mov/.webm).
+    const detailImages = Array.isArray(work.detail_images) ? work.detail_images : [];
+    const imagesList = [...new Set([work.image, ...detailImages].filter(Boolean))];
 
     const isVideoSrc = (s) => /\.(mp4|m4v|mov|webm|ogg)$/i.test(s || '');
     const mainMediaMarkup = (src) => isVideoSrc(src)

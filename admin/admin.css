@@ -66,6 +66,14 @@ a { color: var(--primary); }
 .topbar-title { font-weight: 700; }
 .topbar-spacer { flex: 1; }
 .dirty-status { font-size: .85rem; }
+.feat-row { display: flex; align-items: center; gap: .6rem; padding: .3rem 0; }
+.feat-row .list-item-title { flex: 1; }
+.feat-row .feat-num { min-width: 1.1rem; text-align: right; font-size: .85rem; }
+.dirty-status .linklike {
+  background: none; border: none; padding: 0;
+  font: inherit; color: inherit;
+  text-decoration: underline; cursor: pointer;
+}
 
 /* ── Tabs ── */
 .tabs {

@@ -171,8 +171,15 @@ function workArtworkNode(w, position) {
     return node;
 }
 
+// Same ordering as populateFeaturedWorks in main.js, so crawlers see the grid
+// in the order visitors do.
+function featuredWorks() {
+    return works.filter((w) => w.featured)
+        .sort((a, b) => (a.featuredOrder ?? 1e9) - (b.featuredOrder ?? 1e9));
+}
+
 function homeJsonLd() {
-    const featured = works.filter((w) => w.featured);
+    const featured = featuredWorks();
     return scriptTag({
         '@context': 'https://schema.org',
         '@type': 'ItemList',
@@ -268,7 +275,7 @@ function workLine(w) {
 }
 
 function homeFallback() {
-    const featured = works.filter((w) => w.featured);
+    const featured = featuredWorks();
     const lis = featured.map(workLine).join('\n');
     return wrapFallback(
         `        <h2>Selected work by Kayla Carabes</h2>\n        <ul>\n${lis}\n        </ul>`
