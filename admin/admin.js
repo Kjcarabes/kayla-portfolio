@@ -2304,7 +2304,7 @@ function renderCalendarList() {
     const upcoming = all.filter(e => eventDate(e) >= today);
     const pills = [
       ['kind', 'all', 'All', upcoming.length],
-      ['kind', 'deadline', 'Deadlines', upcoming.filter(e => kindOf(e) === 'deadline').length],
+      ['kind', 'deadline', 'Opportunities', upcoming.filter(e => kindOf(e) === 'deadline').length],
       ['kind', 'job', 'Jobs', upcoming.filter(e => kindOf(e) === 'job').length],
       ['past', String(!f.past), 'Include past', all.length - upcoming.length],
     ];
@@ -2325,7 +2325,7 @@ function renderCalendarList() {
     return `<div class="cal-row ${days < 0 ? 'cal-past' : ''} ${days >= 0 && days <= 7 ? 'cal-soon' : ''}">
       <div class="cal-date"><b>${escapeHtml(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))}</b><div class="muted">${escapeHtml(when)}</div></div>
       <div class="cal-body">
-        <div class="cal-title"><span class="src-badge ${kind === 'job' ? 'src-contact' : 'src-original'}">${kind === 'job' ? 'Job' : 'Deadline'}</span> ${escapeHtml((e.title || '').replace(/^(Deadline|Job):\s*/i, ''))}</div>
+        <div class="cal-title"><span class="src-badge ${kind === 'job' ? 'src-contact' : 'src-original'}">${kind === 'job' ? 'Job' : 'Opportunity'}</span> ${escapeHtml((e.title || '').replace(/^(Deadline|Job):\s*/i, ''))}</div>
         ${e.description ? `<div class="cal-desc">${linkify(e.description)}</div>` : ''}
       </div>
     </div>`;
