@@ -1,9 +1,7 @@
 {
   "_help": "Feeds the weekly 'opportunity finder' and 'art-job watcher' routines. Edit it in the admin's Calendar tab. calendarId is the dedicated public Google Calendar the routines write to (Settings → Integrate calendar → Calendar ID). Everything under profile/jobs is plain English the routine reads to judge fit. notInterested: paste an event title or link here and it will never be suggested again.",
-
-  "calendarId": "",
+  "calendarId": "17665aac47214c651b8a7b1ccaa3dcd722b839157ce2a971c4109f8a0ae63f52@group.calendar.google.com",
   "timezone": "America/Los_Angeles",
-
   "profile": {
     "summary": "Kayla Carabes is an oil painter based in Seattle, WA. Born in Houston, TX. BFA in Painting from RISD. Her work ranges from small panels to 6-foot canvases; figurative and narrative, with a strong sense of colour and humour.",
     "lookingFor": "Juried group exhibitions, open calls, artist residencies (especially funded), grants and fellowships for painters, public-art and mural commissions, art fairs with reasonable booth fees, gallery calls for representation.",
@@ -11,18 +9,15 @@
     "maxEntryFee": 50,
     "avoid": "Vanity galleries and pay-to-play 'international art prize' sites with vague juries. Anything asking for exclusive rights or the artist to buy back work. Student-only or under-25 calls. Digital/NFT-only platforms. Calls whose deadline has already passed."
   },
-
   "jobs": {
     "enabled": true,
     "summary": "Teaching artist, art instructor, museum or gallery roles, studio assistant, muralist, illustration or design-adjacent creative roles. Part-time and freelance are fine.",
     "location": "Seattle metro (in person) or fully remote. Skip roles that require relocating.",
     "avoid": "Unpaid positions, commission-only sales roles, anything that is really a franchise or MLM."
   },
-
   "limits": {
     "maxNewEventsPerRun": 12,
     "maxNewEventsFirstRun": 40
   },
-
   "notInterested": []
 }
