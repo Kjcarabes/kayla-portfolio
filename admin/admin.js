@@ -1947,8 +1947,9 @@ function renderInquiries() {
     <div class="section">
       <h3>Inquiries</h3>
       <p class="tab-hint" style="margin:0 0 .8rem">Everyone who has written to you through the site. <b>Reply</b> opens an email drafted for that person — edit anything, then send. It goes out as you, with your signature, and marks the row done.</p>
-      <div class="orders-filters" id="inq-filters"></div>
       <div class="orders-bar">
+        <div class="orders-filters" id="inq-filters" style="margin-bottom:0"></div>
+        <span class="topbar-spacer"></span>
         <button class="btn" data-action="refresh-submissions">Refresh</button>
         <button class="btn" data-action="sub-csv">Download CSV</button>
       </div>
@@ -2215,8 +2216,11 @@ function renderCalendar() {
       <h3>Opportunities calendar</h3>
       <p class="tab-hint" style="margin:0 0 .8rem">Deadlines for shows, residencies, grants and jobs that fit you, found once a week and added here automatically. Google emails you when something is added and again 14 and 3 days before each deadline. ${calId ? `<a href="https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(calId)}" target="_blank" rel="noopener">Open in Google Calendar ↗</a>` : ''}</p>
       ${calId ? `
-      <div class="orders-filters" id="cal-filters"></div>
-      <div class="orders-bar"><button class="btn" data-action="refresh-cal">Refresh</button></div>
+      <div class="orders-bar">
+        <div class="orders-filters" id="cal-filters" style="margin-bottom:0"></div>
+        <span class="topbar-spacer"></span>
+        <button class="btn" data-action="refresh-cal">Refresh</button>
+      </div>
       <div id="cal-list" class="cal-list" style="margin-top:.9rem">Loading…</div>` : ''}
       ${embed
         ? `<details class="cal-embed-wrap" open><summary>Calendar view</summary><div class="cal-embed"><iframe src="${escapeAttr(embed)}" title="Opportunities calendar" frameborder="0" scrolling="no"></iframe></div></details>`
