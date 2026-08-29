@@ -37,6 +37,7 @@ const FILE = {
   about: 'content/about.json',
   settings: 'content/site-settings.json',
   card: 'content/card.json',
+  opportunities: 'content/opportunities.json',
 };
 
 const SITE = 'https://www.kaylacarabes.com';
@@ -285,11 +286,11 @@ function switchTab(tab) {
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   $$('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
   const panels = $('.panels');
-  if (panels) panels.classList.toggle('wide', ['sales', 'analytics', 'orders', 'inquiries'].includes(tab));
+  if (panels) panels.classList.toggle('wide', ['sales', 'analytics', 'orders', 'inquiries', 'calendar'].includes(tab));
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, inquiries: renderInquiries, about: renderAbout, newsletter: renderNewsletter, popups: renderPopups, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, inquiries: renderInquiries, calendar: renderCalendar, about: renderAbout, newsletter: renderNewsletter, popups: renderPopups, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -2209,6 +2210,158 @@ function downloadSubmissionsCsv() {
   URL.revokeObjectURL(a.href);
 }
 
+// =================== PANEL: CALENDAR ===================
+// Kayla's dedicated "Opportunities" Google Calendar, embedded, plus the profile the
+// weekly opportunity-finder / job-watcher routines read (agents/*.md) and the
+// "not interested" list that keeps rejected things from coming back. The routines
+// only ever *add* events to this one calendar; everything they know about her
+// comes from this file, so this tab is the whole control surface.
+function oppFile() {
+  // The file may not exist on an older checkout — seed it so the editors work.
+  if (!state.files[FILE.opportunities]) {
+    state.files[FILE.opportunities] = { calendarId: '', timezone: 'America/Los_Angeles', profile: {}, jobs: { enabled: true }, limits: { maxNewEventsPerRun: 5 }, notInterested: [] };
+  }
+  return state.files[FILE.opportunities];
+}
+
+function renderCalendar() {
+  const root = $('[data-panel="calendar"]');
+  const f = FILE.opportunities;
+  const o = oppFile();
+  const calId = (o.calendarId || '').trim();
+  const tz = o.timezone || 'America/Los_Angeles';
+  const embed = calId
+    ? `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(calId)}&ctz=${encodeURIComponent(tz)}&mode=AGENDA&showTitle=0&showPrint=0&showCalendars=0`
+    : '';
+  const noint = o.notInterested || [];
+  root.innerHTML = `
+    <div class="section">
+      <h3>Opportunities calendar</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Deadlines for shows, residencies, grants and jobs that fit you, found once a week and added here automatically. Google emails you when something is added and again 14 and 3 days before each deadline. ${calId ? `<a href="https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(calId)}" target="_blank" rel="noopener">Open in Google Calendar ↗</a>` : ''}</p>
+      ${calId ? `
+      <div class="inq-filters">
+        <span class="inq-filter-group">${[['all', 'Everything'], ['deadline', 'Deadlines'], ['job', 'Jobs']].map(([k, l]) =>
+          `<button class="btn" data-action="cal-filter" data-group="kind" data-which="${k}">${l}</button>`).join('')}</span>
+        <span class="inq-filter-group">${[['false', 'Upcoming'], ['true', 'Include past']].map(([k, l]) =>
+          `<button class="btn" data-action="cal-filter" data-group="past" data-which="${k}">${l}</button>`).join('')}</span>
+        <span class="inq-filter-group"><button class="btn" data-action="refresh-cal">Refresh</button></span>
+      </div>
+      <div id="cal-list" class="cal-list">Loading…</div>` : ''}
+      ${embed
+        ? `<details class="cal-embed-wrap" open><summary>Calendar view</summary><div class="cal-embed"><iframe src="${escapeAttr(embed)}" title="Opportunities calendar" frameborder="0" scrolling="no"></iframe></div></details>`
+        : `<div class="cal-setup">
+            <b>One-time setup (5 minutes):</b>
+            <ol>
+              <li>In Google Calendar (signed in as kaylacarabesart@gmail.com) → <b>+</b> next to "Other calendars" → <b>Create new calendar</b> → name it <b>Kayla — Opportunities</b>.</li>
+              <li>Open its settings → <b>Access permissions</b> → tick <b>Make available to public</b> → "See all event details". (This calendar only ever holds public open calls — nothing personal.)</li>
+              <li>Same settings page → <b>Other notifications</b> → set <b>New events</b> to <b>Email</b>. Under <b>Event notifications</b> add <b>Email, 14 days before</b> and <b>Email, 3 days before</b>.</li>
+              <li>Scroll to <b>Integrate calendar</b> → copy the <b>Calendar ID</b> and paste it below, then <b>Publish</b>.</li>
+            </ol>
+          </div>`}
+      ${input(f, 'calendarId', 'Calendar ID', { spellcheck: false, placeholder: 'xxxxxxxx@group.calendar.google.com', hint: 'From Google Calendar → the calendar’s settings → Integrate calendar.' })}
+    </div>
+
+    <div class="section">
+      <h3>What to look for</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Plain English — this is exactly what the finder reads to decide what fits you. Be specific; it takes you at your word.</p>
+      ${textarea(f, 'profile.summary', 'About you (as the finder should understand it)', { rows: 3 })}
+      ${textarea(f, 'profile.lookingFor', 'Opportunities you want', { rows: 3 })}
+      ${textarea(f, 'profile.geography', 'Where', { rows: 2 })}
+      ${input(f, 'profile.maxEntryFee', 'Max entry fee ($)', { type: 'number' })}
+      ${textarea(f, 'profile.avoid', 'Skip anything like this', { rows: 3 })}
+      <div class="field-row">
+        ${input(f, 'limits.maxNewEventsPerRun', 'Safety ceiling per week', { type: 'number', hint: 'Not a target: everything that fits is added, up to this. Over it, the soonest deadlines go first and the rest come back next week.' })}
+        ${input(f, 'limits.maxNewEventsFirstRun', 'Ceiling for the very first run', { type: 'number', hint: 'Higher, because the first run clears a backlog onto an empty calendar.' })}
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Jobs</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">A second routine looks for paid art-related work and adds it to the same calendar as "Job: …" entries.</p>
+      ${checkbox(f, 'jobs.enabled', 'Look for jobs too')}
+      ${textarea(f, 'jobs.summary', 'Kinds of roles', { rows: 2 })}
+      ${textarea(f, 'jobs.location', 'Where', { rows: 2 })}
+      ${textarea(f, 'jobs.avoid', 'Skip anything like this', { rows: 2 })}
+    </div>
+
+    <div class="section">
+      <h3>Not interested</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Paste the title (or link) of anything you don’t want suggested again — the same call from the same organiser won’t come back. Deleting an event from the calendar alone isn’t remembered; add it here.</p>
+      <div>${noint.map((s, i) => `
+        <div class="list-item">
+          <div class="field-row">
+            ${input(f, `notInterested.${i}`, `#${i + 1}`, { placeholder: 'Title or link' })}
+            <div class="list-item-actions" style="align-self:flex-end"><button data-action="del-noint" data-i="${i}" class="danger">Remove</button></div>
+          </div>
+        </div>`).join('')}
+      </div>
+      <button class="add-btn" data-action="add-noint">+ Add</button>
+    </div>
+  `;
+  loadCalendarEvents();
+}
+
+// The calendar as a scrolling list (soonest first) so Kayla doesn't have to page
+// through months. Comes from the calendar's public ICS feed via the Worker.
+state.calFilter = { kind: 'all', past: false };
+
+async function loadCalendarEvents() {
+  const box = $('#cal-list');
+  if (!box) return;
+  const calendarId = (oppFile().calendarId || '').trim();
+  if (!calendarId) return;
+  box.textContent = 'Loading…'; box.style.color = '';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/calendar-events`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ calendarId }),
+    });
+    if (r.status === 404) throw new Error('Needs the newer admin Worker — redeploy it (npx wrangler deploy).');
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    state.calEvents = data.events || [];
+    renderCalendarList();
+  } catch (err) {
+    box.textContent = `Couldn’t load the list: ${err.message}`;
+    box.style.color = 'var(--danger)';
+  }
+}
+
+// All-day events are plain dates — build them as local dates so the day never
+// shifts with the timezone.
+function eventDate(e) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(e.start || '');
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(e.start);
+}
+
+function renderCalendarList() {
+  const box = $('#cal-list');
+  if (!box) return;
+  const f = state.calFilter;
+  $$('[data-action="cal-filter"]').forEach(b => b.classList.toggle('active', String(f[b.dataset.group]) === b.dataset.which));
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const kindOf = (e) => (/^job\b/i.test(e.title || '') ? 'job' : 'deadline');
+  const all = state.calEvents || [];
+  const rows = all.filter(e => (f.kind === 'all' || kindOf(e) === f.kind) && (f.past || eventDate(e) >= today));
+  if (!all.length) { box.innerHTML = '<span class="muted">Nothing on the calendar yet.</span>'; return; }
+  if (!rows.length) { box.innerHTML = '<span class="muted">Nothing upcoming with these filters.</span>'; return; }
+  const linkify = (s) => escapeHtml(s).replace(/(https?:\/\/[^\s<]+)/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+  box.innerHTML = rows.map(e => {
+    const d = eventDate(e);
+    const days = Math.round((d - today) / 86400000);
+    const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : days > 1 ? `in ${days} days` : `${-days} day${days === -1 ? '' : 's'} ago`;
+    const kind = kindOf(e);
+    return `<div class="cal-row ${days < 0 ? 'cal-past' : ''} ${days >= 0 && days <= 7 ? 'cal-soon' : ''}">
+      <div class="cal-date"><b>${escapeHtml(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))}</b><div class="muted">${escapeHtml(when)}</div></div>
+      <div class="cal-body">
+        <div class="cal-title"><span class="src-badge ${kind === 'job' ? 'src-contact' : 'src-original'}">${kind === 'job' ? 'Job' : 'Deadline'}</span> ${escapeHtml((e.title || '').replace(/^(Deadline|Job):\s*/i, ''))}</div>
+        ${e.description ? `<div class="cal-desc">${linkify(e.description)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // =================== PANEL: CARD ===================
 function renderCard() {
   const root = $('[data-panel="card"]');
@@ -2312,6 +2465,11 @@ document.addEventListener('click', (e) => {
     'move-promo-down': () => { moveItem(promos(), i, 1); rerender(); },
 
     'add-social': () => { socials().push({ name: '', url: '' }); rerender(); },
+
+    'add-noint': () => { (oppFile().notInterested ||= []).push(''); rerender(); },
+    'cal-filter': () => { state.calFilter[btn.dataset.group] = btn.dataset.which === 'true' ? true : btn.dataset.which === 'false' ? false : btn.dataset.which; renderCalendarList(); },
+    'refresh-cal': () => loadCalendarEvents(),
+    'del-noint': () => { oppFile().notInterested.splice(i, 1); rerender(); },
     'del-social': () => { state.files[FILE.settings].socialLinks.splice(i, 1); rerender(); },
 
     'lookup-template': () => lookupTemplate(btn.dataset.file, btn.dataset.prefix),

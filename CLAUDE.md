@@ -277,6 +277,27 @@ real `{ ok }`. Before this the page posted `no-cors` and said "Sent!" unconditio
 - Anti-spoofing DNS (added 2026-08-28): `v=spf1 -all` + `_dmarc` `p=reject`. The
   domain sends no mail (Gmail does), so nothing legitimate is affected.
 
+### Opportunity finder / job watcher: read-only routines, calendar is the state
+
+Two scheduled Claude Code cloud routines run the prompts in `agents/*.md` against a
+checkout of this repo and add events to a dedicated public Google Calendar
+(`content/opportunities.json → calendarId`, edited in the admin Calendar tab). The
+user asked for this to be "on guardrails heavily", and the shape follows from that:
+
+- The routines have **no write tools and no Gmail** — Read/Glob/Grep/WebSearch/
+  WebFetch + the Google Calendar connector. They can't commit, push, run commands,
+  or send mail. Don't add `Bash`/`Write`/`Edit` or an email connector to "improve"
+  them; notifications come from Google Calendar's own per-calendar settings.
+- The calendar is the "seen" set (list before create) and `notInterested` is the
+  reject list. No KV, no ledger, no repo writes. Deleting an event alone does not
+  stop it resurfacing — that's why the admin tab has the Not-interested list.
+- Create-only, one named calendar, hard per-run cap, "zero results is fine" — all in
+  the prompt files. Keep those rules at the top of the prompt where they are.
+- The profile is plain English in JSON so Kayla edits it in the admin; the prompt
+  files are for developers. The Google Calendar embed requires the calendar to be
+  public, which is acceptable only because it contains public open calls — never
+  point it at her personal calendar.
+
 ### Mobile shop sidebar
 
 On `<= 768px` the shop sidebar visually disappears: the `.shop-title` H1 is preserved

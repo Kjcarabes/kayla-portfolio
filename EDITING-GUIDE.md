@@ -354,6 +354,22 @@ kaylacarabesart@gmail.com.
 - Older inquiries from before the dashboard kept its own copy are still in the Google
   Sheet, under **Older inquiries** at the bottom.
 
+## Calendar (opportunities & jobs found for you)
+
+The admin's **Calendar** tab shows a Google Calendar that fills itself: once a week
+an assistant searches for shows, open calls, residencies, grants and jobs that fit
+you and adds each one on its **deadline** date, with why it fits, the fee, and the
+link to apply. Google emails you when something new lands and again 14 and 3 days
+before a deadline.
+
+- It only ever **adds** to that one calendar — it never touches your personal
+  calendar, never emails anyone, never applies to anything.
+- **What to look for** on the same tab is written in plain English. Change it any
+  time (e.g. "no more fairs", "only Washington", "fees up to $75") and Publish.
+- Don't want something? Add its title to **Not interested** and it won't come back.
+  (Deleting the event alone isn't remembered.)
+- First-time setup instructions appear on the tab until the calendar is connected.
+
 ## Updating Your Email & Social Links (Site-Wide!)
 
 Your email and social links appear on every page. Edit them in ONE place and they update everywhere!

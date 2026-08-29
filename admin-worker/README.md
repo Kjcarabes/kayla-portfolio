@@ -547,6 +547,39 @@ be empty, and each IP gets 10 submissions per hour per form. `SITE_URL` in
 `wrangler.toml` is where it reads `site-settings.json` from. Blank out
 `formsRelayUrl` in `site-settings.json` and the site goes back to posting directly.
 
+## 7. Opportunity finder + job watcher (Claude Code routines)
+
+Two **scheduled cloud routines** (claude.ai/code/routines) search the web for art
+opportunities / jobs that fit Kayla and add them to a dedicated Google Calendar.
+Their prompts are `agents/opportunity-finder.md` and `agents/job-watcher.md`; the
+profile they read and the "not interested" list are `content/opportunities.json`,
+edited in the admin's **Calendar** tab, which also embeds the calendar.
+
+Guardrails (deliberate — keep them):
+
+- **Tools:** `Read`, `Glob`, `Grep`, `WebSearch`, `WebFetch` + the Google Calendar
+  connector only. No `Bash`/`Write`/`Edit` → the routine cannot commit, push, or run
+  commands. No Gmail connector → it cannot send mail.
+- **Calendar:** a separate, public "Kayla — Opportunities" calendar (its ID in
+  `opportunities.json`). The prompt forbids touching any other calendar, forbids
+  editing/deleting events, and has a per-run safety ceiling (`limits.maxNewEventsPerRun`, default 12; `maxNewEventsFirstRun` 40 for the backlog on an empty calendar — not targets; over the ceiling the soonest deadlines win and the rest resurface next run).
+  Google's own per-calendar notifications ("new events" + 14/3-day reminders) do the
+  emailing, so no email scope is needed anywhere.
+- **State:** the calendar itself is the "seen" list (the routine lists existing
+  events before adding) plus `notInterested` in the JSON. Nothing is written to KV or
+  the repo by the routine.
+- **Cadence:** finder weekly (Mon 9am Seattle = `0 16 * * 1` UTC), job watcher every
+  2 days. Model `claude-sonnet-5`. Usage draws on Jason's Claude subscription, not an
+  API key; runs are visible as sessions at claude.ai/code.
+
+Setup: install the Claude GitHub App on this repo (read is all the routine needs),
+connect the **Google Calendar** connector at claude.ai/customize/connectors (signed
+in to the Google account that owns the calendar), create the calendar per the
+Calendar tab's instructions, paste its ID, Publish. Then create the routines with
+the saved prompt "Read `agents/opportunity-finder.md` (or `job-watcher.md`) and
+follow it exactly." Trigger one manual run and read its transcript before trusting
+the schedule.
+
 ## Local dev
 
 `npx wrangler dev` runs the Worker locally; point the admin sign-in at the

@@ -3,6 +3,17 @@
 Open work and ideas, in rough priority order. Dated so stale items are obvious.
 Keep entries short; the *why* matters more than the *how*.
 
+## In progress — 2026-08-28
+
+### A + B as guardrailed cloud routines (code done; needs Jason's setup)
+- Built: `agents/opportunity-finder.md`, `agents/job-watcher.md`,
+  `content/opportunities.json` (profile + not-interested), admin **Calendar** tab
+  (embed + editors). Guardrails: read-only tools, Calendar connector only (no Gmail),
+  create-only on one dedicated public calendar, per-run cap.
+- Remaining (Jason): install Claude GitHub App on the repo; connect Google Calendar
+  connector; create the "Kayla — Opportunities" calendar (public + notifications) and
+  paste its ID in the admin; then create the two routines + one manual test run each.
+
 ## Ideas — Jason, 2026-08-28
 
 ### A. Opportunity calendar — weekly agent that finds shows, competitions, grants
