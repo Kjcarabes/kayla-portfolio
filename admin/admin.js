@@ -1168,7 +1168,7 @@ function updateOrderButtons() {
 const ORDER_FILTERS = [
   { key: 'all', label: 'All', match: () => true },
   { key: 'new', label: 'Not started', match: o => !o.gelatoOrderId && o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
-  { key: 'draft', label: 'Drafts', match: o => o.gelatoOrderType === 'draft' && o.status !== 'cancelled' },
+  { key: 'draft', label: 'Drafts', match: o => o.gelatoOrderType === 'draft' && !['shipped', 'cancelled'].includes(o.status) },
   { key: 'printing', label: 'Printing', match: o => !!o.gelatoOrderId && o.gelatoOrderType !== 'draft' && !['shipped', 'cancelled'].includes(o.status) },
   { key: 'manual', label: 'Awaiting manual shipment', match: o => !o.gelatoOrderId && !o.autoConfigured && !['shipped', 'cancelled'].includes(o.status) },
   { key: 'shipped', label: 'Shipped', match: o => o.status === 'shipped' },
