@@ -1930,7 +1930,16 @@ async function loadAnalytics() {
 // dashboard. The old Google Sheet is still readable at the bottom for history.
 const INQ_SOURCE_LABEL = { original: 'Original', contact: 'Contact page', other: 'Other' };
 const INQ_SOURCE_HINT = { original: 'Asked about an original from the shop', contact: 'Sent from the Contact page', other: 'Another form on the site' };
-state.inqFilter = { source: 'all', status: 'todo' };
+// One row of pills, like the Orders tab. "All" is the resting state.
+const INQ_FILTERS = [
+  { key: 'all', label: 'All', match: () => true },
+  { key: 'todo', label: 'To do', match: e => e.status !== 'done' },
+  { key: 'done', label: 'Done', match: e => e.status === 'done' },
+  { key: 'original', label: 'Originals', match: e => (e.source || 'other') === 'original' },
+  { key: 'contact', label: 'Contact page', match: e => e.source === 'contact' },
+  { key: 'other', label: 'Other', match: e => (e.source || 'other') === 'other' },
+];
+state.inqFilter = 'all';
 
 function renderInquiries() {
   const root = $('[data-panel="inquiries"]');
@@ -1938,45 +1947,14 @@ function renderInquiries() {
     <div class="section">
       <h3>Inquiries</h3>
       <p class="tab-hint" style="margin:0 0 .8rem">Everyone who has written to you through the site. <b>Reply</b> opens an email drafted for that person — edit anything, then send. It goes out as you, with your signature, and marks the row done.</p>
-      <div class="inq-filters">
-        <span class="inq-filter-group">${[['all', 'All'], ['original', 'Originals'], ['contact', 'Contact page'], ['other', 'Other']].map(([k, l]) =>
-          `<button class="btn" data-action="inq-filter" data-group="source" data-which="${k}">${l}</button>`).join('')}</span>
-        <span class="inq-filter-group">${[['todo', 'To do'], ['done', 'Done'], ['all', 'Everything']].map(([k, l]) =>
-          `<button class="btn" data-action="inq-filter" data-group="status" data-which="${k}">${l}</button>`).join('')}</span>
-        <span class="inq-filter-group">
-          <button class="btn" data-action="refresh-submissions">Refresh</button>
-          <button class="btn" data-action="sub-csv">Download CSV</button>
-        </span>
+      <div class="orders-filters" id="inq-filters"></div>
+      <div class="orders-bar">
+        <button class="btn" data-action="refresh-submissions">Refresh</button>
+        <button class="btn" data-action="sub-csv">Download CSV</button>
       </div>
-      <div id="sub-table">Loading…</div>
-      <p class="muted" style="margin:.8rem 0 0;font-size:.85rem">Inquiries from before this tab existed live in the old Google Sheet.
-        <button class="btn" data-action="inq-import" id="inq-import-btn">Import them here</button>
-        <span id="inq-import-status"></span></p>
+      <div id="sub-table" style="margin-top:.9rem">Loading…</div>
     </div>`;
   loadSubmissions();
-}
-
-// One-shot (but safely repeatable) copy of the old inquiries Sheet into KV.
-async function importSheetInquiries() {
-  const btn = $('#inq-import-btn');
-  const status = $('#inq-import-status');
-  if (btn) btn.disabled = true;
-  if (status) status.textContent = 'Importing…';
-  try {
-    const r = await fetch(`${state.workerUrl}/api/inquiries-import`, {
-      method: 'POST',
-      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
-      body: '{}',
-    });
-    const data = await r.json();
-    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
-    if (status) status.textContent = `Imported ${data.imported} (${data.skipped} already here, ${data.total} in the Sheet). They're filed under Done.`;
-    loadSubmissions();
-  } catch (err) {
-    if (status) { status.textContent = `Couldn’t import: ${err.message}`; status.style.color = 'var(--danger)'; }
-  } finally {
-    if (btn) btn.disabled = false;
-  }
 }
 
 // Pulls the Worker's KV copy of every site form submission (inquiries + newsletter
@@ -2009,17 +1987,27 @@ const fmtWhen = (ts) => {
   return isNaN(d) ? String(ts || '') : d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 };
 
+function renderInqFilters(all) {
+  const el = $('#inq-filters');
+  if (!el) return;
+  const active = state.inqFilter || 'all';
+  el.innerHTML = INQ_FILTERS.map(f => {
+    const n = all.filter(f.match).length;
+    return `<button class="order-filter${f.key === active ? ' active' : ''}${n ? '' : ' empty'}" data-action="inq-filter" data-which="${f.key}">
+        ${escapeHtml(f.label)} <span class="order-filter-count">${n}</span>
+      </button>`;
+  }).join('');
+}
+
 function renderSubmissionsTable() {
   const table = $('#sub-table');
   if (!table) return;
-  const f = state.inqFilter;
-  $$('[data-action="inq-filter"]').forEach(b => b.classList.toggle('active', f[b.dataset.group] === b.dataset.which));
   const all = (state.submissions || []).filter(e => e.kind === 'inquiry');
-  const rows = all.filter(e =>
-    (f.source === 'all' || (e.source || 'other') === f.source) &&
-    (f.status === 'all' || (e.status || 'todo') === f.status));
+  renderInqFilters(all);
+  const f = INQ_FILTERS.find(x => x.key === (state.inqFilter || 'all')) || INQ_FILTERS[0];
+  const rows = all.filter(f.match);
   if (!all.length) { table.innerHTML = '<span class="muted">No inquiries yet.</span>'; return; }
-  if (!rows.length) { table.innerHTML = '<span class="muted">Nothing here with these filters.</span>'; return; }
+  if (!rows.length) { table.innerHTML = '<span class="muted">Nothing here.</span>'; return; }
   table.innerHTML = `<div class="inq-scroll"><table class="inq-table">
     <thead><tr><th>When</th><th>From</th><th>Name</th><th>Contact</th><th>About</th><th>Message</th><th>Status</th><th></th></tr></thead>
     <tbody>${rows.map(e => {
@@ -2034,7 +2022,7 @@ function renderSubmissionsTable() {
           ${e.contactPreference === 'phone' ? '<div class="muted">prefers a call</div>' : ''}</td>
       <td>${escapeHtml(e.productTitle || '')}</td>
       <td>${escapeHtml(e.message || '')}</td>
-      <td style="white-space:nowrap">${done ? '<span style="color:var(--ok)">✓ Done</span>' : '<span class="field-warn">To do</span>'}
+      <td style="white-space:nowrap">${done ? '<span class="status-badge done">✓ Done</span>' : '<span class="status-badge todo">To do</span>'}
           ${e.repliedAt ? `<div class="muted">replied ${escapeHtml(fmtWhen(e.repliedAt))}</div>` : ''}
           ${e.importedFrom ? '<div class="muted">from the old Sheet</div>' : ''}</td>
       <td style="white-space:nowrap">
@@ -2227,14 +2215,9 @@ function renderCalendar() {
       <h3>Opportunities calendar</h3>
       <p class="tab-hint" style="margin:0 0 .8rem">Deadlines for shows, residencies, grants and jobs that fit you, found once a week and added here automatically. Google emails you when something is added and again 14 and 3 days before each deadline. ${calId ? `<a href="https://calendar.google.com/calendar/u/0/r?cid=${encodeURIComponent(calId)}" target="_blank" rel="noopener">Open in Google Calendar ↗</a>` : ''}</p>
       ${calId ? `
-      <div class="inq-filters">
-        <span class="inq-filter-group">${[['all', 'Everything'], ['deadline', 'Deadlines'], ['job', 'Jobs']].map(([k, l]) =>
-          `<button class="btn" data-action="cal-filter" data-group="kind" data-which="${k}">${l}</button>`).join('')}</span>
-        <span class="inq-filter-group">${[['false', 'Upcoming'], ['true', 'Include past']].map(([k, l]) =>
-          `<button class="btn" data-action="cal-filter" data-group="past" data-which="${k}">${l}</button>`).join('')}</span>
-        <span class="inq-filter-group"><button class="btn" data-action="refresh-cal">Refresh</button></span>
-      </div>
-      <div id="cal-list" class="cal-list">Loading…</div>` : ''}
+      <div class="orders-filters" id="cal-filters"></div>
+      <div class="orders-bar"><button class="btn" data-action="refresh-cal">Refresh</button></div>
+      <div id="cal-list" class="cal-list" style="margin-top:.9rem">Loading…</div>` : ''}
       ${embed
         ? `<details class="cal-embed-wrap" open><summary>Calendar view</summary><div class="cal-embed"><iframe src="${escapeAttr(embed)}" title="Opportunities calendar" frameborder="0" scrolling="no"></iframe></div></details>`
         : `<div class="cal-setup">The calendar isn’t connected yet — Jason sets its ID in <code>content/opportunities.json</code>.</div>`}
@@ -2313,10 +2296,23 @@ function renderCalendarList() {
   const box = $('#cal-list');
   if (!box) return;
   const f = state.calFilter;
-  $$('[data-action="cal-filter"]').forEach(b => b.classList.toggle('active', String(f[b.dataset.group]) === b.dataset.which));
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const kindOf = (e) => (/^job\b/i.test(e.title || '') ? 'job' : 'deadline');
   const all = state.calEvents || [];
+  const filters = $('#cal-filters');
+  if (filters) {
+    const upcoming = all.filter(e => eventDate(e) >= today);
+    const pills = [
+      ['kind', 'all', 'All', upcoming.length],
+      ['kind', 'deadline', 'Deadlines', upcoming.filter(e => kindOf(e) === 'deadline').length],
+      ['kind', 'job', 'Jobs', upcoming.filter(e => kindOf(e) === 'job').length],
+      ['past', String(!f.past), 'Include past', all.length - upcoming.length],
+    ];
+    filters.innerHTML = pills.map(([group, which, label, n]) => {
+      const active = group === 'past' ? f.past : f.kind === which;
+      return `<button class="order-filter${active ? ' active' : ''}${n ? '' : ' empty'}" data-action="cal-filter" data-group="${group}" data-which="${which}">${label} <span class="order-filter-count">${n}</span></button>`;
+    }).join('');
+  }
   const rows = all.filter(e => (f.kind === 'all' || kindOf(e) === f.kind) && (f.past || eventDate(e) >= today));
   if (!all.length) { box.innerHTML = '<span class="muted">Nothing on the calendar yet.</span>'; return; }
   if (!rows.length) { box.innerHTML = '<span class="muted">Nothing upcoming with these filters.</span>'; return; }
@@ -2465,9 +2461,8 @@ document.addEventListener('click', (e) => {
 
     'send-newsletter': () => sendNewsletter(),
     'refresh-subscribers': () => loadSubscribers(),
-    'inq-import': () => importSheetInquiries(),
     'refresh-submissions': () => loadSubmissions(),
-    'inq-filter': () => { state.inqFilter[btn.dataset.group] = btn.dataset.which; renderSubmissionsTable(); },
+    'inq-filter': () => { state.inqFilter = btn.dataset.which; renderSubmissionsTable(); },
     'inq-reply': () => showReplyModal(btn.dataset.key),
     'sub-status': () => saveSubmission(btn.dataset.key, { status: btn.dataset.status }),
     'sub-del': () => { if (confirm('Delete this inquiry? This can’t be undone.')) saveSubmission(btn.dataset.key, { delete: true }); },
