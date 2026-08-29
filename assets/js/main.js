@@ -203,7 +203,7 @@ function initInquiryModal() {
                 ${HONEYPOT_FIELD}
                 <p class="inquiry-form-error" data-inquiry-error hidden></p>
                 <button type="submit" class="inquiry-form-submit">Send</button>
-                ${PRIVACY_LINE}
+                ${PRIVACY_LINE_INQUIRY}
             </form>
             <div class="inquiry-modal-success" hidden>
                 <p>Thanks — your message is on its way. Kayla will reply soon.</p>
@@ -347,6 +347,8 @@ function isValidPhone(s) {
 // off-screen and out of the tab order). A filled value means "drop it".
 const HONEYPOT_FIELD = '<label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>';
 const PRIVACY_LINE = '<p class="form-privacy">Sent to Kayla and never shared.</p>';
+// Inquirers join the newsletter by default (every issue has an unsubscribe link) — say so.
+const PRIVACY_LINE_INQUIRY = '<p class="form-privacy">Sent to Kayla and never shared. You’ll also get her occasional newsletter — unsubscribe any time.</p>';
 
 async function submitSiteForm(kind, fields, legacyEndpoint) {
     if (fields.website) return { ok: true }; // honeypot tripped — pretend, send nothing

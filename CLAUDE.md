@@ -258,8 +258,19 @@ real `{ ok }`. Before this the page posted `no-cors` and said "Sent!" unconditio
   invent availability; falls back to a plain template without `ANTHROPIC_API_KEY`)
   and sends via `POST /api/inquiry-reply` → the notify Apps Script, with
   `renderBuyerEmail` appending "Kayla" + the signature. Drafts therefore end at the
-  closing line, never with her name. The old Sheet table is a collapsed `<details>` at the bottom and is
-  only fetched when opened, because that call also writes to the mailing list.
+  closing line, never with her name. When a price is asked, the draft gets
+  `pricingFacts`: the Original Sales price list (list = target × markup; the floor
+  is passed as "never state or go below"), the tab's fair-price formula on the
+  work's parsed size, and median $/in² of actual sales — written as
+  `$N [estimate — confirm]` unless it's the list price. The old inquiries Sheet is
+  importable once via `/api/inquiries-import` (hash-keyed, idempotent, lands as
+  `done`); the admin no longer reads the Sheet live. **Everyone who writes in joins
+  the mailing list by default** (user's decision; every newsletter has a signed
+  unsubscribe link): `subscribeInquirer` → Apps Script `subscribe` action, which
+  refuses to re-add an address present in any row so opt-outs stick; falls back to
+  the plain signup post once per address (`nl:auto:<email>` KV marker) on an older
+  script. The inquiry/contact privacy line discloses it. The Sheet is no longer read live (its `inquiries` action also
+  auto-added emails to the mailing list — that side effect is gone with it).
 - **The Worker emails Kayla about every inquiry**, to `site-settings.json → email`
   (`kaylacarabesart@gmail.com`). The inquiries Sheet's Apps Script used to do this
   and mailed the Sheet owner's inbox (`kjcarabes@gmail.com`) — its `MailApp` line is

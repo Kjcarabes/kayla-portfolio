@@ -432,6 +432,7 @@ single-recipient email. In `doPost`, just above `return sendNewsletter(payload);
 
 ```js
     if (payload.action === 'notify') return notifyOne(payload);
+    if (payload.action === 'subscribe') return subscribeOne(payload);
     // Anything else with an action is a mistake, NOT a newsletter. Without this
     // line an unrecognised action falls through and mails every subscriber.
     // (The real newsletter send carries no `action`, so it still works.)
@@ -452,6 +453,28 @@ function notifyOne(p) {
   return json({ ok: true });
 }
 ```
+
+And `subscribeOne`, which the Worker calls for everyone who writes in through the
+site (they join the list by default; every newsletter carries the unsubscribe link).
+It appends only if the address isn't already in the Sheet **in any form**, so an
+unsubscribed row keeps someone out for good:
+
+```js
+function subscribeOne(p) {
+  var email = String(p.email || '').trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, error: 'bad email' });
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][0] || '').trim().toLowerCase() === email) return json({ ok: true, added: false });
+  }
+  sheet.appendRow([email, new Date().toISOString(), '', p.note || 'from inquiry']);
+  return json({ ok: true, added: true });
+}
+```
+
+Without it the Worker falls back to the plain signup post once per address, which
+can't see unsubscribed rows — paste it so opt-outs are always respected.
 
 The `replyTo` line matters for the admin **Inquiries** tab: replies Kayla sends from
 there go out through this same function, and without it a customer who hits
@@ -576,7 +599,7 @@ Guardrails — what is actually enforced vs. what is only asked for:
   Consequence: a change to those files takes effect after the next push + Pages
   deploy (Kayla's admin Publish does exactly that).
 - **Prompt-level:** one named calendar, create-only, per-run safety ceiling
-  (`limits.maxNewEventsPerRun` 20; `maxNewEventsFirstRun` 40 for the first backlog —
+  (`limits.maxNewEventsPerRun` 50; `maxNewEventsFirstRun` 60 for the first backlog —
   ceilings, not targets; soonest deadlines win, the rest resurface next run), stop
   after two tool errors, never invent. The first test run proved the stop rules work:
   with page fetches blocked it created nothing and reported why.

@@ -351,8 +351,14 @@ kaylacarabesart@gmail.com.
   gives you a fresh one.
 - **Mark done / Mark to do / Delete** are yours to manage the list. Nothing here is
   ever shown on the site.
-- Older inquiries from before the dashboard kept its own copy are still in the Google
-  Sheet, under **Older inquiries** at the bottom.
+- If they asked about price, the draft suggests a figure from your price list (Original
+  Sales tab) or, failing that, from your fair-price formula and past sales — marked
+  `[estimate — confirm]` so you always look at it before sending.
+- Older inquiries from before this tab existed can be pulled in once with **Import
+  them here** (they're filed under Done).
+- Everyone who writes to you is added to your newsletter list automatically (the
+  form tells them so, and every newsletter has an unsubscribe link). Someone who
+  unsubscribed stays unsubscribed even if they write again.
 
 ## Calendar (opportunities & jobs found for you)
 

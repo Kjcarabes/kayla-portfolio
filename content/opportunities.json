@@ -15,8 +15,8 @@
     "avoid": "Unpaid positions, commission-only sales roles, anything that is really a franchise or MLM."
   },
   "limits": {
-    "maxNewEventsPerRun": 20,
-    "maxNewEventsFirstRun": 40
+    "maxNewEventsPerRun": 50,
+    "maxNewEventsFirstRun": 60
   },
   "notInterested": []
 }

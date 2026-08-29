@@ -1923,37 +1923,6 @@ async function loadAnalytics() {
   }
 }
 
-async function loadInquiries() {
-  const table = $('#inq-table');
-  const note = $('#inq-note');
-  if (!table) return;
-  table.textContent = 'Loading…';
-  table.style.color = '';
-  try {
-    const r = await fetch(`${state.workerUrl}/api/inquiries`, {
-      method: 'POST',
-      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
-      body: '{}',
-    });
-    const data = await r.json();
-    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
-    const rows = data.rows || [];
-    if (note) note.textContent = data.added
-      ? `Added ${data.added} new email${data.added === 1 ? '' : 's'} to the mailing list.`
-      : 'No new emails to add.';
-    if (rows.length < 2) { table.innerHTML = '<span class="muted">No inquiries yet.</span>'; return; }
-    const header = rows[0];
-    const body = rows.slice(1);
-    table.innerHTML = `<div class="inq-scroll"><table class="inq-table">
-      <thead><tr>${header.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-      <tbody>${body.map(row => `<tr>${header.map((_, c) => `<td>${escapeHtml(row[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
-    </table></div>`;
-  } catch (err) {
-    table.textContent = `Couldn’t load inquiries: ${err.message}`;
-    table.style.color = 'var(--danger)';
-  }
-}
-
 // =================== PANEL: INQUIRIES ===================
 // Everyone who wrote in through the site — the original-artwork modal, the
 // contact page, anything else — kept by the Worker in private KV. Kayla triages
@@ -1980,17 +1949,34 @@ function renderInquiries() {
         </span>
       </div>
       <div id="sub-table">Loading…</div>
-    </div>
-    <details class="section" id="inq-sheet">
-      <summary>Older inquiries (Google Sheet)</summary>
-      <p class="tab-hint" style="margin:.6rem 0">Inquiries from before the dashboard kept its own copy, straight from the spreadsheet. Any new email found here is added to your mailing list automatically.</p>
-      <div id="inq-note" class="muted" style="margin-bottom:.7rem"></div>
-      <div id="inq-table">Loading…</div>
-      <button class="btn" data-action="refresh-inquiries" style="margin-top:.7rem">Refresh</button>
-    </details>`;
-  // The Sheet call also writes to the mailing list, so only make it when opened.
-  $('#inq-sheet').addEventListener('toggle', (e) => { if (e.target.open) loadInquiries(); });
+      <p class="muted" style="margin:.8rem 0 0;font-size:.85rem">Inquiries from before this tab existed live in the old Google Sheet.
+        <button class="btn" data-action="inq-import" id="inq-import-btn">Import them here</button>
+        <span id="inq-import-status"></span></p>
+    </div>`;
   loadSubmissions();
+}
+
+// One-shot (but safely repeatable) copy of the old inquiries Sheet into KV.
+async function importSheetInquiries() {
+  const btn = $('#inq-import-btn');
+  const status = $('#inq-import-status');
+  if (btn) btn.disabled = true;
+  if (status) status.textContent = 'Importing…';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/inquiries-import`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    if (status) status.textContent = `Imported ${data.imported} (${data.skipped} already here, ${data.total} in the Sheet). They're filed under Done.`;
+    loadSubmissions();
+  } catch (err) {
+    if (status) { status.textContent = `Couldn’t import: ${err.message}`; status.style.color = 'var(--danger)'; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 // Pulls the Worker's KV copy of every site form submission (inquiries + newsletter
@@ -2049,7 +2035,8 @@ function renderSubmissionsTable() {
       <td>${escapeHtml(e.productTitle || '')}</td>
       <td>${escapeHtml(e.message || '')}</td>
       <td style="white-space:nowrap">${done ? '<span style="color:var(--ok)">✓ Done</span>' : '<span class="field-warn">To do</span>'}
-          ${e.repliedAt ? `<div class="muted">replied ${escapeHtml(fmtWhen(e.repliedAt))}</div>` : ''}</td>
+          ${e.repliedAt ? `<div class="muted">replied ${escapeHtml(fmtWhen(e.repliedAt))}</div>` : ''}
+          ${e.importedFrom ? '<div class="muted">from the old Sheet</div>' : ''}</td>
       <td style="white-space:nowrap">
         <button class="btn primary" data-action="inq-reply" data-key="${escapeAttr(e.key)}"${e.email ? '' : ' disabled title="No email address — they asked for a call"'}>Reply</button>
         <button class="btn" data-action="sub-status" data-key="${escapeAttr(e.key)}" data-status="${done ? 'todo' : 'done'}">${done ? 'Mark to do' : 'Mark done'}</button>
@@ -2478,7 +2465,7 @@ document.addEventListener('click', (e) => {
 
     'send-newsletter': () => sendNewsletter(),
     'refresh-subscribers': () => loadSubscribers(),
-    'refresh-inquiries': () => loadInquiries(),
+    'inq-import': () => importSheetInquiries(),
     'refresh-submissions': () => loadSubmissions(),
     'inq-filter': () => { state.inqFilter[btn.dataset.group] = btn.dataset.which; renderSubmissionsTable(); },
     'inq-reply': () => showReplyModal(btn.dataset.key),
