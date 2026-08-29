@@ -22,3 +22,5 @@ certs/
 
 # Gelato fulfilment audit log — records real customer orders, never commit it
 .gelato-ledger.json
+# wrangler local dev/KV state
+.wrangler/

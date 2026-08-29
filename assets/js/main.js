@@ -47,9 +47,12 @@ async function initNewsletter() {
             <button class="newsletter-popup-close" aria-label="Close">&times;</button>
             <h3>${nl.heading}</h3>
             <p>${nl.message}</p>
-            <form class="newsletter-form" action="${nl.formAction}" method="POST">
-                <input type="email" name="email" placeholder="${nl.placeholder}" required>
+            <form class="newsletter-form" action="${nl.formAction}" method="POST" novalidate>
+                <input type="email" name="email" placeholder="${nl.placeholder}" required autocomplete="email" aria-label="Email address">
+                ${HONEYPOT_FIELD}
+                <p class="form-error" data-form-error hidden></p>
                 <button type="submit">${nl.buttonText}</button>
+                ${PRIVACY_LINE}
             </form>
         `;
 
@@ -72,24 +75,21 @@ async function initNewsletter() {
         popup.querySelector('.newsletter-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
-            const email = form.querySelector('input[type="email"]').value;
-            const submitBtn = form.querySelector('button');
+            const email = form.querySelector('input[type="email"]').value.trim();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const errorEl = form.querySelector('[data-form-error]');
+            errorEl.hidden = true;
+            if (!isValidEmail(email)) {
+                errorEl.textContent = 'Please enter a valid email address.';
+                errorEl.hidden = false;
+                return;
+            }
             submitBtn.textContent = '...';
             submitBtn.disabled = true;
 
             try {
-                // Google Apps Script requires specific handling
-                const formData = new FormData();
-                formData.append('email', email);
-                formData.append('timestamp', new Date().toISOString());
+                await submitSiteForm('newsletter', { email, website: form.elements.website?.value || '' }, nl.formAction);
 
-                await fetch(nl.formAction, {
-                    method: 'POST',
-                    mode: 'no-cors', // Required for Google Apps Script
-                    body: formData
-                });
-
-                // Show success (no-cors means we can't read response, but assume success)
                 popup.innerHTML = `
                     <button class="newsletter-popup-close" aria-label="Close">&times;</button>
                     <p class="newsletter-success">${nl.successMessage}</p>
@@ -105,6 +105,8 @@ async function initNewsletter() {
 
             } catch (error) {
                 console.error('Newsletter signup error:', error);
+                errorEl.textContent = formErrorMessage(error);
+                errorEl.hidden = false;
                 submitBtn.textContent = nl.buttonText;
                 submitBtn.disabled = false;
             }
@@ -198,8 +200,10 @@ function initInquiryModal() {
                 <label><span class="inquiry-form-label">Message (optional)</span>
                     <textarea name="message" rows="3"></textarea>
                 </label>
+                ${HONEYPOT_FIELD}
                 <p class="inquiry-form-error" data-inquiry-error hidden></p>
                 <button type="submit" class="inquiry-form-submit">Send</button>
+                ${PRIVACY_LINE}
             </form>
             <div class="inquiry-modal-success" hidden>
                 <p>Thanks — your message is on its way. Kayla will reply soon.</p>
@@ -234,20 +238,28 @@ function initInquiryModal() {
         errorEl.hidden = true;
 
         const fd = new FormData(form);
-        const name = (fd.get('name') || '').toString().trim();
-        const email = (fd.get('email') || '').toString().trim();
-        const phone = (fd.get('phone') || '').toString().trim();
+        const str = (k) => (fd.get(k) || '').toString().trim();
+        const name = str('name');
+        const email = str('email');
+        const phone = str('phone');
+        const contactPreference = str('contactPreference') === 'phone' ? 'phone' : 'email';
 
         if (!name) { showError('Please enter your name.'); return; }
+        if (email && !isValidEmail(email)) { showError('That email address doesn’t look right.'); return; }
+        if (phone && !isValidPhone(phone)) { showError('That phone number doesn’t look right.'); return; }
         if (!email && !phone) { showError('Please leave an email or phone so Kayla can reply.'); return; }
+        if (contactPreference === 'phone' && !phone) { showError('You chose phone — please add a number.'); return; }
+        if (contactPreference === 'email' && !email) { showError('You chose email — please add an address.'); return; }
 
         const settings = await getSiteSettings();
-        const endpoint = settings.inquiryFormAction;
-        if (!endpoint) { showError('This form isn’t configured yet. Please try again later.'); return; }
-
-        fd.append('productTitle', form.dataset.productTitle || '');
-        fd.append('productId', form.dataset.productId || '');
-        fd.append('timestamp', new Date().toISOString());
+        const fields = {
+            name, email, phone, contactPreference,
+            message: str('message'),
+            productTitle: form.dataset.productTitle || '',
+            productId: form.dataset.productId || '',
+            source: (form.dataset.productId || form.dataset.productTitle) ? 'original' : 'other',
+            website: str('website'),
+        };
 
         const submitBtn = form.querySelector('.inquiry-form-submit');
         submitBtn.disabled = true;
@@ -255,13 +267,13 @@ function initInquiryModal() {
         submitBtn.textContent = 'Sending…';
 
         try {
-            await fetch(endpoint, { method: 'POST', mode: 'no-cors', body: fd });
+            await submitSiteForm('inquiry', fields, settings.inquiryFormAction);
             form.hidden = true;
             successEl.hidden = false;
             setTimeout(closeInquiryModal, 2500);
         } catch (err) {
             console.error('Inquiry submit failed:', err);
-            showError('Something went wrong. Please try again or email kaylacarabesart@gmail.com.');
+            showError(formErrorMessage(err, settings.email));
             submitBtn.disabled = false;
             submitBtn.textContent = originalLabel;
         }
@@ -310,6 +322,117 @@ function getSiteSettings() {
             });
     }
     return siteSettingsPromise;
+}
+
+// ===========================================
+// SITE FORMS (inquiry + newsletter signup)
+// ===========================================
+// Every form posts to the admin Worker (site-settings → formsRelayUrl), which keeps
+// a private copy, forwards to the Google Sheet script server-side and returns a
+// real answer — so "Sent!" only shows when it actually was. With no relay
+// configured we fall back to the old direct no-cors post, which can't see the
+// response and has to assume success.
+
+// Mirrors validEmail / validPhone in admin-worker/worker.js — keep them in step.
+function isValidEmail(s) {
+    s = (s || '').trim();
+    return s.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
+}
+function isValidPhone(s) {
+    const digits = (s || '').replace(/\D/g, '');
+    return digits.length >= 7 && digits.length <= 15;
+}
+
+// Bots fill every field they can find; a human never sees this one (.hp parks it
+// off-screen and out of the tab order). A filled value means "drop it".
+const HONEYPOT_FIELD = '<label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>';
+const PRIVACY_LINE = '<p class="form-privacy">Sent to Kayla and never shared.</p>';
+
+async function submitSiteForm(kind, fields, legacyEndpoint) {
+    if (fields.website) return { ok: true }; // honeypot tripped — pretend, send nothing
+
+    const settings = await getSiteSettings();
+    const relay = (settings.formsRelayUrl || '').replace(/\/$/, '');
+    if (relay) {
+        const res = await fetch(`${relay}/forms/${kind}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fields),
+        });
+        let data = null;
+        try { data = await res.json(); } catch (_) { /* not JSON → Worker is down */ }
+        if (!res.ok || !data || !data.ok) {
+            // The Worker's messages are written for the visitor (validation, rate
+            // limit); anything else gets the generic text in formErrorMessage.
+            const err = new Error((data && data.error) || `Server error ${res.status}`);
+            err.userFacing = !!(data && data.error) && [400, 429, 502].includes(res.status);
+            throw err;
+        }
+        return data;
+    }
+
+    if (!legacyEndpoint) {
+        const err = new Error('This form isn’t configured yet. Please try again later.');
+        err.userFacing = true;
+        throw err;
+    }
+    const fd = new FormData();
+    Object.entries(fields).forEach(([k, v]) => { if (k !== 'website') fd.append(k, v); });
+    fd.append('timestamp', new Date().toISOString());
+    await fetch(legacyEndpoint, { method: 'POST', mode: 'no-cors', body: fd });
+    return { ok: true };
+}
+
+function formErrorMessage(err, contactEmail) {
+    if (err && err.userFacing) return err.message;
+    return `Something went wrong. Please try again or email ${contactEmail || 'kaylacarabesart@gmail.com'}.`;
+}
+
+// Contact page message form (static markup in contact.html). Lands in the admin's
+// Inquiries tab under "Contact page"; email is required here because a reply is
+// the whole point.
+function initContactForm() {
+    const form = document.getElementById('contact-form');
+    if (!form) return;
+    const errorEl = form.querySelector('[data-contact-error]');
+    const successEl = document.getElementById('contact-form-success');
+    const showError = (msg) => { errorEl.textContent = msg; errorEl.hidden = false; };
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl.hidden = true;
+        const fd = new FormData(form);
+        const str = (k) => (fd.get(k) || '').toString().trim();
+        const name = str('name');
+        const email = str('email');
+        const phone = str('phone');
+        const message = str('message');
+        if (!name) return showError('Please enter your name.');
+        if (!isValidEmail(email)) return showError('Please enter a valid email address so Kayla can reply.');
+        if (phone && !isValidPhone(phone)) return showError('That phone number doesn’t look right.');
+        if (!message) return showError('Please write a message.');
+
+        const settings = await getSiteSettings();
+        const submitBtn = form.querySelector('.inquiry-form-submit');
+        const originalLabel = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending…';
+        try {
+            await submitSiteForm('inquiry', {
+                name, email, phone, message,
+                contactPreference: 'email',
+                source: 'contact',
+                website: str('website'),
+            }, settings.inquiryFormAction);
+            form.hidden = true;
+            if (successEl) successEl.hidden = false;
+        } catch (err) {
+            console.error('Contact form failed:', err);
+            showError(formErrorMessage(err, settings.email));
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalLabel;
+        }
+    });
 }
 
 async function loadSiteSettings() {
@@ -1518,8 +1641,8 @@ async function initCardPage() {
 }
 
 // Card page mailing-list signup — a button that opens a popup with the email
-// field. Same flow as the site (Google Apps Script formAction, FormData +
-// no-cors POST, success message + localStorage flag).
+// field. Same flow as the site popup (submitSiteForm → Worker relay, success
+// message + localStorage flag).
 async function initCardNewsletter() {
     const openBtn = document.getElementById('card-newsletter-open');
     if (!openBtn) return;
@@ -1547,9 +1670,12 @@ function openCardNewsletterModal(nl) {
             <button class="card-modal-close" aria-label="Close">&times;</button>
             <h3>${nl.heading || 'Stay in the loop'}</h3>
             <p>${nl.message || ''}</p>
-            <form class="card-modal-form">
+            <form class="card-modal-form" novalidate>
                 <input type="email" name="email" placeholder="${nl.placeholder || 'your@email.com'}" required autocomplete="email" aria-label="Email address">
+                ${HONEYPOT_FIELD}
+                <p class="form-error" data-form-error hidden></p>
                 <button type="submit" class="card-link card-link--primary">${nl.buttonText || 'Subscribe'}</button>
+                ${PRIVACY_LINE}
             </form>
         </div>`;
     document.body.appendChild(backdrop);
@@ -1569,14 +1695,20 @@ function openCardNewsletterModal(nl) {
     backdrop.querySelector('.card-modal-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = backdrop.querySelector('button[type="submit"]');
+        const errorEl = backdrop.querySelector('[data-form-error]');
+        const email = input.value.trim();
+        errorEl.hidden = true;
+        if (!isValidEmail(email)) {
+            errorEl.textContent = 'Please enter a valid email address.';
+            errorEl.hidden = false;
+            return;
+        }
         const original = btn.textContent;
         btn.textContent = '...';
         btn.disabled = true;
         try {
-            const fd = new FormData();
-            fd.append('email', input.value);
-            fd.append('timestamp', new Date().toISOString());
-            await fetch(nl.formAction, { method: 'POST', mode: 'no-cors', body: fd });
+            const website = backdrop.querySelector('.card-modal-form').elements.website?.value || '';
+            await submitSiteForm('newsletter', { email, website }, nl.formAction);
             localStorage.setItem('newsletter_subscribed', 'true');
             const modal = backdrop.querySelector('.card-modal');
             modal.innerHTML = `<button class="card-modal-close" aria-label="Close">&times;</button><p style="margin-top:1rem">${nl.successMessage || 'Thanks for subscribing!'}</p>`;
@@ -1586,6 +1718,8 @@ function openCardNewsletterModal(nl) {
             setTimeout(close, 2500);
         } catch (error) {
             console.error('Newsletter signup error:', error);
+            errorEl.textContent = formErrorMessage(error);
+            errorEl.hidden = false;
             btn.textContent = original;
             btn.disabled = false;
         }
@@ -1770,5 +1904,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadWorkDetail();
     setupImageFadeIn();
     initInquiryModal();
+    initContactForm();
     initNewsletter();
 });

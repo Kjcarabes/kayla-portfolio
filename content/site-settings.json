@@ -5,6 +5,9 @@
 
   "inquiryFormAction": "https://script.google.com/macros/s/AKfycbxYyPKrMfV28_eECGsZwpwzm4q_cgCo744THAut1_JcvMlXiouc1xLYni5soUZAzqOK/exec",
 
+  "_formsRelayHelp": "The admin Worker URL. The inquiry form and newsletter signups post here first — it keeps a private copy and forwards to the Google Sheets above — so the site can tell whether a message really went through. Leave empty to post straight to the sheets (the old way, which can't see failures).",
+  "formsRelayUrl": "https://kayla-admin.bb69z8ddnz.workers.dev",
+
   "socialLinks": [
     {
       "name": "Instagram",

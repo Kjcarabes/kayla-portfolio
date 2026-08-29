@@ -447,10 +447,16 @@ and anywhere below, a new function:
 function notifyOne(p) {
   var opts = { name: FROM_NAME };
   if (p.html) opts.htmlBody = p.html;
+  if (p.replyTo) opts.replyTo = p.replyTo; // dashboard replies: the customer's answer goes to Kayla's inbox
   GmailApp.sendEmail(p.to, p.subject, p.body, opts);
   return json({ ok: true });
 }
 ```
+
+The `replyTo` line matters for the admin **Inquiries** tab: replies Kayla sends from
+there go out through this same function, and without it a customer who hits
+"Reply" writes back to the Sheet owner's address rather than
+`kaylacarabesart@gmail.com`.
 
 To send from `kaylacarabesart@gmail.com` instead of the Sheet owner's address, add
 `from: 'kaylacarabesart@gmail.com'` to `opts` — but read "About the From address"
@@ -515,6 +521,31 @@ npm run gelato -- --catalog poster      # find productUids
 ```
 
 Needs `STRIPE_SECRET_KEY` and `GELATO_API_KEY` in `.env` (gitignored).
+
+## 6. Site forms → the Inquiries tab
+
+The site's inquiry modal (originals), the **contact page** message form and the
+newsletter signups all post to the Worker (`POST /forms/inquiry`,
+`POST /forms/newsletter` — public, no password) instead of straight to Google. The
+Worker keeps every entry in private KV first, forwards to the same Apps Script
+URLs in `content/site-settings.json` (read from the live site, so editing them
+there is enough), and returns a real yes/no — the page only says "Sent!" when it was.
+
+**Inquiries** land in the admin's Inquiries tab, grouped by source (`original`,
+`contact`, `other`), with To do / Done / Delete, editable reply templates (KV key
+`inquiry:templates`) and a **Reply** button that sends through the `notify` Apps
+Script (`POST /api/inquiry-reply`) with the signature appended and `replyTo` set to
+the site's public email. The Worker also emails Kayla about every inquiry, to the
+`email` in `site-settings.json` — so the inquiries Sheet's own `MailApp.sendEmail`
+line should be **deleted** (it mails the Sheet owner's inbox, and she'd get two).
+
+Newsletter signups that failed to reach the Sheet show as a warning in the
+Newsletter tab (they're the mailing list, so they need adding by hand).
+
+Bot filtering: the request's `Origin` must be the site, a hidden honeypot field must
+be empty, and each IP gets 10 submissions per hour per form. `SITE_URL` in
+`wrangler.toml` is where it reads `site-settings.json` from. Blank out
+`formsRelayUrl` in `site-settings.json` and the site goes back to posting directly.
 
 ## Local dev
 

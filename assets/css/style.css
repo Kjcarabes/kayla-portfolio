@@ -483,6 +483,22 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
     opacity: 0.6;
 }
 
+/* Contact page message form — reuses the inquiry-modal field styles */
+.contact-form {
+    width: 100%;
+    max-width: 440px;
+    margin-top: var(--spacing-md);
+    text-align: left;
+}
+
+.contact-form[hidden] {
+    display: none;
+}
+
+.contact-form-success {
+    color: var(--color-text);
+}
+
 .contact-social {
     margin-top: var(--spacing-lg);
     display: flex;
@@ -1693,6 +1709,37 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
     font-size: 0.8rem;
     color: #b33030;
     margin: 0;
+}
+
+/* Shared by every site form (inquiry + both newsletter signups) */
+/* `form p.…` so these beat the popups' own `.newsletter-popup p` / `.card-modal p` */
+form p.form-error {
+    font-size: 0.8rem;
+    color: #b33030;
+    margin: 0;
+}
+
+form p.form-error[hidden] {
+    display: none;
+}
+
+form p.form-privacy {
+    font-size: 0.7rem;
+    color: var(--color-text-light);
+    margin: 0.4rem 0 0;
+    text-align: center;
+}
+
+/* Honeypot: parked off-screen rather than display:none so bots still "see" and
+   fill it; a person can't see it or tab to it (tabindex=-1). */
+form .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .inquiry-modal-success {

@@ -285,11 +285,11 @@ function switchTab(tab) {
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   $$('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
   const panels = $('.panels');
-  if (panels) panels.classList.toggle('wide', tab === 'sales' || tab === 'analytics' || tab === 'orders');
+  if (panels) panels.classList.toggle('wide', ['sales', 'analytics', 'orders', 'inquiries'].includes(tab));
   renderActiveTab();
 }
 function renderActiveTab() {
-  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, about: renderAbout, newsletter: renderNewsletter, popups: renderPopups, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
+  ({ works: renderWorks, blog: renderBlog, shop: renderShop, orders: renderOrders, inquiries: renderInquiries, about: renderAbout, newsletter: renderNewsletter, popups: renderPopups, sales: renderSales, analytics: renderAnalytics, settings: renderSettings, card: renderCard }[state.activeTab])?.();
 }
 
 // =================== FIELD HELPERS ===================
@@ -1457,6 +1457,7 @@ function renderNewsletter() {
       <h3>Recipients <span id="nl-count" class="muted"></span></h3>
       <p class="tab-hint" style="margin:0 0 .6rem">Everyone currently subscribed — this is exactly who the message goes to.</p>
       <div id="nl-recipients" class="nl-recipients muted">Loading subscribers…</div>
+      <div id="nl-held" hidden></div>
       <button class="btn" data-action="refresh-subscribers" style="margin-top:.6rem">Refresh</button>
     </div>
     <div class="section">
@@ -1472,6 +1473,7 @@ function renderNewsletter() {
     </div>
   `;
   loadSubscribers();
+  loadSubmissions();
 }
 
 // Pull the current subscriber list (via Worker → Apps Script) so Kayla sees who
@@ -1629,14 +1631,6 @@ function renderSales() {
   root.innerHTML = `
     <div class="sales-total-banner" id="sales-total-banner">💰 Total made: … 🤑</div>
     <div class="section">
-      <h3>Leads <span class="muted">— inquiries on originals</span></h3>
-      <p class="tab-hint" style="margin:0 0 .6rem">New inquiry emails are added to your mailing list automatically (ones already on the list, including anyone who unsubscribed, are left alone).</p>
-      <div id="inq-note" class="muted" style="margin-bottom:.7rem"></div>
-      <div id="inq-table">Loading…</div>
-      <button class="btn" data-action="refresh-inquiries" style="margin-top:.7rem">Refresh</button>
-    </div>
-
-    <div class="section">
       <h3>Fair-price calculator</h3>
       <p class="tab-hint" style="margin:0 0 .8rem">Suggests a target price = (size × base rate) + (hours × hourly rate) + materials. That's the Target Price; your markup below sets the List Price.</p>
       <div class="calc-grid">
@@ -1664,7 +1658,6 @@ function renderSales() {
     <div class="section" id="sale-section"><h3>Sale record</h3><div class="muted">Loading…</div></div>
     <div class="section" id="other-pay-section" hidden></div>
   `;
-  loadInquiries();
   wireCalculator();
   loadSales();
   loadOtherPayments();
@@ -1878,7 +1871,6 @@ async function saveSales() {
   }
 }
 
-function renderInquiries() { renderSales(); } // legacy alias
 
 // =================== PANEL: ANALYTICS ===================
 function renderAnalytics() {
@@ -1959,6 +1951,262 @@ async function loadInquiries() {
     table.textContent = `Couldn’t load inquiries: ${err.message}`;
     table.style.color = 'var(--danger)';
   }
+}
+
+// =================== PANEL: INQUIRIES ===================
+// Everyone who wrote in through the site — the original-artwork modal, the
+// contact page, anything else — kept by the Worker in private KV. Kayla triages
+// here (to do / done / delete) and replies by email without leaving the
+// dashboard. The old Google Sheet is still readable at the bottom for history.
+const INQ_SOURCE_LABEL = { original: 'Original', contact: 'Contact page', other: 'Other' };
+const INQ_SOURCE_HINT = { original: 'Asked about an original from the shop', contact: 'Sent from the Contact page', other: 'Another form on the site' };
+state.inqFilter = { source: 'all', status: 'todo' };
+
+function renderInquiries() {
+  const root = $('[data-panel="inquiries"]');
+  root.innerHTML = `
+    <div class="section">
+      <h3>Inquiries</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">Everyone who has written to you through the site. <b>Reply</b> opens a pre-written email you can edit before it goes — it's sent as you, with your signature, and marks the row done.</p>
+      <div class="inq-filters">
+        <span class="inq-filter-group">${[['all', 'All'], ['original', 'Originals'], ['contact', 'Contact page'], ['other', 'Other']].map(([k, l]) =>
+          `<button class="btn" data-action="inq-filter" data-group="source" data-which="${k}">${l}</button>`).join('')}</span>
+        <span class="inq-filter-group">${[['todo', 'To do'], ['done', 'Done'], ['all', 'Everything']].map(([k, l]) =>
+          `<button class="btn" data-action="inq-filter" data-group="status" data-which="${k}">${l}</button>`).join('')}</span>
+        <span class="inq-filter-group">
+          <button class="btn" data-action="refresh-submissions">Refresh</button>
+          <button class="btn" data-action="sub-csv">Download CSV</button>
+        </span>
+      </div>
+      <div id="sub-table">Loading…</div>
+    </div>
+    <div class="section">
+      <h3>Reply templates</h3>
+      <p class="tab-hint" style="margin:0 0 .8rem">The starting text for each kind of reply. <code>{name}</code>, <code>{artwork}</code> and <code>{message}</code> are filled in for you. "Kayla" and your signature are added at the end automatically — don't type them here.</p>
+      <div id="inq-templates" class="muted">Loading…</div>
+    </div>
+    <details class="section" id="inq-sheet">
+      <summary>Older inquiries (Google Sheet)</summary>
+      <p class="tab-hint" style="margin:.6rem 0">Inquiries from before the dashboard kept its own copy, straight from the spreadsheet. Any new email found here is added to your mailing list automatically.</p>
+      <div id="inq-note" class="muted" style="margin-bottom:.7rem"></div>
+      <div id="inq-table">Loading…</div>
+      <button class="btn" data-action="refresh-inquiries" style="margin-top:.7rem">Refresh</button>
+    </details>`;
+  // The Sheet call also writes to the mailing list, so only make it when opened.
+  $('#inq-sheet').addEventListener('toggle', (e) => { if (e.target.open) loadInquiries(); });
+  loadSubmissions();
+}
+
+// Pulls the Worker's KV copy of every site form submission (inquiries + newsletter
+// signups) plus the reply templates. Used by the Inquiries and Newsletter tabs.
+async function loadSubmissions() {
+  const table = $('#sub-table');
+  const held = $('#nl-held');
+  if (!table && !held) return;
+  if (table) { table.textContent = 'Loading…'; table.style.color = ''; }
+  try {
+    const r = await fetch(`${state.workerUrl}/api/submissions`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (r.status === 404) throw new Error('Needs the newer admin Worker — redeploy it (npx wrangler deploy).');
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    state.submissions = data.entries || [];
+    if (data.templates) state.inqTemplates = data.templates;
+    renderSubmissionsTable();
+    renderInquiryTemplates();
+    renderHeldSignups();
+  } catch (err) {
+    if (table) { table.textContent = `Couldn’t load: ${err.message}`; table.style.color = 'var(--danger)'; }
+    if (held) held.hidden = true;
+  }
+}
+
+const fmtWhen = (ts) => {
+  const d = new Date(ts);
+  return isNaN(d) ? String(ts || '') : d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+function renderSubmissionsTable() {
+  const table = $('#sub-table');
+  if (!table) return;
+  const f = state.inqFilter;
+  $$('[data-action="inq-filter"]').forEach(b => b.classList.toggle('active', f[b.dataset.group] === b.dataset.which));
+  const all = (state.submissions || []).filter(e => e.kind === 'inquiry');
+  const rows = all.filter(e =>
+    (f.source === 'all' || (e.source || 'other') === f.source) &&
+    (f.status === 'all' || (e.status || 'todo') === f.status));
+  if (!all.length) { table.innerHTML = '<span class="muted">No inquiries yet.</span>'; return; }
+  if (!rows.length) { table.innerHTML = '<span class="muted">Nothing here with these filters.</span>'; return; }
+  table.innerHTML = `<div class="inq-scroll"><table class="inq-table">
+    <thead><tr><th>When</th><th>From</th><th>Name</th><th>Contact</th><th>About</th><th>Message</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows.map(e => {
+      const done = e.status === 'done';
+      const src = e.source || 'other';
+      return `<tr class="${done ? 'inq-done' : ''}">
+      <td style="white-space:nowrap">${escapeHtml(fmtWhen(e.timestamp))}</td>
+      <td><span class="src-badge src-${escapeAttr(src)}" title="${escapeAttr(INQ_SOURCE_HINT[src] || '')}">${escapeHtml(INQ_SOURCE_LABEL[src] || src)}</span></td>
+      <td>${escapeHtml(e.name)}</td>
+      <td>${e.email ? `<a href="mailto:${escapeAttr(e.email)}">${escapeHtml(e.email)}</a>` : ''}
+          ${e.phone ? `<div class="muted">${escapeHtml(e.phone)}</div>` : ''}
+          ${e.contactPreference === 'phone' ? '<div class="muted">prefers a call</div>' : ''}</td>
+      <td>${escapeHtml(e.productTitle || '')}</td>
+      <td>${escapeHtml(e.message || '')}</td>
+      <td style="white-space:nowrap">${done ? '<span style="color:var(--ok)">✓ Done</span>' : '<span class="field-warn">To do</span>'}
+          ${e.repliedAt ? `<div class="muted">replied ${escapeHtml(fmtWhen(e.repliedAt))}</div>` : ''}</td>
+      <td style="white-space:nowrap">
+        <button class="btn primary" data-action="inq-reply" data-key="${escapeAttr(e.key)}"${e.email ? '' : ' disabled title="No email address — they asked for a call"'}>Reply</button>
+        <button class="btn" data-action="sub-status" data-key="${escapeAttr(e.key)}" data-status="${done ? 'todo' : 'done'}">${done ? 'Mark to do' : 'Mark done'}</button>
+        <button class="btn" data-action="sub-del" data-key="${escapeAttr(e.key)}">Delete</button>
+      </td>
+    </tr>`; }).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderInquiryTemplates() {
+  const box = $('#inq-templates');
+  if (!box) return;
+  const t = state.inqTemplates || {};
+  box.className = '';
+  box.innerHTML = `${['original', 'contact', 'other'].map(k => `
+    <div class="field"><label class="field-label">${escapeHtml(INQ_SOURCE_LABEL[k])} <span class="muted">— ${escapeHtml(INQ_SOURCE_HINT[k])}</span></label>
+      <textarea rows="6" spellcheck="true" data-tmpl="${k}">${escapeHtml(t[k] || '')}</textarea></div>`).join('')}
+    <button class="btn primary" data-action="save-templates">Save templates</button>
+    <span id="tmpl-status" class="muted" style="margin-left:.6rem"></span>`;
+}
+
+async function saveInquiryTemplates() {
+  const templates = {};
+  $$('[data-tmpl]').forEach(el => { templates[el.dataset.tmpl] = el.value; });
+  const status = $('#tmpl-status');
+  if (status) status.textContent = 'Saving…';
+  try {
+    const data = await submissionsSave({ templates });
+    state.inqTemplates = data.templates || templates;
+    if (status) status.textContent = 'Saved ✓';
+  } catch (err) {
+    if (status) { status.textContent = `Couldn’t save: ${err.message}`; status.style.color = 'var(--danger)'; }
+  }
+}
+
+function fillTemplate(tmpl, e) {
+  return String(tmpl || '')
+    .replace(/\{name\}/g, (e.name || '').trim().split(/\s+/)[0] || 'there')
+    .replace(/\{artwork\}/g, e.productTitle || 'the piece')
+    .replace(/\{message\}/g, e.message || '');
+}
+
+function showReplyModal(key) {
+  const e = (state.submissions || []).find(x => x.key === key);
+  if (!e) return;
+  const src = e.source || 'other';
+  const subject = e.productTitle ? `Re: your inquiry about “${e.productTitle}”` : 'Re: your message on kaylacarabes.com';
+  const replyTo = getByPath(state.files[FILE.settings] || {}, 'email') || 'kaylacarabesart@gmail.com';
+  const root = $('#modal-root');
+  root.innerHTML = `
+    <div class="modal-backdrop"><div class="modal" style="max-width:660px">
+      <button class="modal-close" id="rp-x" aria-label="Close">&times;</button>
+      <h2>Reply to ${escapeHtml(e.name || 'inquiry')}</h2>
+      <div class="inq-quote"><b>${escapeHtml(fmtWhen(e.timestamp))}</b>${e.productTitle ? ` · about <b>${escapeHtml(e.productTitle)}</b>` : ''}${e.phone ? ` · ${escapeHtml(e.phone)}` : ''}
+${escapeHtml(e.message || '(no message)')}</div>
+      <div class="field"><label class="field-label">To</label><input type="email" id="rp-to" value="${escapeAttr(e.email || '')}" spellcheck="false"></div>
+      <div class="field"><label class="field-label">Subject</label><input type="text" id="rp-subject" value="${escapeAttr(subject)}" spellcheck="true"></div>
+      <div class="field"><label class="field-label">Message</label><textarea id="rp-body" rows="11" spellcheck="true">${escapeHtml(fillTemplate((state.inqTemplates || {})[src], e))}</textarea></div>
+      <div class="field-hint">Goes out as “Kayla Carabes” with your signature underneath. Their reply comes back to ${escapeHtml(replyTo)}.</div>
+      <p id="rp-error" class="error-text" hidden></p>
+      <div class="modal-actions">
+        <button id="rp-cancel">Cancel</button>
+        <button id="rp-send" class="primary">Send email</button>
+      </div>
+    </div></div>`;
+  $('#rp-cancel').onclick = () => { root.innerHTML = ''; };
+  $('#rp-x').onclick = () => { root.innerHTML = ''; };
+  $('#rp-send').onclick = () => sendInquiryReply(key);
+  $('#rp-body').focus();
+}
+
+async function sendInquiryReply(key) {
+  const err = $('#rp-error');
+  const btn = $('#rp-send');
+  const to = $('#rp-to').value.trim();
+  const subject = $('#rp-subject').value.trim();
+  const body = $('#rp-body').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) { err.textContent = 'That email address doesn’t look right.'; err.hidden = false; return; }
+  if (!subject || !body) { err.textContent = 'Subject and message are both required.'; err.hidden = false; return; }
+  if (/\[.+?\]/.test(body) && !confirm('The message still has a [placeholder] in square brackets. Send it anyway?')) return;
+  err.hidden = true;
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const r = await fetch(`${state.workerUrl}/api/inquiry-reply`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, to, subject, body }),
+    });
+    if (r.status === 404) throw new Error('Replying needs the newer admin Worker — redeploy it (npx wrangler deploy).');
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+    $('#modal-root').innerHTML = '';
+    if (data.entry) state.submissions = (state.submissions || []).map(x => (x.key === key ? data.entry : x));
+    renderSubmissionsTable();
+    toast(`Sent to ${escapeHtml(to)} ✓`);
+  } catch (e) {
+    err.textContent = e.message; err.hidden = false;
+    btn.disabled = false; btn.textContent = 'Send email';
+  }
+}
+
+// Newsletter signups the Worker holds that never reached the Sheet — newsletters
+// go out from the Sheet, so these need adding by hand. Hidden when there are none.
+function renderHeldSignups() {
+  const box = $('#nl-held');
+  if (!box) return;
+  const rows = (state.submissions || []).filter(e => e.kind === 'newsletter' && !e.relayed);
+  box.hidden = !rows.length;
+  if (!rows.length) return;
+  box.innerHTML = `<p class="field-warn" style="margin:.8rem 0 .3rem">${rows.length} signup${rows.length === 1 ? '' : 's'} didn’t reach the Sheet — add ${rows.length === 1 ? 'it' : 'them'} to the signups spreadsheet by hand, then press Done:</p>
+    ${rows.map(e => `<div style="display:flex;gap:.6rem;align-items:center;margin:.25rem 0">
+      <code>${escapeHtml(e.email)}</code><span class="muted">${escapeHtml(fmtWhen(e.timestamp))}</span>
+      <button class="btn" data-action="sub-del" data-key="${escapeAttr(e.key)}">Done</button>
+    </div>`).join('')}`;
+}
+
+async function submissionsSave(payload) {
+  const r = await fetch(`${state.workerUrl}/api/submissions-save`, {
+    method: 'POST',
+    headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await r.json();
+  if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
+  return data;
+}
+
+async function saveSubmission(key, patch) {
+  try {
+    const data = await submissionsSave({ key, ...patch });
+    state.submissions = patch.delete
+      ? (state.submissions || []).filter(e => e.key !== key)
+      : (state.submissions || []).map(e => (e.key === key ? data.entry : e));
+    renderSubmissionsTable();
+    renderHeldSignups();
+  } catch (err) {
+    toast(`Couldn’t update: ${escapeHtml(err.message)}`, 'error');
+  }
+}
+
+function downloadSubmissionsCsv() {
+  const rows = (state.submissions || []).filter(e => e.kind === 'inquiry');
+  if (!rows.length) { toast('Nothing to export yet.'); return; }
+  const cols = ['timestamp', 'source', 'status', 'name', 'email', 'phone', 'contactPreference', 'productTitle', 'productId', 'message', 'repliedAt'];
+  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [cols.join(','), ...rows.map(e => cols.map(c => cell(e[c])).join(','))].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `inquiries-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // =================== PANEL: CARD ===================
@@ -2086,6 +2334,13 @@ document.addEventListener('click', (e) => {
     'send-newsletter': () => sendNewsletter(),
     'refresh-subscribers': () => loadSubscribers(),
     'refresh-inquiries': () => loadInquiries(),
+    'refresh-submissions': () => loadSubmissions(),
+    'inq-filter': () => { state.inqFilter[btn.dataset.group] = btn.dataset.which; renderSubmissionsTable(); },
+    'inq-reply': () => showReplyModal(btn.dataset.key),
+    'sub-status': () => saveSubmission(btn.dataset.key, { status: btn.dataset.status }),
+    'sub-del': () => { if (confirm('Delete this inquiry? This can’t be undone.')) saveSubmission(btn.dataset.key, { delete: true }); },
+    'sub-csv': () => downloadSubmissionsCsv(),
+    'save-templates': () => saveInquiryTemplates(),
 
     'add-price': () => { state.sales.priceList.push({ work: '', year: '', size: '', target: null, floor: null, status: 'Available', sell: null, notes: '' }); renderPriceTable(); },
     'del-price': () => { if (confirm('Delete this row?')) { state.sales.priceList.splice(i, 1); renderPriceTable(); } },

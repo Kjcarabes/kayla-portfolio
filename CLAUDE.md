@@ -14,6 +14,8 @@ There *is* local Node tooling (`package.json` + `scripts/`), but it only generat
 content that lives in the repo (optimized images, synced Stripe products); the site
 itself never imports any of it.
 
+Open work and ideas live in `TODO.md` (dated; check it before proposing new features).
+
 Top-level files / dirs the user touches:
 
 - `index.html`, `work.html`, `shop.html`, `about.html`, `blog.html`, `contact.html`, `work-detail.html` — the pages
@@ -236,6 +238,44 @@ sale record, deduped by session id via `sales.importedPayments`.
 Customer addresses live **only** in Stripe and the Worker's private KV — never in
 the repo. `/api/orders` merges Stripe (what/where) + Gelato (progress) + KV (Kayla's
 manual status/tracking/notes) at read time; nothing about a buyer is committed.
+
+### Site forms: relay through the Worker, KV first, honest answer
+
+The inquiry modal, the contact-page message form and both newsletter signups
+(`main.js` → `submitSiteForm`) post to the admin Worker's public `POST /forms/inquiry`
+/ `/forms/newsletter` (outside the `/api/` password gate on purpose — visitors call
+them). The Worker stores the entry in private KV **first**, then relays server-side
+to the same Apps Script URLs the forms always used (read from the live
+`site-settings.json`, so Kayla can change them without a redeploy), and returns a
+real `{ ok }`. Before this the page posted `no-cors` and said "Sent!" unconditionally.
+
+- **KV is the inquiry record now; the Sheet is history.** Each inquiry carries a
+  `source` (`original` = shop modal, `contact` = contact page, `other`) and a `status`
+  (`todo` / `done`). The admin **Inquiries** tab is the manager: filter pills, Mark
+  done / to do, Delete, CSV, and **Reply** — a modal seeded from per-source templates
+  (KV `inquiry:templates`, editable in the tab; `{name}` `{artwork}` `{message}`)
+  that sends via `POST /api/inquiry-reply` → the notify Apps Script, with
+  `renderBuyerEmail` appending "Kayla" + the signature. Templates therefore end at
+  the sign-off. The old Sheet table is a collapsed `<details>` at the bottom and is
+  only fetched when opened, because that call also writes to the mailing list.
+- **The Worker emails Kayla about every inquiry**, to `site-settings.json → email`
+  (`kaylacarabesart@gmail.com`). The inquiries Sheet's Apps Script used to do this
+  and mailed the Sheet owner's inbox (`kjcarabes@gmail.com`) — its `MailApp` line is
+  meant to be deleted, not the Worker's. Newsletter signups get no email.
+- Replies set `replyTo` on the notify payload; the Apps Script's `notifyOne` must
+  pass it on (README §5) or customer replies go to the Sheet owner.
+- `{ ok: true }` when *either* the KV write or the relay succeeded; the visitor is
+  only told it failed when both did. Customer PII lives in KV only, never the repo.
+- Bot filtering is Origin allow-list + honeypot (`website` field, class `.hp`) + a
+  soft 10/hour/IP KV counter. A filled honeypot gets a happy `200` and is dropped.
+- Validation is duplicated client (`isValidEmail` / `isValidPhone` in `main.js`) and
+  server (`validateForm` in `worker.js`) — keep them in step. Phone = 7–15 digits
+  after stripping formatting; the chosen contact preference must have its field; the
+  contact page requires email + message.
+- If `formsRelayUrl` is blank in `site-settings.json` the site falls back to the old
+  direct no-cors post — graceful, never broken, same rule as the image pipeline.
+- Anti-spoofing DNS (added 2026-08-28): `v=spf1 -all` + `_dmarc` `p=reject`. The
+  domain sends no mail (Gmail does), so nothing legitimate is affected.
 
 ### Mobile shop sidebar
 

@@ -334,6 +334,26 @@ It's **off by default**, so nothing changes for your existing work until you swi
 
 ---
 
+## Inquiries (people who write to you through the site)
+
+Every message sent through the site lands in the admin's **Inquiries** tab — whether
+someone clicked **Contact me** on an original, used the form on the Contact page, or
+any other form on the site. You also get an email for each one at
+kaylacarabesart@gmail.com.
+
+- **Filter** by where it came from (Originals / Contact page / Other) and by
+  **To do / Done**. New ones start as To do.
+- **Reply** opens an email that's already written for you (it fills in their name and
+  the painting). Edit it, press **Send email**, and it goes out as you with your
+  signature — the row is marked Done automatically. Anything in `[square brackets]` is
+  a reminder to fill in a price or detail before sending.
+- **Mark done / Mark to do / Delete** are yours to manage the list. Nothing here is
+  ever shown on the site.
+- **Reply templates** (lower on the same tab) are the starting text for each kind of
+  reply — change them whenever you like and press **Save templates**.
+- Older inquiries from before the dashboard kept its own copy are still in the Google
+  Sheet, under **Older inquiries** at the bottom.
+
 ## Updating Your Email & Social Links (Site-Wide!)
 
 Your email and social links appear on every page. Edit them in ONE place and they update everywhere!

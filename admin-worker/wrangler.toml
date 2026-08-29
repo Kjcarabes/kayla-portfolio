@@ -21,6 +21,9 @@ IG_API_BASE = "https://graph.instagram.com/v21.0"
 FB_API_BASE = "https://graph.facebook.com/v21.0"
 # Cloudflare Web Analytics site tag (already public in the site's beacon).
 CF_SITE_TAG = "c924106269a54cb584b22aaef454b221"
+# Where the public site lives. The form relay reads content/site-settings.json from
+# here (the Apps Script URLs + Kayla's email) so those stay editable without a redeploy.
+SITE_URL = "https://www.kaylacarabes.com"
 
 # Secrets (do NOT put these here — set with `wrangler secret put`):
 #   GITHUB_TOKEN            — fine-grained PAT, this repo only, Contents: Read+Write

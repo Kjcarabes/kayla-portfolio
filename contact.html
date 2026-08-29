@@ -101,6 +101,27 @@
 
         <a href="mailto:kaylacarabesart@gmail.com" class="contact-email">kaylacarabesart@gmail.com</a>
 
+        <!-- Message form → admin Inquiries tab ("Contact page"). Handled by initContactForm() in main.js. -->
+        <form class="inquiry-form contact-form" id="contact-form" novalidate>
+            <label><span class="inquiry-form-label">Name *</span>
+                <input type="text" name="name" required autocomplete="name">
+            </label>
+            <label><span class="inquiry-form-label">Email *</span>
+                <input type="email" name="email" required autocomplete="email">
+            </label>
+            <label><span class="inquiry-form-label">Phone (optional)</span>
+                <input type="tel" name="phone" autocomplete="tel">
+            </label>
+            <label><span class="inquiry-form-label">Message *</span>
+                <textarea name="message" rows="5" required></textarea>
+            </label>
+            <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            <p class="form-error" data-contact-error hidden></p>
+            <button type="submit" class="inquiry-form-submit">Send message</button>
+            <p class="form-privacy">Sent to Kayla and never shared.</p>
+        </form>
+        <p class="contact-form-success" id="contact-form-success" hidden>Thanks — your message is on its way. Kayla will reply soon.</p>
+
         <div class="contact-social">
             <!-- Populated by JS from site-settings.json -->
         </div>
