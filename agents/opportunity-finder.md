@@ -61,7 +61,9 @@ Score each candidate on fit before adding it:
 - **Eligible**: she is an **emerging** painter in Seattle, WA — RISD BFA, May 2026,
   early twenties — so "emerging", "early career" and "under 30/35" calls fit; student-only
   ones don't. Medium must include painting, works on paper/printmaking, or be
-  open-media. Geography must match `profile.geography`.
+  open-media. Geography must match `profile.geography`. Juried publications and
+  magazine features count as opportunities: a named juror or editor plus a modest
+  entry fee is a normal magazine call, not pay-to-play.
 - **Deadline is in the future** (at least 3 days away). Nothing more than ~9
   months out unless it's a major residency or grant.
 - **Entry fee is not a filter** — note it in the event so she can decide, but never
@@ -117,8 +119,10 @@ fill space.
    catch what the hubs miss — at least one search per category: Seattle/King County
    calls; Washington/PNW juried shows; funded residencies for painters; grants and
    fellowships for emerging painters; public art and murals in WA; works-on-paper/
-   print calls; Latinx-focused calls and publications; Texas/Houston calls; Mexico
-   City calls; online exhibitions.
+   print calls; Latinx-focused calls and publications; juried painting publications
+   and magazine features (New American Paintings regional issues, Studio Visit,
+   Create!, Fresh Paint, Art Maze, Friend of the Artist, online artist features);
+   Texas/Houston calls; Mexico City calls; online exhibitions.
 
    Then **cast a wider net** — many real calls only ever appear as a post
    somewhere. Run searches like these (vary the wording, include the current
@@ -173,7 +177,7 @@ fill space.
      ```
      Confirm before applying — <where you saw it>
      Why it fits: <one sentence, specific to her work>
-     What: <one sentence — exhibition / residency / grant / public art>
+     What: <one sentence — exhibition / residency / grant / public art / publication>
      Where: <city, state or "online">
      Eligibility: <one line>
      Fee: $<n> (or Free)
