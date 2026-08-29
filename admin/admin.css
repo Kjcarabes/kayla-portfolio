@@ -56,8 +56,10 @@ a { color: var(--primary); }
 #connect-btn { width: 100%; padding: .7rem; font-weight: 600; margin-top: .4rem; }
 
 /* ── Topbar ── */
+/* Topbar + tabs stick together as one unit, so the tabs never need to know the
+   topbar's height (which changes once it wraps on a phone). */
+.chrome { position: sticky; top: 0; z-index: 20; }
 .topbar {
-  position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 1rem;
   padding: .75rem 1.25rem;
   background: var(--panel);
@@ -81,7 +83,6 @@ a { color: var(--primary); }
   padding: .5rem 1.25rem 0;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
-  position: sticky; top: 53px; z-index: 19;
 }
 .tab {
   border: none; background: none; cursor: pointer;
@@ -384,4 +385,133 @@ button { font: inherit; }
   /* One column: nothing left to align, so drop the subgrid and space the fields normally. */
   .field-row { grid-template-columns: 1fr; row-gap: .85rem; }
   .field-row > .field { display: block; grid-row: auto; }
+}
+
+/* ── Phones & small tablets ──────────────────────────────────────────────
+   Everything below only kicks in at ≤ 768px; the desktop layout is untouched. */
+@media (max-width: 768px) {
+  body { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+  .cute-banner { font-size: .85rem; padding: .5rem .75rem; }
+
+  .chrome { padding-top: env(safe-area-inset-top); }
+  .topbar { padding: .55rem .75rem; gap: .5rem; }
+  /* Zero basis so the title never forces the buttons onto a second line once the bar can wrap. */
+  .topbar-title { flex: 1 1 0%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .topbar-spacer { display: none; }
+  /* A shrinkable flex item would wrap "No changes" onto two lines; the title is what gives way. */
+  .dirty-status { font-size: .8rem; white-space: nowrap; flex-shrink: 0; }
+
+  /* 13 tabs can't wrap into a usable nav on a phone: one horizontally scrolling
+     strip instead, with a fade at the right edge so it's obvious more are hidden. */
+  .tabs {
+    flex-wrap: nowrap; gap: 0; padding: 0 .5rem;
+    overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; white-space: nowrap; min-height: 44px; padding: .6rem .75rem; }
+  /* Blank run-out after the last tab so the fade never hides its label. */
+  .tab:last-child { margin-right: 2.5rem; }
+  .chrome::after {
+    content: ''; position: absolute; right: 0; bottom: 1px; width: 2.5rem; height: 44px;
+    background: linear-gradient(to right, rgba(255,255,255,0), var(--panel) 70%);
+    pointer-events: none;
+  }
+
+  .panels, .panels.wide { padding: 1rem .75rem 5rem; overflow-wrap: anywhere; }
+  .section { padding: .9rem .85rem; border-radius: 8px; }
+  details.list-item > :not(summary) { padding-left: .75rem; padding-right: .75rem; }
+  details.list-item > summary { padding: .7rem .75rem; }
+
+  /* iOS zooms the page when a focused control's text is under 16px. */
+  input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea,
+  .cell-input, select.cell-input { font-size: 16px; }
+
+  /* Tap targets */
+  .btn, .add-btn, .list-item-actions button, .topbar button, .connect-wrap button,
+  .modal-actions button, .order-filter { min-height: 40px; }
+  .modal-close { padding: .35rem .6rem; }
+  .dirty-status .linklike { min-height: 0; }
+  .list-item-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .sales-save-bar, .tmpl-lookup { flex-wrap: wrap; }
+
+  /* Wide tables scroll inside their wrapper, never the page. A floor on the
+     inquiries table keeps the Message column readable instead of 8 columns
+     crushing into 300px. */
+  .inq-scroll { max-width: 100%; -webkit-overflow-scrolling: touch; }
+  .inq-table { min-width: 640px; }
+  .inq-table td { max-width: 260px; }
+  /* Auto table layout otherwise hands all the width to the fixed-min inputs and
+     squeezes the text columns to one character per line. */
+  .sales-table { min-width: 900px; overflow-wrap: normal; }
+  .stat-num, .order-filter, .btn, .add-btn, .tab { overflow-wrap: normal; }
+  .an-list-row b { flex-shrink: 0; white-space: nowrap; }
+
+  /* A file input's intrinsic width (~250px) is what pushed the picker off-screen;
+     width:0 + min-width:100% keeps it out of the min-content calculation. */
+  .image-picker { flex-wrap: wrap; }
+  .image-controls { flex: 1 1 160px; min-width: 0; }
+  .image-controls input[type=file] { width: 0; min-width: 100%; }
+
+  .stat-row { gap: .6rem; }
+  .stat { padding: .75rem .9rem; }
+  .stat-num { font-size: 1.5rem; }
+  .an-bars { overflow: hidden; }
+  .cal-embed { height: 70vh; }
+
+  .modal-backdrop { padding: .75rem; }
+  .modal { padding: 1.25rem 1rem; max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); }
+  .modal h2 { font-size: 1.1rem; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions button { flex: 1 1 auto; }
+  .progress-log { max-height: 40vh; }
+  .changes-list { overflow-wrap: anywhere; }
+
+  .toast {
+    left: .75rem; right: .75rem; transform: none; max-width: none; text-align: center;
+    bottom: calc(.75rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 480px) {
+  .cute-banner { font-size: .8rem; }
+  .connect-wrap { margin: 5vh auto; width: calc(100% - 1.5rem); padding: 1.5rem 1.15rem; }
+  .connect-wrap h1 { font-size: 1.25rem; }
+
+  /* The change summary gets its own line under the title/buttons; when there's
+     nothing to report the disabled Publish button already says so, so the
+     "No changes" text is dropped rather than spending a line on it. */
+  .topbar { flex-wrap: wrap; row-gap: .35rem; }
+  .dirty-status { flex: 1 1 100%; order: 5; text-align: right; white-space: normal; }
+  .dirty-status.muted { display: none; }
+
+  .panels, .panels.wide { padding: .75rem .6rem 5rem; }
+  .section { padding: .8rem .7rem; }
+  .section > h3 { font-size: .95rem; }
+  .tab-hint { font-size: .82rem; }
+  .field-checkbox { margin-right: .75rem; }
+  .inq-filters { gap: .4rem .8rem; }
+
+  /* Four action buttons plus a thumbnail and title don't fit one 360px line;
+     actions drop to their own right-aligned row. */
+  .list-item-header { flex-wrap: wrap; }
+  .list-item-header .summary-main { flex: 1 1 100%; }
+  .list-item-header .list-item-actions { width: 100%; }
+  .list-item { padding: .75rem; }
+
+  .cal-row { grid-template-columns: 1fr; gap: .15rem; padding: .6rem .7rem; }
+  .cal-date { display: flex; gap: .5rem; align-items: baseline; white-space: normal; }
+  .cal-list { max-height: 70vh; }
+
+  .orders-bar .topbar-spacer { display: none; }
+  .orders-bar > .btn { flex: 1 1 calc(50% - .25rem); }
+
+  .sales-total-banner { font-size: 1.2rem; padding: .9rem 1rem; border-radius: 10px; }
+  .calc-result strong { font-size: 1.3rem; }
+  .an-bars { gap: 1px; }
+  .an-bar { min-width: 2px; }
+  .image-preview { width: 76px; height: 76px; }
+
+  .modal-backdrop { padding: .5rem; }
+  .modal { max-height: calc(100vh - 1rem); max-height: calc(100dvh - 1rem); }
 }

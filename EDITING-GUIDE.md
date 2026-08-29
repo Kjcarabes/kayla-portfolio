@@ -343,14 +343,14 @@ kaylacarabesart@gmail.com.
 
 - **Filter** by where it came from (Originals / Contact page / Other) and by
   **To do / Done**. New ones start as To do.
-- **Reply** opens an email that's already written for you (it fills in their name and
-  the painting). Edit it, press **Send email**, and it goes out as you with your
-  signature — the row is marked Done automatically. Anything in `[square brackets]` is
-  a reminder to fill in a price or detail before sending.
+- **Reply** opens an email already drafted for that person — it reads their message
+  and knows which painting they asked about (and whether it's still available). Read
+  it through, change anything you like, press **Send email**, and it goes out as you
+  with your signature — the row is marked Done automatically. Anything in
+  `[square brackets]` is a spot for you to fill in (a price, a date). **↻ New draft**
+  gives you a fresh one.
 - **Mark done / Mark to do / Delete** are yours to manage the list. Nothing here is
   ever shown on the site.
-- **Reply templates** (lower on the same tab) are the starting text for each kind of
-  reply — change them whenever you like and press **Save templates**.
 - Older inquiries from before the dashboard kept its own copy are still in the Google
   Sheet, under **Older inquiries** at the bottom.
 
@@ -365,10 +365,9 @@ before a deadline.
 - It only ever **adds** to that one calendar — it never touches your personal
   calendar, never emails anyone, never applies to anything.
 - **What to look for** on the same tab is written in plain English. Change it any
-  time (e.g. "no more fairs", "only Washington", "fees up to $75") and Publish.
+  time (e.g. "no more fairs", "only Washington", "residencies too") and Publish.
 - Don't want something? Add its title to **Not interested** and it won't come back.
   (Deleting the event alone isn't remembered.)
-- First-time setup instructions appear on the tab until the calendar is connected.
 
 ## Updating Your Email & Social Links (Site-Wide!)
 

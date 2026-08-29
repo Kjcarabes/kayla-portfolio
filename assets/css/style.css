@@ -472,10 +472,17 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
     max-width: 400px;
 }
 
+/* The form is the main call to action; email is the quiet alternative under it */
+.contact-layout p.contact-alt {
+    margin: var(--spacing-md) 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+}
+
 .contact-email {
-    font-size: 1.25rem;
+    color: var(--color-text);
     border-bottom: 1px solid var(--color-text);
-    padding-bottom: 0.25rem;
+    padding-bottom: 0.1rem;
     transition: opacity 0.2s;
 }
 
@@ -487,7 +494,6 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
 .contact-form {
     width: 100%;
     max-width: 440px;
-    margin-top: var(--spacing-md);
     text-align: left;
 }
 
@@ -500,7 +506,7 @@ body.has-auction-banner .hero { height: calc(100vh - var(--banner-h)); }
 }
 
 .contact-social {
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-md);
     display: flex;
     gap: var(--spacing-md);
 }

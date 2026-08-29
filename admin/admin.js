@@ -1968,7 +1968,7 @@ function renderInquiries() {
   root.innerHTML = `
     <div class="section">
       <h3>Inquiries</h3>
-      <p class="tab-hint" style="margin:0 0 .8rem">Everyone who has written to you through the site. <b>Reply</b> opens a pre-written email you can edit before it goes — it's sent as you, with your signature, and marks the row done.</p>
+      <p class="tab-hint" style="margin:0 0 .8rem">Everyone who has written to you through the site. <b>Reply</b> opens an email drafted for that person — edit anything, then send. It goes out as you, with your signature, and marks the row done.</p>
       <div class="inq-filters">
         <span class="inq-filter-group">${[['all', 'All'], ['original', 'Originals'], ['contact', 'Contact page'], ['other', 'Other']].map(([k, l]) =>
           `<button class="btn" data-action="inq-filter" data-group="source" data-which="${k}">${l}</button>`).join('')}</span>
@@ -1980,11 +1980,6 @@ function renderInquiries() {
         </span>
       </div>
       <div id="sub-table">Loading…</div>
-    </div>
-    <div class="section">
-      <h3>Reply templates</h3>
-      <p class="tab-hint" style="margin:0 0 .8rem">The starting text for each kind of reply. <code>{name}</code>, <code>{artwork}</code> and <code>{message}</code> are filled in for you. "Kayla" and your signature are added at the end automatically — don't type them here.</p>
-      <div id="inq-templates" class="muted">Loading…</div>
     </div>
     <details class="section" id="inq-sheet">
       <summary>Older inquiries (Google Sheet)</summary>
@@ -2015,9 +2010,7 @@ async function loadSubmissions() {
     const data = await r.json();
     if (!r.ok || !data.ok) throw new Error(data.error || `Server error ${r.status}`);
     state.submissions = data.entries || [];
-    if (data.templates) state.inqTemplates = data.templates;
     renderSubmissionsTable();
-    renderInquiryTemplates();
     renderHeldSignups();
   } catch (err) {
     if (table) { table.textContent = `Couldn’t load: ${err.message}`; table.style.color = 'var(--danger)'; }
@@ -2066,43 +2059,49 @@ function renderSubmissionsTable() {
   </table></div>`;
 }
 
-function renderInquiryTemplates() {
-  const box = $('#inq-templates');
+// Plain starting text for when automatic drafting isn't set up or fails.
+function fallbackDraft(e) {
+  const first = (e.name || '').trim().split(/\s+/)[0] || 'there';
+  const about = e.productTitle ? ` about "${e.productTitle}"` : '';
+  return `Hi ${first},\n\nThank you for your message${about} — it's lovely to hear from you.\n\n[Your reply here.]\n\nWarmly,`;
+}
+
+// Asks the Worker for a Claude-written draft tailored to this inquiry. The
+// textarea is locked while drafting so a half-typed edit can't be overwritten.
+async function draftReply(key) {
+  const box = $('#rp-body');
+  const note = $('#rp-draft-note');
+  const btn = $('#rp-redraft');
   if (!box) return;
-  const t = state.inqTemplates || {};
-  box.className = '';
-  box.innerHTML = `${['original', 'contact', 'other'].map(k => `
-    <div class="field"><label class="field-label">${escapeHtml(INQ_SOURCE_LABEL[k])} <span class="muted">— ${escapeHtml(INQ_SOURCE_HINT[k])}</span></label>
-      <textarea rows="6" spellcheck="true" data-tmpl="${k}">${escapeHtml(t[k] || '')}</textarea></div>`).join('')}
-    <button class="btn primary" data-action="save-templates">Save templates</button>
-    <span id="tmpl-status" class="muted" style="margin-left:.6rem"></span>`;
-}
-
-async function saveInquiryTemplates() {
-  const templates = {};
-  $$('[data-tmpl]').forEach(el => { templates[el.dataset.tmpl] = el.value; });
-  const status = $('#tmpl-status');
-  if (status) status.textContent = 'Saving…';
+  const e = (state.submissions || []).find(x => x.key === key);
+  box.disabled = true; box.value = 'Writing a draft for this message…';
+  if (btn) btn.disabled = true;
+  if (note) note.textContent = '';
   try {
-    const data = await submissionsSave({ templates });
-    state.inqTemplates = data.templates || templates;
-    if (status) status.textContent = 'Saved ✓';
+    const r = await fetch(`${state.workerUrl}/api/inquiry-draft`, {
+      method: 'POST',
+      headers: { 'X-Admin-Secret': state.secret, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw Object.assign(new Error(data.error || `Server error ${r.status}`), { notConfigured: data.notConfigured });
+    box.value = data.draft;
+    if (note) note.textContent = 'Drafted for you — read it through and change anything before sending.';
   } catch (err) {
-    if (status) { status.textContent = `Couldn’t save: ${err.message}`; status.style.color = 'var(--danger)'; }
+    box.value = fallbackDraft(e || {});
+    if (note) note.textContent = err.notConfigured
+      ? 'Automatic drafts aren’t set up yet (ANTHROPIC_API_KEY on the Worker) — starting from a plain template.'
+      : `Couldn’t write a draft (${err.message}) — starting from a plain template.`;
+  } finally {
+    box.disabled = false;
+    if (btn) btn.disabled = false;
+    box.focus();
   }
-}
-
-function fillTemplate(tmpl, e) {
-  return String(tmpl || '')
-    .replace(/\{name\}/g, (e.name || '').trim().split(/\s+/)[0] || 'there')
-    .replace(/\{artwork\}/g, e.productTitle || 'the piece')
-    .replace(/\{message\}/g, e.message || '');
 }
 
 function showReplyModal(key) {
   const e = (state.submissions || []).find(x => x.key === key);
   if (!e) return;
-  const src = e.source || 'other';
   const subject = e.productTitle ? `Re: your inquiry about “${e.productTitle}”` : 'Re: your message on kaylacarabes.com';
   const replyTo = getByPath(state.files[FILE.settings] || {}, 'email') || 'kaylacarabesart@gmail.com';
   const root = $('#modal-root');
@@ -2114,7 +2113,8 @@ function showReplyModal(key) {
 ${escapeHtml(e.message || '(no message)')}</div>
       <div class="field"><label class="field-label">To</label><input type="email" id="rp-to" value="${escapeAttr(e.email || '')}" spellcheck="false"></div>
       <div class="field"><label class="field-label">Subject</label><input type="text" id="rp-subject" value="${escapeAttr(subject)}" spellcheck="true"></div>
-      <div class="field"><label class="field-label">Message</label><textarea id="rp-body" rows="11" spellcheck="true">${escapeHtml(fillTemplate((state.inqTemplates || {})[src], e))}</textarea></div>
+      <div class="field"><label class="field-label">Message <button type="button" class="btn" id="rp-redraft" style="margin-left:.6rem;font-weight:400">↻ New draft</button></label><textarea id="rp-body" rows="11" spellcheck="true"></textarea></div>
+      <div class="field-hint" id="rp-draft-note"></div>
       <div class="field-hint">Goes out as “Kayla Carabes” with your signature underneath. Their reply comes back to ${escapeHtml(replyTo)}.</div>
       <p id="rp-error" class="error-text" hidden></p>
       <div class="modal-actions">
@@ -2125,7 +2125,8 @@ ${escapeHtml(e.message || '(no message)')}</div>
   $('#rp-cancel').onclick = () => { root.innerHTML = ''; };
   $('#rp-x').onclick = () => { root.innerHTML = ''; };
   $('#rp-send').onclick = () => sendInquiryReply(key);
-  $('#rp-body').focus();
+  $('#rp-redraft').onclick = () => draftReply(key);
+  draftReply(key);
 }
 
 async function sendInquiryReply(key) {
@@ -2249,16 +2250,7 @@ function renderCalendar() {
       <div id="cal-list" class="cal-list">Loading…</div>` : ''}
       ${embed
         ? `<details class="cal-embed-wrap" open><summary>Calendar view</summary><div class="cal-embed"><iframe src="${escapeAttr(embed)}" title="Opportunities calendar" frameborder="0" scrolling="no"></iframe></div></details>`
-        : `<div class="cal-setup">
-            <b>One-time setup (5 minutes):</b>
-            <ol>
-              <li>In Google Calendar (signed in as kaylacarabesart@gmail.com) → <b>+</b> next to "Other calendars" → <b>Create new calendar</b> → name it <b>Kayla — Opportunities</b>.</li>
-              <li>Open its settings → <b>Access permissions</b> → tick <b>Make available to public</b> → "See all event details". (This calendar only ever holds public open calls — nothing personal.)</li>
-              <li>Same settings page → <b>Other notifications</b> → set <b>New events</b> to <b>Email</b>. Under <b>Event notifications</b> add <b>Email, 14 days before</b> and <b>Email, 3 days before</b>.</li>
-              <li>Scroll to <b>Integrate calendar</b> → copy the <b>Calendar ID</b> and paste it below, then <b>Publish</b>.</li>
-            </ol>
-          </div>`}
-      ${input(f, 'calendarId', 'Calendar ID', { spellcheck: false, placeholder: 'xxxxxxxx@group.calendar.google.com', hint: 'From Google Calendar → the calendar’s settings → Integrate calendar.' })}
+        : `<div class="cal-setup">The calendar isn’t connected yet — Jason sets its ID in <code>content/opportunities.json</code>.</div>`}
     </div>
 
     <div class="section">
@@ -2267,12 +2259,7 @@ function renderCalendar() {
       ${textarea(f, 'profile.summary', 'About you (as the finder should understand it)', { rows: 3 })}
       ${textarea(f, 'profile.lookingFor', 'Opportunities you want', { rows: 3 })}
       ${textarea(f, 'profile.geography', 'Where', { rows: 2 })}
-      ${input(f, 'profile.maxEntryFee', 'Max entry fee ($)', { type: 'number' })}
       ${textarea(f, 'profile.avoid', 'Skip anything like this', { rows: 3 })}
-      <div class="field-row">
-        ${input(f, 'limits.maxNewEventsPerRun', 'Safety ceiling per week', { type: 'number', hint: 'Not a target: everything that fits is added, up to this. Over it, the soonest deadlines go first and the rest come back next week.' })}
-        ${input(f, 'limits.maxNewEventsFirstRun', 'Ceiling for the very first run', { type: 'number', hint: 'Higher, because the first run clears a backlog onto an empty calendar.' })}
-      </div>
     </div>
 
     <div class="section">
@@ -2498,7 +2485,6 @@ document.addEventListener('click', (e) => {
     'sub-status': () => saveSubmission(btn.dataset.key, { status: btn.dataset.status }),
     'sub-del': () => { if (confirm('Delete this inquiry? This can’t be undone.')) saveSubmission(btn.dataset.key, { delete: true }); },
     'sub-csv': () => downloadSubmissionsCsv(),
-    'save-templates': () => saveInquiryTemplates(),
 
     'add-price': () => { state.sales.priceList.push({ work: '', year: '', size: '', target: null, floor: null, status: 'Available', sell: null, notes: '' }); renderPriceTable(); },
     'del-price': () => { if (confirm('Delete this row?')) { state.sales.priceList.splice(i, 1); renderPriceTable(); } },

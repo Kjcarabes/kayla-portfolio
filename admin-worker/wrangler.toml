@@ -42,6 +42,9 @@ SITE_URL = "https://www.kaylacarabes.com"
 #   STRIPE_WEBHOOK_SECRET   — (optional) whsec_… for POST /stripe-webhook
 #   GELATO_WEBHOOK_TOKEN    — (optional) shared token in the /gelato-webhook URL; Gelato
 #                             doesn't sign its webhooks, so this token IS the auth
+#   ANTHROPIC_API_KEY       — (optional) Claude API key; the Inquiries tab's "Reply"
+#                             opens with a draft written for that inquiry. Without it
+#                             the reply box starts from a plain template.
 #   ORDER_NOTIFY_URL        — (optional) Apps Script /exec URL. ONLY set this once the
 #                             script handles action:'notify' — it falls through to a
 #                             full mailing-list send otherwise. See README §5.

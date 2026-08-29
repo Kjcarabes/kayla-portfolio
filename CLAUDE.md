@@ -252,11 +252,13 @@ real `{ ok }`. Before this the page posted `no-cors` and said "Sent!" unconditio
 - **KV is the inquiry record now; the Sheet is history.** Each inquiry carries a
   `source` (`original` = shop modal, `contact` = contact page, `other`) and a `status`
   (`todo` / `done`). The admin **Inquiries** tab is the manager: filter pills, Mark
-  done / to do, Delete, CSV, and **Reply** — a modal seeded from per-source templates
-  (KV `inquiry:templates`, editable in the tab; `{name}` `{artwork}` `{message}`)
-  that sends via `POST /api/inquiry-reply` → the notify Apps Script, with
-  `renderBuyerEmail` appending "Kayla" + the signature. Templates therefore end at
-  the sign-off. The old Sheet table is a collapsed `<details>` at the bottom and is
+  done / to do, Delete, CSV, and **Reply** — a modal whose body is a draft written
+  for that inquiry by Claude (`POST /api/inquiry-draft`: Worker-side raw fetch to
+  the Messages API, `claude-opus-5`, artwork facts from `works.json` so it can't
+  invent availability; falls back to a plain template without `ANTHROPIC_API_KEY`)
+  and sends via `POST /api/inquiry-reply` → the notify Apps Script, with
+  `renderBuyerEmail` appending "Kayla" + the signature. Drafts therefore end at the
+  closing line, never with her name. The old Sheet table is a collapsed `<details>` at the bottom and is
   only fetched when opened, because that call also writes to the mailing list.
 - **The Worker emails Kayla about every inquiry**, to `site-settings.json → email`
   (`kaylacarabesart@gmail.com`). The inquiries Sheet's Apps Script used to do this
@@ -279,15 +281,25 @@ real `{ ok }`. Before this the page posted `no-cors` and said "Sent!" unconditio
 
 ### Opportunity finder / job watcher: read-only routines, calendar is the state
 
-Two scheduled Claude Code cloud routines run the prompts in `agents/*.md` against a
-checkout of this repo and add events to a dedicated public Google Calendar
+Two scheduled Claude Code cloud routines run the prompts in `agents/*.md` (fetched
+from the live site, not a checkout) and add events to a dedicated public Google Calendar
 (`content/opportunities.json → calendarId`, edited in the admin Calendar tab). The
 user asked for this to be "on guardrails heavily", and the shape follows from that:
 
-- The routines have **no write tools and no Gmail** — Read/Glob/Grep/WebSearch/
-  WebFetch + the Google Calendar connector. They can't commit, push, run commands,
-  or send mail. Don't add `Bash`/`Write`/`Edit` or an email connector to "improve"
-  them; notifications come from Google Calendar's own per-calendar settings.
+- Real walls vs. asks. **Enforced:** the calendar connector is restricted to
+  `list_calendars/list_events/get_event/create_event` via `permitted_tools` (no
+  delete/update tool exists in the session); the connector's Google account is a
+  throwaway that can see only the Opportunities calendar; no Gmail connector.
+  **No repo access:** the routines have no git source — they fetch the prompt and
+  the content JSON from the live site (`https://www.kaylacarabes.com/agents/…`,
+  `/content/…`). The Claude GitHub App is uninstalled on purpose; `allowed_tools`
+  in the routine config does not actually remove Bash from cloud sessions, so
+  removing access was the only real wall. Edits to `agents/*.md` reach the routines
+  only after a push + Pages deploy. Don't add an email connector to
+  "improve" them; notifications come from Google Calendar's per-calendar settings.
+- The cloud environment's default "Trusted" egress blocks `WebFetch` on arts sites;
+  the routine then (correctly) creates nothing. The environment needs general web
+  access for the finder to verify pages — that's a claude.ai environment setting.
 - The calendar is the "seen" set (list before create) and `notInterested` is the
   reject list. No KV, no ledger, no repo writes. Deleting an event alone does not
   stop it resurfacing — that's why the admin tab has the Not-interested list.

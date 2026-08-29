@@ -532,10 +532,11 @@ URLs in `content/site-settings.json` (read from the live site, so editing them
 there is enough), and returns a real yes/no — the page only says "Sent!" when it was.
 
 **Inquiries** land in the admin's Inquiries tab, grouped by source (`original`,
-`contact`, `other`), with To do / Done / Delete, editable reply templates (KV key
-`inquiry:templates`) and a **Reply** button that sends through the `notify` Apps
-Script (`POST /api/inquiry-reply`) with the signature appended and `replyTo` set to
-the site's public email. The Worker also emails Kayla about every inquiry, to the
+`contact`, `other`), with To do / Done / Delete and a **Reply** button. Reply opens
+with a draft written for that inquiry by Claude (`POST /api/inquiry-draft`, needs
+the `ANTHROPIC_API_KEY` secret; a plain template otherwise) and sends through the
+`notify` Apps Script (`POST /api/inquiry-reply`) with the signature appended and
+`replyTo` set to the site's public email. The Worker also emails Kayla about every inquiry, to the
 `email` in `site-settings.json` — so the inquiries Sheet's own `MailApp.sendEmail`
 line should be **deleted** (it mails the Sheet owner's inbox, and she'd get two).
 
@@ -555,16 +556,34 @@ Their prompts are `agents/opportunity-finder.md` and `agents/job-watcher.md`; th
 profile they read and the "not interested" list are `content/opportunities.json`,
 edited in the admin's **Calendar** tab, which also embeds the calendar.
 
-Guardrails (deliberate — keep them):
+Routine IDs: finder `trig_015xYnXohxD62S4JTYabBfR5` (Mon 9am Seattle), job watcher
+`trig_013aQa9cgiobCWoymt43nQyE` (every 2 days, 8am). Manage at claude.ai/code/routines.
 
-- **Tools:** `Read`, `Glob`, `Grep`, `WebSearch`, `WebFetch` + the Google Calendar
-  connector only. No `Bash`/`Write`/`Edit` → the routine cannot commit, push, or run
-  commands. No Gmail connector → it cannot send mail.
-- **Calendar:** a separate, public "Kayla — Opportunities" calendar (its ID in
-  `opportunities.json`). The prompt forbids touching any other calendar, forbids
-  editing/deleting events, and has a per-run safety ceiling (`limits.maxNewEventsPerRun`, default 12; `maxNewEventsFirstRun` 40 for the backlog on an empty calendar — not targets; over the ceiling the soonest deadlines win and the rest resurface next run).
-  Google's own per-calendar notifications ("new events" + 14/3-day reminders) do the
-  emailing, so no email scope is needed anywhere.
+Guardrails — what is actually enforced vs. what is only asked for:
+
+- **Calendar connector is list/create only** (`permitted_tools` on the routine's
+  `mcp_connections`: `list_calendars, list_events, get_event, create_event`). There is
+  no update/delete tool in the session at all — this is a real wall.
+- **The connector's Google account only sees one calendar**: a throwaway Google
+  account that has "Kayla — Opportunities" shared to it with "make changes to
+  events". Even the full Calendar OAuth scope then covers exactly one calendar.
+- **No Gmail connector** → it cannot send mail. Google's per-calendar notifications
+  ("new events" + 14/3-day reminders) do the emailing.
+- **No repository access at all.** The routines have no git source; they fetch
+  `agents/*.md` and `content/opportunities.json` / `about.json` / `works.json` from
+  the **live site** (GitHub Pages serves the whole repo). The Claude GitHub App is
+  not needed and should stay uninstalled — nothing Claude does can reach the repo.
+  Consequence: a change to those files takes effect after the next push + Pages
+  deploy (Kayla's admin Publish does exactly that).
+- **Prompt-level:** one named calendar, create-only, per-run safety ceiling
+  (`limits.maxNewEventsPerRun` 20; `maxNewEventsFirstRun` 40 for the first backlog —
+  ceilings, not targets; soonest deadlines win, the rest resurface next run), stop
+  after two tool errors, never invent. The first test run proved the stop rules work:
+  with page fetches blocked it created nothing and reported why.
+- **Network:** the cloud environment's default "Trusted" egress policy blocks
+  `WebFetch` for arts-org sites, and the routine refuses to add anything it couldn't
+  open. The environment (claude.ai/code → environments → Default) must allow general
+  web access, or the routine can search but never verify.
 - **State:** the calendar itself is the "seen" list (the routine lists existing
   events before adding) plus `notInterested` in the JSON. Nothing is written to KV or
   the repo by the routine.
@@ -572,12 +591,11 @@ Guardrails (deliberate — keep them):
   2 days. Model `claude-sonnet-5`. Usage draws on Jason's Claude subscription, not an
   API key; runs are visible as sessions at claude.ai/code.
 
-Setup: install the Claude GitHub App on this repo (read is all the routine needs),
-connect the **Google Calendar** connector at claude.ai/customize/connectors (signed
+Setup: connect the **Google Calendar** connector at claude.ai/customize/connectors (signed
 in to the Google account that owns the calendar), create the calendar per the
 Calendar tab's instructions, paste its ID, Publish. Then create the routines with
-the saved prompt "Read `agents/opportunity-finder.md` (or `job-watcher.md`) and
-follow it exactly." Trigger one manual run and read its transcript before trusting
+the saved prompt "Fetch https://www.kaylacarabes.com/agents/opportunity-finder.md
+(or `job-watcher.md`) and follow it exactly" and no repository source. Trigger one manual run and read its transcript before trusting
 the schedule.
 
 ## Local dev

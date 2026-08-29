@@ -1,13 +1,12 @@
 {
-  "_help": "Feeds the weekly 'opportunity finder' and 'art-job watcher' routines. Edit it in the admin's Calendar tab. calendarId is the dedicated public Google Calendar the routines write to (Settings → Integrate calendar → Calendar ID). Everything under profile/jobs is plain English the routine reads to judge fit. notInterested: paste an event title or link here and it will never be suggested again.",
+  "_help": "Feeds the weekly 'opportunity finder' and 'art-job watcher' routines. profile / jobs / notInterested are edited in the admin's Calendar tab (plain English the routine reads to judge fit). calendarId and limits are developer settings, edited here only: calendarId is the dedicated PUBLIC Google Calendar the routines write to (its settings → Integrate calendar → Calendar ID — public, not a secret); limits are per-run safety ceilings, not targets.",
   "calendarId": "17665aac47214c651b8a7b1ccaa3dcd722b839157ce2a971c4109f8a0ae63f52@group.calendar.google.com",
   "timezone": "America/Los_Angeles",
   "profile": {
-    "summary": "Kayla Carabes is an oil painter based in Seattle, WA. Born in Houston, TX. BFA in Painting from RISD. Her work ranges from small panels to 6-foot canvases; figurative and narrative, with a strong sense of colour and humour.",
-    "lookingFor": "Juried group exhibitions, open calls, artist residencies (especially funded), grants and fellowships for painters, public-art and mural commissions, art fairs with reasonable booth fees, gallery calls for representation.",
-    "geography": "Seattle and the Puget Sound area first; Washington state and the Pacific Northwest; national (US) calls that accept shipped or digital submissions; online/virtual exhibitions. Texas-based calls are fine (Houston roots).",
-    "maxEntryFee": 50,
-    "avoid": "Vanity galleries and pay-to-play 'international art prize' sites with vague juries. Anything asking for exclusive rights or the artist to buy back work. Student-only or under-25 calls. Digital/NFT-only platforms. Calls whose deadline has already passed."
+    "summary": "Kayla Julianna Carabes (b. 2002, Houston, TX) is an emerging painter based in Seattle, WA. She earned her BFA in Painting from the Rhode Island School of Design in May 2026. Her work is figurative and narrative, mostly oil on canvas, panel or found wood, ranging from 6x3-inch studies to 6x5-foot canvases, with a distinct sense of colour and humour. Recurring subjects: animals as characters (a raccoon called Jimothy, sun bears, armadillos, horses, birds, cats), forests and landscapes seen from above, city walks, family memory (a portrait of her late grandmother). Her practice treats natural environments as sites of memory, transformation and storytelling and draws on intergenerational knowledge and ecological research. She also makes copperplate etchings (intaglio), collage, and experimental works in wood ash, animal-skin glue and soft pastel, and works across design. Track record: 1st place / People's Choice in Seattle's Jimothy art competition, exhibited at Seattle City Hall (Aug-Sep 2026); RISD Senior Painting Showcase and Painting Triennial (Woods Gerry Gallery); Memorial Hall and Gelman Gallery shows (RISD); Invierno Insolito at Luzy Studios, Mexico City (2026); 134 Collaborative (2025); Nativo II at Hardy and Nance Studios, Houston (2023). Published in SOMOS, Brown University's Latinx literary magazine (several issues), and on the cover of The College Hill Independent.",
+    "lookingFor": "Emerging-artist grants, fellowships and awards (she is in her early twenties and a 2026 graduate, so 'emerging', 'early career' and 'under 30/35' calls are a strong fit). Juried group exhibitions and open calls for painting or open media; residencies, especially funded ones; public-art and mural commissions; print/works-on-paper calls (etching); calls from Latinx-focused organisations and publications; gallery calls for representation; art fairs with reasonable booth fees.",
+    "geography": "Seattle and the Puget Sound area first; Washington state and the Pacific Northwest; national (US) calls that accept shipped or digital submissions; online/virtual exhibitions. Texas calls are welcome (Houston roots), and Mexico City opportunities are worth including given her recent show there. Skip anything that requires living outside the US.",
+    "avoid": "Vanity galleries and pay-to-play 'international art prize' sites with vague juries. Anything asking for exclusive rights or the artist to buy back work. Student-only calls (she has graduated). Digital/NFT-only platforms. Calls whose deadline has already passed."
   },
   "jobs": {
     "enabled": true,
@@ -16,7 +15,7 @@
     "avoid": "Unpaid positions, commission-only sales roles, anything that is really a franchise or MLM."
   },
   "limits": {
-    "maxNewEventsPerRun": 12,
+    "maxNewEventsPerRun": 20,
     "maxNewEventsFirstRun": 40
   },
   "notInterested": []
