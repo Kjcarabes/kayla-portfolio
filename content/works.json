@@ -3,6 +3,17 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, heroFeature",
   "works": [
     {
+      "id": "sulfur-pool",
+      "title": "Sulfur Pool",
+      "date": "2026-09-09",
+      "category": "Paintings",
+      "image": "assets/images/fullsizerender.jpg",
+      "medium": "Oil on Canvas",
+      "size": "17in x 17in",
+      "heroFeature": false,
+      "originalStatus": "available"
+    },
+    {
       "id": "jimothy-takes-seattle",
       "title": "Jimothy Takes Seattle",
       "date": "2026-07-26",
