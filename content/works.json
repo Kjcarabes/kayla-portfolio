@@ -25,7 +25,8 @@
         1200,
         1600,
         3348
-      ]
+      ],
+      "heroOrder": 4
     },
     {
       "id": "jimothy-takes-seattle",
@@ -80,7 +81,8 @@
         1200,
         1600,
         3850
-      ]
+      ],
+      "heroOrder": 1
     },
     {
       "id": "25 portrait",
@@ -120,7 +122,8 @@
         1200,
         1600,
         2457
-      ]
+      ],
+      "heroOrder": 2
     },
     {
       "id": "dolly",
@@ -144,7 +147,8 @@
       "detail_images": [
         "assets/images/img_5335.jpg",
         "assets/images/img_5338.jpg"
-      ]
+      ],
+      "heroOrder": 3
     },
     {
       "id": "side of road copy.jpg",
@@ -164,7 +168,8 @@
         1200,
         1600,
         4632
-      ]
+      ],
+      "heroOrder": 5
     },
     {
       "id": "sparkle-face",
@@ -183,7 +188,8 @@
         1200,
         1600,
         4284
-      ]
+      ],
+      "heroOrder": 6
     },
     {
       "id": "xochi",
@@ -214,7 +220,8 @@
         1200,
         1600,
         4077
-      ]
+      ],
+      "heroOrder": 7
     },
     {
       "id": "moss-hall",
@@ -236,7 +243,8 @@
         1200,
         1600,
         3302
-      ]
+      ],
+      "heroOrder": 8
     },
     {
       "id": "garden",
@@ -256,7 +264,8 @@
         1200,
         1600,
         2727
-      ]
+      ],
+      "heroOrder": 9
     },
     {
       "id": "horses",
@@ -275,7 +284,8 @@
         1200,
         1600,
         5253
-      ]
+      ],
+      "heroOrder": 10
     },
     {
       "id": "voyuer",
@@ -723,7 +733,8 @@
         1200,
         1600,
         4676
-      ]
+      ],
+      "heroOrder": 11
     },
     {
       "id": "Grey sky",
