@@ -10,8 +10,14 @@
       "image": "assets/images/fullsizerender.jpg",
       "medium": "Oil on Canvas",
       "size": "17in x 17in",
-      "heroFeature": false,
+      "heroFeature": true,
       "originalStatus": "available",
+      "detail_images": [
+        "assets/images/img_5707.jpg",
+        "assets/images/img_5685.jpg",
+        "assets/images/img_5756.jpg",
+        "assets/images/img_5686.jpg"
+      ],
       "aspectRatio": 1.0093,
       "widths": [
         400,
