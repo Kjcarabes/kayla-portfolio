@@ -316,6 +316,17 @@
       "workId": "shell"
     },
     {
+      "id": "print:sulfur-pool",
+      "title": "Sulfur Pool",
+      "category": "Prints",
+      "price": 0,
+      "image": "assets/images/fullsizerender.jpg",
+      "description": "Print",
+      "stripeLink": "",
+      "sold": true,
+      "workId": "sulfur-pool"
+    },
+    {
       "id": "print:bears",
       "title": "Sun Bears",
       "category": "Prints",
@@ -406,5 +417,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-09-09T20:36:03.237Z"
+  "_lastSync": "2026-09-09T23:09:22.906Z"
 }
