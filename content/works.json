@@ -14,6 +14,14 @@
       "originalStatus": "available",
       "detail_images": [
         "assets/images/img_7388.jpeg"
+      ],
+      "aspectRatio": 1.3986,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        5123
       ]
     },
     {
