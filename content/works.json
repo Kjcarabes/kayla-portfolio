@@ -3,6 +3,17 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, heroFeature",
   "works": [
     {
+      "id": "duck",
+      "title": "Duck",
+      "date": "2026-10-03",
+      "category": "Paintings",
+      "image": "assets/images/img_7394.jpeg",
+      "medium": "Oil on Canvas",
+      "size": "5in x 7in",
+      "heroFeature": false,
+      "originalStatus": "available"
+    },
+    {
       "id": "sulfur-pool",
       "title": "Sulfur Pool",
       "date": "2026-09-09",
