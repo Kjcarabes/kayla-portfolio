@@ -11,7 +11,10 @@
       "medium": "Oil on Canvas",
       "size": "5in x 7in",
       "heroFeature": false,
-      "originalStatus": "available"
+      "originalStatus": "available",
+      "detail_images": [
+        "assets/images/img_7388.jpeg"
+      ]
     },
     {
       "id": "sulfur-pool",
