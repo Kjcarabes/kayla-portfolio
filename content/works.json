@@ -3,6 +3,17 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, heroFeature",
   "works": [
     {
+      "id": "sweet-as",
+      "title": "Sweet as",
+      "date": "2026-11-02",
+      "category": "Paintings",
+      "image": "assets/images/img_9914.jpg",
+      "size": "24in x 30in",
+      "heroFeature": false,
+      "originalStatus": "nfs",
+      "printPrice": 15
+    },
+    {
       "id": "duck",
       "title": "Duck",
       "date": "2026-10-03",
