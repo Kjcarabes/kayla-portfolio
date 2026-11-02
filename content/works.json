@@ -11,7 +11,15 @@
       "size": "24in x 30in",
       "heroFeature": false,
       "originalStatus": "nfs",
-      "printPrice": 15
+      "printPrice": 15,
+      "aspectRatio": 1.2608,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4539
+      ]
     },
     {
       "id": "duck",

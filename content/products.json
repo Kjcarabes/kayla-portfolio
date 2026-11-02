@@ -349,6 +349,17 @@
       "workId": "bears"
     },
     {
+      "id": "prod_VYZqyWsCcc4a7E",
+      "title": "Sweet as",
+      "category": "Prints",
+      "price": 15,
+      "image": "assets/images/img_9914.jpg",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/bJefZhaUO3oq8dL9uWe7m0s",
+      "sold": false,
+      "workId": "sweet-as"
+    },
+    {
       "id": "print:trees",
       "title": "Talking trees",
       "category": "Prints",
@@ -428,5 +439,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-11-02T14:58:44.374Z"
+  "_lastSync": "2026-11-02T21:22:25.175Z"
 }
