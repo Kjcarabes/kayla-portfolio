@@ -9,7 +9,7 @@
       "category": "Paintings",
       "image": "assets/images/img_9914.jpg",
       "size": "24in x 30in",
-      "heroFeature": false,
+      "heroFeature": true,
       "originalStatus": "nfs",
       "printPrice": 15,
       "aspectRatio": 1.2608,
@@ -19,6 +19,12 @@
         1200,
         1600,
         4539
+      ],
+      "detail_images": [
+        "assets/images/img_9882.heic",
+        "assets/images/img_9904.heic",
+        "assets/images/img_9857.heic",
+        "assets/images/img_9876.heic"
       ]
     },
     {
