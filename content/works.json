@@ -25,7 +25,8 @@
         "assets/images/img_9904.heic",
         "assets/images/img_9857.heic",
         "assets/images/img_9876.heic"
-      ]
+      ],
+      "heroOrder": 2
     },
     {
       "id": "duck",
@@ -74,7 +75,7 @@
         1600,
         3348
       ],
-      "heroOrder": 4
+      "heroOrder": 5
     },
     {
       "id": "jimothy-takes-seattle",
@@ -171,7 +172,7 @@
         1600,
         2457
       ],
-      "heroOrder": 2
+      "heroOrder": 3
     },
     {
       "id": "dolly",
@@ -196,7 +197,7 @@
         "assets/images/img_5335.jpg",
         "assets/images/img_5338.jpg"
       ],
-      "heroOrder": 3
+      "heroOrder": 4
     },
     {
       "id": "side of road copy.jpg",
@@ -217,7 +218,7 @@
         1600,
         4632
       ],
-      "heroOrder": 5
+      "heroOrder": 6
     },
     {
       "id": "sparkle-face",
@@ -237,7 +238,7 @@
         1600,
         4284
       ],
-      "heroOrder": 6
+      "heroOrder": 7
     },
     {
       "id": "xochi",
@@ -269,7 +270,7 @@
         1600,
         4077
       ],
-      "heroOrder": 7
+      "heroOrder": 8
     },
     {
       "id": "moss-hall",
@@ -292,7 +293,7 @@
         1600,
         3302
       ],
-      "heroOrder": 8
+      "heroOrder": 9
     },
     {
       "id": "garden",
@@ -313,7 +314,7 @@
         1600,
         2727
       ],
-      "heroOrder": 9
+      "heroOrder": 10
     },
     {
       "id": "horses",
@@ -333,7 +334,7 @@
         1600,
         5253
       ],
-      "heroOrder": 10
+      "heroOrder": 11
     },
     {
       "id": "voyuer",
@@ -782,7 +783,7 @@
         1600,
         4676
       ],
-      "heroOrder": 11
+      "heroOrder": 12
     },
     {
       "id": "Grey sky",
