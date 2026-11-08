@@ -125,17 +125,6 @@
       "workId": "dolly"
     },
     {
-      "id": "print:duck",
-      "title": "Duck",
-      "category": "Prints",
-      "price": 0,
-      "image": "assets/images/img_7394.jpeg",
-      "description": "Print",
-      "stripeLink": "",
-      "sold": true,
-      "workId": "duck"
-    },
-    {
       "id": "print:garden",
       "title": "Grandma's Garden",
       "category": "Prints",
@@ -439,5 +428,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-11-08T04:53:46.451Z"
+  "_lastSync": "2026-11-08T05:24:20.354Z"
 }
