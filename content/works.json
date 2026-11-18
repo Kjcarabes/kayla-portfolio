@@ -3,6 +3,17 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, heroFeature",
   "works": [
     {
+      "id": "november",
+      "title": "November",
+      "date": "2026-11-16",
+      "category": "Paintings",
+      "image": "assets/images/img_9430.heic",
+      "size": "8in x 10in",
+      "heroFeature": true,
+      "originalStatus": "available",
+      "printPrice": 20
+    },
+    {
       "id": "sweet-as",
       "title": "Sweet as",
       "date": "2026-11-02",
