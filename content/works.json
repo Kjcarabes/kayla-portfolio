@@ -12,7 +12,8 @@
       "size": "24in x 36in",
       "heroFeature": true,
       "originalStatus": "available",
-      "printPrice": 15
+      "printPrice": 15,
+      "heroOrder": 10
     },
     {
       "id": "november",
@@ -35,7 +36,8 @@
         1200,
         1600,
         3347
-      ]
+      ],
+      "heroOrder": 2
     },
     {
       "id": "sweet-as",
@@ -61,7 +63,7 @@
         "assets/images/img_9857.heic",
         "assets/images/img_9876.heic"
       ],
-      "heroOrder": 2
+      "heroOrder": 3
     },
     {
       "id": "sulfur-pool",
@@ -88,7 +90,7 @@
         1600,
         3348
       ],
-      "heroOrder": 5
+      "heroOrder": 6
     },
     {
       "id": "jimothy-takes-seattle",
@@ -185,7 +187,7 @@
         1600,
         2457
       ],
-      "heroOrder": 3
+      "heroOrder": 4
     },
     {
       "id": "dolly",
@@ -210,7 +212,7 @@
         "assets/images/img_5335.jpg",
         "assets/images/img_5338.jpg"
       ],
-      "heroOrder": 4
+      "heroOrder": 5
     },
     {
       "id": "side of road copy.jpg",
@@ -231,7 +233,7 @@
         1600,
         4632
       ],
-      "heroOrder": 6
+      "heroOrder": 7
     },
     {
       "id": "sparkle-face",
@@ -251,7 +253,7 @@
         1600,
         4284
       ],
-      "heroOrder": 7
+      "heroOrder": 8
     },
     {
       "id": "xochi",
@@ -283,7 +285,7 @@
         1600,
         4077
       ],
-      "heroOrder": 8
+      "heroOrder": 9
     },
     {
       "id": "moss-hall",
@@ -306,7 +308,7 @@
         1600,
         3302
       ],
-      "heroOrder": 9
+      "heroOrder": 11
     },
     {
       "id": "garden",
@@ -327,7 +329,7 @@
         1600,
         2727
       ],
-      "heroOrder": 10
+      "heroOrder": 12
     },
     {
       "id": "horses",
@@ -347,7 +349,7 @@
         1600,
         5253
       ],
-      "heroOrder": 11
+      "heroOrder": 13
     },
     {
       "id": "voyuer",
@@ -796,7 +798,7 @@
         1600,
         4676
       ],
-      "heroOrder": 12
+      "heroOrder": 14
     },
     {
       "id": "Grey sky",
