@@ -282,6 +282,17 @@
       "workId": "sheep"
     },
     {
+      "id": "prod_VgStzXTljJktLe",
+      "title": "Persimmon Eaters",
+      "category": "Prints",
+      "price": 15,
+      "image": "assets/images/img_9278-2.heic",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/3cIbJ12oi8IK1Pn6iKe7m0u",
+      "sold": false,
+      "workId": "persimmon-eaters"
+    },
+    {
       "id": "print:red sun",
       "title": "Red Sun",
       "category": "Prints",
@@ -439,5 +450,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-11-23T06:11:58.406Z"
+  "_lastSync": "2026-11-23T22:44:19.070Z"
 }
