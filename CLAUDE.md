@@ -74,6 +74,21 @@ the optimizer has run for it, `pictureMarkup` returns a plain `<img>` (no srcset
 and `applyJustifiedLayout` falls back to the await-decode path. The page is slower
 but never broken. Don't add hard requirements that the optimizer must have run.
 
+**HEIC is converted in the admin, never in the pipeline.** Prebuilt sharp can't
+decode HEVC-coded HEIC (patent licensing) and only Safari displays it, so
+`readUpload` in `admin/admin.js` turns a picked HEIC into a JPEG (Safari's native
+decoder, else the vendored `admin/vendor/heic-to-*.js`, loaded only on demand).
+Every other upload goes through `stripMetadata`: JPEG/PNG/WebP are rebuilt from an
+allow-list (compressed pixels byte for byte, ICC profile, orientation) so phone GPS
+never reaches the public repo. Lossless on purpose — originals feed Gelato prints,
+and her photos are Display P3, so don't swap this for a canvas re-encode (that's
+only the fallback for a file that won't parse). The 61 originals that already had
+GPS were cleaned with `exiftool -gps:all=` on 2026-11-24; git history still has it.
+The optimizer writes each variant to a temp file
+and renames it, and treats a 0-byte output as stale. Before that, an undecodable
+source left an empty `.webp` that later runs counted as done, so live `srcset`s
+pointed at empty files (2026-11, three works).
+
 The `.github/workflows/optimize-images.yml` action runs the optimizer on every push
 that touches raw images (excluding `assets/images/optimized/**`) or `works.json`,
 and commits the result with `[skip ci]` to avoid an infinite loop.

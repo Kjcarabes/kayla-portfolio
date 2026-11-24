@@ -37,9 +37,25 @@ function variantOutputPath(srcRelFromImagesBase, width) {
 async function isUpToDate(srcPath, outPath) {
     try {
         const [s, o] = await Promise.all([fs.stat(srcPath), fs.stat(outPath)]);
-        return o.mtimeMs >= s.mtimeMs;
+        // A 0-byte file is a stub from an encode that died mid-write; never trust it.
+        return o.size > 0 && o.mtimeMs >= s.mtimeMs;
     } catch {
         return false;
+    }
+}
+
+// sharp creates the output file before decoding, so a source it can't decode (e.g. an
+// HEVC-coded HEIC) used to leave an empty .webp that every later run then counted as
+// done. Encoding to a temp file and renaming means a failure leaves nothing behind.
+async function writeVariant(pipeline, outPath) {
+    await fs.mkdir(path.dirname(outPath), { recursive: true });
+    const tmp = `${outPath}.tmp-${process.pid}.webp`;
+    try {
+        await pipeline.webp({ quality: WEBP_QUALITY }).toFile(tmp);
+        await fs.rename(tmp, outPath);
+    } catch (e) {
+        await fs.rm(tmp, { force: true });
+        throw e;
     }
 }
 
@@ -68,12 +84,12 @@ async function optimizeOne(srcAbsPath) {
         const outPath = variantOutputPath(srcRel, w);
         generated.push(w);
         if (await isUpToDate(srcAbsPath, outPath)) continue;
-        await fs.mkdir(path.dirname(outPath), { recursive: true });
-        await sharp(srcAbsPath)
-            .rotate() // honor EXIF orientation so portrait phones don't end up sideways
-            .resize({ width: w, withoutEnlargement: true })
-            .webp({ quality: WEBP_QUALITY })
-            .toFile(outPath);
+        await writeVariant(
+            sharp(srcAbsPath)
+                .rotate() // honor EXIF orientation so portrait phones don't end up sideways
+                .resize({ width: w, withoutEnlargement: true }),
+            outPath
+        );
         process.stdout.write(`  · ${path.relative(ROOT, outPath)}\n`);
     }
 
@@ -83,11 +99,7 @@ async function optimizeOne(srcAbsPath) {
         const fullOutPath = variantOutputPath(srcRel, meta.width);
         generated.push(meta.width);
         if (!(await isUpToDate(srcAbsPath, fullOutPath))) {
-            await fs.mkdir(path.dirname(fullOutPath), { recursive: true });
-            await sharp(srcAbsPath)
-                .rotate()
-                .webp({ quality: WEBP_QUALITY })
-                .toFile(fullOutPath);
+            await writeVariant(sharp(srcAbsPath).rotate(), fullOutPath);
             process.stdout.write(`  · ${path.relative(ROOT, fullOutPath)}\n`);
         }
     }
@@ -154,11 +166,12 @@ async function updateHeroPreload(works) {
     if (m && Array.isArray(hero.widths) && hero.widths.length > 0) {
         const base = m[1];
         const srcset = hero.widths
-            .map(w => `assets/images/optimized/${base}-${w}.webp ${w}w`)
+            // Percent-encode: srcset splits on spaces/commas (see pictureMarkup in main.js).
+            .map(w => `${encodeURI(`assets/images/optimized/${base}-${w}.webp`).replace(/,/g, '%2C')} ${w}w`)
             .join(', ');
         tag = `<link rel="preload" as="image" type="image/webp" imagesrcset="${srcset}" imagesizes="100vw" fetchpriority="high">`;
     } else {
-        tag = `<link rel="preload" as="image" href="${hero.image}" fetchpriority="high">`;
+        tag = `<link rel="preload" as="image" href="${encodeURI(hero.image)}" fetchpriority="high">`;
     }
 
     const html = await fs.readFile(INDEX_PATH, 'utf8');

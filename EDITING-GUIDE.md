@@ -587,7 +587,12 @@ automatically generates smaller versions for you (see "Image Optimization" below
 - **Just upload the high-quality original** straight from your camera or phone. The site
   will serve smaller, faster versions to visitors automatically.
 - **File formats:** JPG/JPEG for photos and paintings, PNG if you need transparency.
-  Don't use HEIC (iPhone's default) — convert to JPG first.
+  iPhone photos (HEIC) are fine in the admin — it turns them into JPGs for you as you
+  pick them. If you ever add a file to GitHub by hand instead, convert it to JPG first.
+- **Location privacy:** phones hide the exact spot a photo was taken inside the file.
+  The admin removes that (and other hidden camera details) from every photo you
+  upload, without changing how the picture looks. Adding files to GitHub by hand
+  skips this — another reason to use the admin.
 - **Filenames:** lowercase, no spaces. Use dashes: `mountain-painting.jpeg`, not
   `Mountain Painting.jpg`.
 

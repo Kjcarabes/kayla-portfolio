@@ -60,7 +60,7 @@ function stripeImageUrls(image, widths) {
     const w = capped.length ? Math.max(...capped) : Math.max(...widths);
     rel = `assets/images/optimized/${m[1]}-${w}.webp`;
   }
-  return [`${SITE_URL}/${rel}`];
+  return [`${SITE_URL}/${encodeURI(rel)}`];
 }
 
 // Shown on Stripe's checkout page when a buyer reaches a link that just hit its

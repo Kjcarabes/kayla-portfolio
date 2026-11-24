@@ -70,7 +70,7 @@ function fullDate(work) {
     return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null;
 }
 
-const abs = (rel) => rel.startsWith('http') ? rel : `${BASE}/${String(rel).replace(/^\//, '')}`;
+const abs = (rel) => rel.startsWith('http') ? rel : `${BASE}/${encodeURI(String(rel).replace(/^\//, ''))}`;
 
 // Serialize JSON-LD safely for inlining in <script> (escape '<' to avoid </script> breakouts).
 function jsonLd(obj) {
@@ -271,7 +271,7 @@ function wrapFallback(inner) {
 
 function workLine(w) {
     const bits = [displayYear(w), w.medium, w.size].filter(Boolean).join(', ');
-    return `        <li><a href="work-detail.html?id=${escapeHtml(w.id)}">${escapeHtml(w.title)}</a>${bits ? ` — ${escapeHtml(bits)}` : ''}</li>`;
+    return `        <li><a href="work-detail.html?id=${escapeHtml(encodeURIComponent(w.id))}">${escapeHtml(w.title)}</a>${bits ? ` — ${escapeHtml(bits)}` : ''}</li>`;
 }
 
 function homeFallback() {
@@ -301,7 +301,7 @@ function shopFallback() {
         const status = w.originalStatus === 'sold' ? 'sold'
             : w.originalStatus === 'nfs' ? 'not for sale'
             : 'available — inquire to purchase';
-        lines.push(`        <li>${escapeHtml(w.title)} — original ${escapeHtml(w.medium || 'painting')} — ${escapeHtml(status)} — <a href="work-detail.html?id=${escapeHtml(w.id)}">View artwork</a></li>`);
+        lines.push(`        <li>${escapeHtml(w.title)} — original ${escapeHtml(w.medium || 'painting')} — ${escapeHtml(status)} — <a href="work-detail.html?id=${escapeHtml(encodeURIComponent(w.id))}">View artwork</a></li>`);
     }
     return wrapFallback(
         `        <h2>Shop original paintings, prints &amp; crafts by Kayla Carabes</h2>\n        <ul>\n${lines.join('\n')}\n        </ul>`

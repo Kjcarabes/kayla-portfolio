@@ -134,6 +134,240 @@ function imgPreviewSrc(path) {
   return `${SITE}/${path}`;
 }
 
+// iPhone photos are HEIC: only Safari can display one, and the image optimizer's
+// sharp build can't decode HEVC, so a HEIC that reached the repo was a broken image
+// for most visitors. Convert on pick instead — the browser's own decoder where it
+// has one (Safari), else a vendored libheif build fetched only when needed. Going
+// through a canvas also drops EXIF, including the phone's GPS location.
+const HEIC_RE = /\.(heic|heif)$/i;
+const isHeicFile = (file) => HEIC_RE.test(file.name) || /^image\/hei[cf]/i.test(file.type);
+const MAX_CANVAS_PIXELS = 16777216; // iOS Safari refuses larger canvases
+
+async function canvasToJpeg(file) {
+  const bmp = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, Math.sqrt(MAX_CANVAS_PIXELS / (bmp.width * bmp.height)));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+    if (!blob) throw new Error('could not encode JPEG');
+    return blob;
+  } finally { bmp.close(); }
+}
+
+async function heicToJpeg(file) {
+  try {
+    return await canvasToJpeg(file);
+  } catch { /* no native HEIC decoder (Chrome, Firefox) — use the library */ }
+  const { heicTo } = await import('./vendor/heic-to-1.6.7.js');
+  return heicTo({ blob: file, type: 'image/jpeg', quality: 0.92 });
+}
+
+// =================== STRIP PHOTO METADATA ===================
+// Phone photos carry EXIF/XMP with the exact GPS spot they were taken, and the
+// originals are publicly downloadable (the repo is public too). So every upload is
+// rebuilt from an allow-list: the compressed pixels byte for byte (no re-encode, no
+// quality loss), the colour profile (her photos are Display P3), and orientation.
+// Everything else — GPS, camera serial, timestamps, XMP — is dropped. Returns null
+// for formats that carry no location (GIF, SVG); throws if the file doesn't parse.
+function stripMetadata(b) {
+  const at = (sig, o = 0) => sig.every((v, k) => b[o + k] === v);
+  if (at([0xFF, 0xD8, 0xFF])) return stripJpeg(b);
+  if (at([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) return stripPng(b);
+  if (at([0x52, 0x49, 0x46, 0x46]) && at([0x57, 0x45, 0x42, 0x50], 8)) return stripWebp(b);
+  return null;
+}
+
+const ascii = (b, o, n) => String.fromCharCode(...b.subarray(o, o + n));
+
+function concatBytes(parts) {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
+function stripJpeg(b) {
+  const out = [b.subarray(0, 2)]; // SOI
+  let i = 2, orientation = 1, ended = false;
+  while (i + 1 < b.length) {
+    if (b[i] !== 0xFF) throw new Error('bad JPEG marker');
+    const m = b[i + 1];
+    if (m === 0xFF) { i++; continue; } // fill byte
+    if (m === 0xD9) { out.push(b.subarray(i, i + 2)); ended = true; break; } // EOI; drop any trailer
+    if (i + 4 > b.length) throw new Error('truncated JPEG');
+    const end = i + 2 + ((b[i + 2] << 8) | b[i + 3]);
+    if (end > b.length) throw new Error('truncated JPEG');
+    if (m === 0xDA) {
+      // Scan: header plus entropy-coded data, which runs to the next marker that
+      // isn't a stuffed 0xFF00 or a restart marker.
+      let j = end;
+      while (j + 1 < b.length && !(b[j] === 0xFF && b[j + 1] !== 0x00 && (b[j + 1] < 0xD0 || b[j + 1] > 0xD7))) j++;
+      out.push(b.subarray(i, j));
+      i = j;
+      continue;
+    }
+    const seg = b.subarray(i, end);
+    if (m === 0xE1 && ascii(seg, 4, 6) === 'Exif\0\0') orientation = exifOrientation(seg.subarray(10));
+    const keep = (m < 0xE0 || m > 0xEF) && m !== 0xFE // tables + frame header; not APPn/comments
+      || (m === 0xE0 && ascii(seg, 4, 5) === 'JFIF\0')
+      || (m === 0xE2 && ascii(seg, 4, 12) === 'ICC_PROFILE\0')
+      || (m === 0xEE && ascii(seg, 4, 5) === 'Adobe'); // colour transform, needed to decode
+    if (keep) out.push(seg);
+    i = end;
+  }
+  if (!ended) throw new Error('truncated JPEG');
+  if (orientation !== 1) {
+    const afterJfif = out[1] && out[1][1] === 0xE0 ? 2 : 1;
+    out.splice(afterJfif, 0, orientationApp1(orientation));
+  }
+  return concatBytes(out);
+}
+
+function exifOrientation(tiff) {
+  try {
+    const dv = new DataView(tiff.buffer, tiff.byteOffset, tiff.byteLength);
+    const le = tiff[0] === 0x49; // "II" = little-endian
+    const ifd = dv.getUint32(4, le);
+    for (let k = 0, n = dv.getUint16(ifd, le); k < n; k++) {
+      const e = ifd + 2 + k * 12;
+      if (dv.getUint16(e, le) === 0x0112) {
+        const v = dv.getUint16(e + 8, le);
+        return v >= 1 && v <= 8 ? v : 1;
+      }
+    }
+  } catch { /* malformed EXIF: treat as upright */ }
+  return 1;
+}
+
+// A minimal EXIF block holding only IFD0 → Orientation, so sideways shots stay upright.
+function orientationTiff(v) {
+  const t = new Uint8Array(26);
+  const dv = new DataView(t.buffer);
+  t.set([0x4D, 0x4D, 0x00, 0x2A, 0, 0, 0, 8]);   // "MM", 42, IFD0 at 8
+  dv.setUint16(8, 1);                            // one entry:
+  dv.setUint16(10, 0x0112); dv.setUint16(12, 3); //   Orientation, SHORT
+  dv.setUint32(14, 1); dv.setUint16(18, v);      //   count 1, value
+  return t;                                      // next-IFD offset stays 0
+}
+
+function orientationApp1(v) {
+  const seg = new Uint8Array(36);
+  seg.set([0xFF, 0xE1, 0, 34, 0x45, 0x78, 0x69, 0x66, 0, 0]); // APP1, length, "Exif\0\0"
+  seg.set(orientationTiff(v), 10);
+  return seg;
+}
+
+let CRC_TABLE;
+function crc32(bytes) {
+  CRC_TABLE ||= Array.from({ length: 256 }, (_, n) => {
+    for (let k = 0; k < 8; k++) n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1;
+    return n >>> 0;
+  });
+  let c = 0xFFFFFFFF;
+  for (const x of bytes) c = CRC_TABLE[(c ^ x) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+const PNG_KEEP = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'cHRM', 'gAMA', 'iCCP', 'sBIT',
+  'sRGB', 'bKGD', 'pHYs', 'cICP', 'mDCV', 'mDCv', 'cLLI', 'cLLi', 'acTL', 'fcTL', 'fdAT']);
+
+function stripPng(b) {
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const out = [b.subarray(0, 8)];
+  let orientation = 1;
+  for (let i = 8; i + 12 <= b.length;) {
+    const type = ascii(b, i + 4, 4);
+    const size = dv.getUint32(i);
+    const end = i + 12 + size;
+    if (end > b.length) break;
+    if (type === 'eXIf') orientation = exifOrientation(b.subarray(i + 8, i + 8 + size));
+    if (PNG_KEEP.has(type)) out.push(b.subarray(i, end)); // whole chunk, CRC included
+    if (type === 'IEND') {
+      if (orientation !== 1) {
+        const t = orientationTiff(orientation);
+        const chunk = new Uint8Array(12 + t.length);
+        const cdv = new DataView(chunk.buffer);
+        cdv.setUint32(0, t.length);
+        chunk.set([0x65, 0x58, 0x49, 0x66], 4); // "eXIf"
+        chunk.set(t, 8);
+        cdv.setUint32(8 + t.length, crc32(chunk.subarray(4, 8 + t.length)));
+        out.splice(2, 0, chunk); // right after IHDR, before any IDAT
+      }
+      return concatBytes(out);
+    }
+    i = end;
+  }
+  throw new Error('truncated PNG');
+}
+
+function stripWebp(b) {
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const out = [];
+  let vp8x = null, orientation = 1;
+  for (let i = 12; i + 8 <= b.length;) {
+    const type = ascii(b, i, 4);
+    const size = dv.getUint32(i + 4, true);
+    if (i + 8 + size > b.length) throw new Error('truncated WebP');
+    const end = Math.min(b.length, i + 8 + size + (size & 1)); // chunks pad to even
+    if (type === 'EXIF') {
+      let tiff = b.subarray(i + 8, i + 8 + size);
+      if (ascii(tiff, 0, 6) === 'Exif\0\0') tiff = tiff.subarray(6); // some writers add it
+      orientation = exifOrientation(tiff);
+    } else if (type !== 'XMP ') {
+      const chunk = b.slice(i, end);
+      if (type === 'VP8X') vp8x = chunk;
+      out.push(chunk);
+    }
+    i = end;
+  }
+  if (!out.length) throw new Error('empty WebP');
+  if (vp8x) vp8x[8] &= ~0x0C; // clear the "has EXIF" / "has XMP" flags
+  if (vp8x && orientation !== 1) {
+    const t = orientationTiff(orientation);
+    const chunk = new Uint8Array(8 + t.length); // 26 bytes: even, so no pad
+    chunk.set([0x45, 0x58, 0x49, 0x46], 0);   // "EXIF"
+    new DataView(chunk.buffer).setUint32(4, t.length, true);
+    chunk.set(t, 8);
+    out.push(chunk); // EXIF belongs after the image data
+    vp8x[8] |= 0x08;
+  }
+  const header = b.slice(0, 12);
+  new DataView(header.buffer).setUint32(4, 4 + out.reduce((n, c) => n + c.length, 0), true);
+  return concatBytes([header, ...out]);
+}
+
+// Read a picked file for upload → { name, contentType, dataUrl }. HEIC becomes JPEG;
+// everything gets its metadata stripped (see above).
+async function readUpload(file) {
+  let blob = file, name = file.name;
+  if (isHeicFile(file)) {
+    blob = await heicToJpeg(file);
+    name = `${name.replace(HEIC_RE, '')}.jpg`;
+  } else {
+    let clean;
+    try {
+      clean = stripMetadata(new Uint8Array(await file.arrayBuffer()));
+    } catch {
+      // Header we can't parse: a lossy re-encode still guarantees nothing leaks.
+      blob = await canvasToJpeg(file);
+      name = `${name.replace(/\.[^.]+$/, '')}.jpg`;
+    }
+    if (clean) blob = new Blob([clean], { type: file.type });
+  }
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result); r.onerror = () => rej(r.error);
+    r.readAsDataURL(blob);
+  });
+  return { name, contentType: blob.type || file.type, dataUrl };
+}
+
+const uploadErrorText = (err) =>
+  `Couldn’t read that photo (${err?.message || err}). Try exporting it as a JPEG and picking it again.`;
+
 // Small thumbnail source: use the optimized WebP variant when one exists (so the
 // list doesn't download full-size originals). `widths` comes from works.json.
 function thumbSrc(path, widths) {
@@ -475,15 +709,23 @@ document.addEventListener('change', async (e) => {
   if (!t.dataset.imgFile) return;
   const file = t.files?.[0];
   if (!file) return;
-  const clean = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase();
+  const label = t.nextElementSibling;
+  if (isHeicFile(file) && label) label.textContent = 'Converting iPhone photo to JPG…';
+  let upload;
+  try {
+    upload = await readUpload(file);
+  } catch (err) {
+    t.value = '';
+    toast(escapeHtml(uploadErrorText(err)), 'error');
+    renderActiveTab();
+    return;
+  }
+  if (t.files?.[0] !== file) return; // she picked another photo while this one converted
+  const { name, contentType, dataUrl } = upload;
+  const clean = name.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase();
   const targetPath = `assets/images/${clean}`;
-  const dataUrl = await new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result); r.onerror = rej;
-    r.readAsDataURL(file);
-  });
   state.pendingImages = state.pendingImages.filter(p => p.path !== targetPath);
-  state.pendingImages.push({ path: targetPath, base64: dataUrl.split(',')[1], contentType: file.type, dataUrl });
+  state.pendingImages.push({ path: targetPath, base64: dataUrl.split(',')[1], contentType, dataUrl });
 
   setByPath(state.files[t.dataset.imgFile], t.dataset.imgKey, targetPath);
   // Changing a work's image invalidates its precomputed dimensions — let the
@@ -733,7 +975,7 @@ function showAddWorkModal() {
       <label class="field-label">Image (required)</label>
       <div class="image-picker">
         <div class="image-preview" id="aw-preview">No image</div>
-        <div class="image-controls"><input type="file" accept="image/*" id="aw-file"><span class="image-path" id="aw-filename">JPG, PNG, etc. (JPG needed to auto-post to Instagram)</span></div>
+        <div class="image-controls"><input type="file" accept="image/*" id="aw-file"><span class="image-path" id="aw-filename">JPG, PNG or iPhone photos (HEIC becomes JPG automatically; JPG needed to auto-post to Instagram)</span></div>
       </div>
     </div>`;
 
@@ -763,9 +1005,22 @@ function showAddWorkModal() {
   $('#aw-file').addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const clean = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase();
-    const dataUrl = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-    picked = { path: `assets/images/${clean}`, base64: dataUrl.split(',')[1], contentType: file.type, dataUrl };
+    if (isHeicFile(file)) $('#aw-filename').textContent = 'Converting iPhone photo to JPG…';
+    let upload;
+    try {
+      upload = await readUpload(file);
+    } catch (err) {
+      e.target.value = '';
+      picked = null;
+      $('#aw-preview').textContent = 'No image';
+      $('#aw-filename').textContent = uploadErrorText(err);
+      paintNetworks();
+      return;
+    }
+    if (e.target.files?.[0] !== file) return; // a newer pick superseded this one
+    const { name, contentType, dataUrl } = upload;
+    const clean = name.replace(/[^a-zA-Z0-9._-]+/g, '-').toLowerCase();
+    picked = { path: `assets/images/${clean}`, base64: dataUrl.split(',')[1], contentType, dataUrl };
     $('#aw-preview').innerHTML = `<img src="${dataUrl}" alt="">`;
     $('#aw-filename').textContent = picked.path;
     paintNetworks();

@@ -589,7 +589,12 @@ function pictureMarkup({ image, widths, aspectRatio, alt = '', sizes, lazy = tru
         return `<img src="${escapeAttr(image || '')}" ${altAttr} ${loadAttrs} ${priorityAttr} ${styleAttr}>`;
     }
     const baseRel = m[1];
-    const srcset = widths.map(w => `assets/images/optimized/${baseRel}-${w}.webp ${w}w`).join(', ');
+    // srcset splits candidates on whitespace and commas, so a filename like
+    // "side of road copy.jpg" must be percent-encoded or every candidate is dropped
+    // and the browser falls back to the multi-MB original.
+    const srcset = widths
+        .map(w => `${encodeURI(`assets/images/optimized/${baseRel}-${w}.webp`).replace(/,/g, '%2C')} ${w}w`)
+        .join(', ');
     const sizesAttr = sizes ? `sizes="${sizes}"` : '';
     return `<picture>
         <source type="image/webp" srcset="${srcset}" ${sizesAttr}>
@@ -1346,7 +1351,7 @@ function applyWorkDetailSeo(work, products = []) {
     const year = workDisplayYear(work);
     const absImg = work.image && work.image.startsWith('http')
         ? work.image
-        : `${SITE_ORIGIN}/${String(work.image || '').replace(/^\//, '')}`;
+        : `${SITE_ORIGIN}/${encodeURI(String(work.image || '').replace(/^\//, ''))}`;
     // Social scrapers cap image size (X ~5MB) and originals can be larger, so prefer a
     // small optimized WebP variant for og:image/twitter:image. Fall back to the original.
     const widths = Array.isArray(work.widths) ? work.widths : [];
@@ -1354,7 +1359,7 @@ function applyWorkDetailSeo(work, products = []) {
     let socialImg = absImg;
     if (optMatch && widths.length) {
         const w = widths.includes(1200) ? 1200 : (widths.filter(x => x <= 1600).pop() || widths[0]);
-        socialImg = `${SITE_ORIGIN}/assets/images/optimized/${optMatch[1]}-${w}.webp`;
+        socialImg = `${SITE_ORIGIN}/${encodeURI(`assets/images/optimized/${optMatch[1]}-${w}.webp`)}`;
     }
     const mediumBits = [work.medium, work.size].filter(Boolean).join(', ');
     // Use just the first line of the description for the meta tag (keeps it concise
