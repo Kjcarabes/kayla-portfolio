@@ -249,6 +249,17 @@
       "workId": "night"
     },
     {
+      "id": "prod_VeGdWw11ctWlOr",
+      "title": "November",
+      "category": "Prints",
+      "price": 20,
+      "image": "assets/images/img_9430-3.heic",
+      "description": "Print",
+      "stripeLink": "https://buy.stripe.com/6oU28r6EybUW79HfTke7m0t",
+      "sold": false,
+      "workId": "november"
+    },
+    {
       "id": "print:Park",
       "title": "Parklife",
       "category": "Prints",
@@ -439,5 +450,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-11-24T01:25:57.021Z"
+  "_lastSync": "2026-11-24T01:29:48.137Z"
 }

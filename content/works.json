@@ -16,6 +16,14 @@
       "detail_images": [
         "assets/images/img_9430-2.heic",
         "assets/images/img_9448.heic"
+      ],
+      "aspectRatio": 1.2296,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        3347
       ]
     },
     {
