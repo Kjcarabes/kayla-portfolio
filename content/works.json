@@ -12,7 +12,11 @@
       "size": "8in x 10in",
       "heroFeature": false,
       "originalStatus": "available",
-      "printPrice": 20
+      "printPrice": 20,
+      "detail_images": [
+        "assets/images/img_9430-2.heic",
+        "assets/images/img_9448.heic"
+      ]
     },
     {
       "id": "persimmon-eaters",
