@@ -3,6 +3,18 @@
   "_instructions": "Each artwork needs: id, title, year, category, image. Optional: description, medium, size, heroFeature",
   "works": [
     {
+      "id": "november",
+      "title": "November",
+      "date": "2026-11-16",
+      "category": "Paintings",
+      "image": "assets/images/img_9430-3.heic",
+      "medium": "Oil on Canvas",
+      "size": "8in x 10in",
+      "heroFeature": false,
+      "originalStatus": "available",
+      "printPrice": 20
+    },
+    {
       "id": "persimmon-eaters",
       "title": "Persimmon Eaters",
       "date": "2026-11-11",
