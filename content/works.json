@@ -42,6 +42,14 @@
         "assets/images/img_0409.jpg",
         "assets/images/img_0394.jpg",
         "assets/images/img_9279.jpg"
+      ],
+      "aspectRatio": 1.2629,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4314
       ]
     },
     {

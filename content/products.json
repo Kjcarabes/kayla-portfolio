@@ -253,7 +253,7 @@
       "title": "November",
       "category": "Prints",
       "price": 20,
-      "image": "assets/images/img_9430-3.heic",
+      "image": "assets/images/img_9430-3.jpg",
       "description": "Print",
       "stripeLink": "https://buy.stripe.com/6oU28r6EybUW79HfTke7m0t",
       "sold": false,
@@ -286,7 +286,7 @@
       "title": "Persimmon Eaters",
       "category": "Prints",
       "price": 15,
-      "image": "assets/images/img_9278.heic",
+      "image": "assets/images/img_9278.jpg",
       "description": "Print",
       "stripeLink": "https://buy.stripe.com/3cIbJ12oi8IK1Pn6iKe7m0u",
       "sold": false,
@@ -450,5 +450,5 @@
       "workId": "jimothy-takes-seattle"
     }
   ],
-  "_lastSync": "2026-11-24T01:29:48.137Z"
+  "_lastSync": "2026-11-24T05:47:13.005Z"
 }
