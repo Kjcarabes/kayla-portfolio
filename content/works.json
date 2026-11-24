@@ -7,37 +7,18 @@
       "title": "Persimmon Eaters",
       "date": "2026-11-11",
       "category": "Paintings",
-      "image": "assets/images/img_9278-2.heic",
+      "image": "assets/images/img_9278.heic",
       "medium": "Oil on Canvas",
       "size": "24in x 36in",
       "heroFeature": true,
       "originalStatus": "available",
       "printPrice": 15,
-      "heroOrder": 10
-    },
-    {
-      "id": "november",
-      "title": "November",
-      "date": "2026-11-16",
-      "category": "Paintings",
-      "image": "assets/images/img_9430-3.heic",
-      "size": "8in x 10in",
-      "heroFeature": true,
-      "originalStatus": "available",
-      "printPrice": 20,
+      "heroOrder": 10,
       "detail_images": [
-        "assets/images/img_9448.heic",
-        "assets/images/img_9430-2.heic"
-      ],
-      "aspectRatio": 1.2296,
-      "widths": [
-        400,
-        800,
-        1200,
-        1600,
-        3347
-      ],
-      "heroOrder": 2
+        "assets/images/img_0409.heic",
+        "assets/images/img_0394.heic",
+        "assets/images/img_9279.heic"
+      ]
     },
     {
       "id": "sweet-as",
