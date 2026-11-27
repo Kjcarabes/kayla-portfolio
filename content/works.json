@@ -57,19 +57,11 @@
       "title": "Sweet as",
       "date": "2026-11-02",
       "category": "Paintings",
-      "image": "assets/images/img_9914.jpg",
+      "image": "assets/images/img_0030-2.jpg",
       "size": "24in x 30in",
       "heroFeature": true,
       "originalStatus": "nfs",
       "printPrice": 15,
-      "aspectRatio": 1.2608,
-      "widths": [
-        400,
-        800,
-        1200,
-        1600,
-        4539
-      ],
       "detail_images": [
         "assets/images/img_9882.jpg",
         "assets/images/img_9904.jpg",
