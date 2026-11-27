@@ -68,7 +68,15 @@
         "assets/images/img_9857.jpg",
         "assets/images/img_9876.jpg"
       ],
-      "heroOrder": 3
+      "heroOrder": 3,
+      "aspectRatio": 1.248,
+      "widths": [
+        400,
+        800,
+        1200,
+        1600,
+        4896
+      ]
     },
     {
       "id": "sulfur-pool",
